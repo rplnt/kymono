@@ -17,7 +17,7 @@ body {
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
     margin: 0px;
     padding: 0px;
-    font: 1.8em sans-serif;
+    font: 3em sans-serif;
 }
 
 .main-menu-right {
@@ -51,7 +51,7 @@ body {
 }
 
 #app {
-    margin-top: 64px;
+    margin-top: 92px;
 }
 
 
@@ -63,13 +63,15 @@ body {
     border: solid 2px #6DAE42;
     border-radius: 2px;
     color: #fff;
-    font-size: 1.5em;
+    font-size: 1.8em;
     padding-left: 8px;
     padding-bottom: 0px;
 }
 
 .filter-menu {
     margin: 8px 20px;
+    font-size: 1.3em;
+    overflow: hidden; 
 }
 
 .btn-filter {
@@ -79,12 +81,12 @@ body {
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
     font-weight: bold;
     margin: 2px 8px;
+    line-height: 24px;
 }
 
-.btn-filter.right {
-    font: monospace large;
+.btn-filter.btn-right {
     float: right;
-    padding: 2px 6px;
+    display:inline-block;
 }
 
 .bookmarks {

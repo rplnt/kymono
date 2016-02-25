@@ -4,11 +4,11 @@ var _=MINI._, $=MINI.$, $$=MINI.$$, EE=MINI.EE, HTML=MINI.HTML;
 
 var conf = {
     base: '/id/8099985/',
-    // base: 'https://kyberia.sk/id/8099985/',
     // base: 'http://localhost:8000/',
     name: 'KyMoNo',
     version: 'v0.0.1',
     css: 'https://cdn.rawgit.com/rplnt/kymono/master/kymono.css',
+    // css: 'kymono.css',
     recent: 1000*60*60*24*3
 };
 
@@ -44,12 +44,19 @@ $(function() {
         $('head').fill();
         try {
             clearTimeout(check_mail_timer);
+            document.removeEventListener('onmousemove', getMouseXY);
         } catch (e) {
             // whatever
         }
         $('body').fill();
         $('head').add(EE('title', conf.name + ' ' + conf.version));
         $('head').add(EE('link', {'@rel': 'stylesheet', '@type': 'text/css', '@href': conf.css}));
+
+        try {
+            document.body.requestFullscreen();
+        } catch (e) {}
+
+        // window.scrollTo(0,1);
     })();
 
     /* add main menu */
@@ -73,7 +80,7 @@ $(function() {
             EE('li', {$: 'menu-item'}, mailBtn),
             EE('li', {$: 'menu-item'}, kBtn),
             EE('ul', {$: 'main-menu-right'}, 
-                EE('li', {$: 'menu-item'}, EE('a', {$: 'btn btn-menu', '@title': 'Whatever'}, 'W'))
+                EE('li', {$: 'menu-item'}, EE('a', {$: 'btn btn-menu', '@title': 'Whatever'}, '#'))
             )
         ]))
     })();
@@ -81,7 +88,8 @@ $(function() {
     $('body').add(EE('div', {id: 'app'}));
 
     setTimeout(function() {
-        App.Home();
+        // App.Home();
+        App.Bookmarks();
     }, 0);
 });
 
@@ -133,17 +141,17 @@ $(function() {
              $('.filter-menu').add(recentButton);
 
             /* show/hide all categories */
-            var showAllBtn = EE('span', {$: 'btn btn-filter right'}, '+');
-            showAllBtn.onClick(function(e) {
-                if (this.set('active').is('.active')) {
-                    this.set('innerHTML', '-');
-                    $('.bookmark').set('-hidden');
-                } else {
-                    this.set('innerHTML', '+');
-                    $('.bookmark').set('+hidden');
-                }
-            })
-            $('.filter-menu').add(showAllBtn);
+            // var showAllBtn = EE('span', {$: 'btn btn-filter btn-right'}, 'X');
+            // showAllBtn.onClick(function(e) {
+            //     if (this.set('active').is('.active')) {
+            //         this.set('innerHTML', '-');
+            //         $('.bookmark').set('-hidden');
+            //     } else {
+            //         this.set('innerHTML', '+');
+            //         $('.bookmark').set('+hidden');
+            //     }
+            // })
+            // $('.filter-menu').add(showAllBtn);
 
             /* bookmark categories */
             $('book-cat', content).per(function(cat, i) {
@@ -256,7 +264,7 @@ $(function() {
     function submitSearch(e) {
         if (e.keyCode == 13) {
             if ($('.bookmark').not('.hidden').length == 1) {
-                openNode($('.bookmark').not('.hidden').get('%id'));
+                app.openNode($('.bookmark').not('.hidden').get('%id'));
             }
         }
     }
@@ -440,12 +448,10 @@ function dateDiffMins(d) {
 /************** NODES ***************/
 (function(app) {
     app.openNode = function(node) {
-        console.log(node);
+        console.log('Opening ' + node);
+        window.open('https://kyberia.sk/id/' + node, '_blank');
     }
 })(App);
-
-
-
 
 
 /* todo */
