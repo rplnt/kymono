@@ -7,7 +7,7 @@ var conf = {
     // base: 'http://localhost:8000/',
     name: 'KyMoNo',
     version: 'v0.0.1',
-    css: 'https://cdn.rawgit.com/rplnt/kymono/master/kymono.css',
+    css: 'https://rawgit.com/rplnt/kymono/master/kymono.css',
     // css: 'kymono.css',
     recent: 1000*60*60*24*3
 };
