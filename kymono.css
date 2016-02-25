@@ -87,10 +87,6 @@ body {
     padding: 2px 6px;
 }
 
-.btn-filter.active {
-    color: #ff3333;
-}
-
 .bookmarks {
     list-style-type: none;
     padding: 0px;
