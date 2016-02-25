@@ -4,6 +4,7 @@ var _=MINI._, $=MINI.$, $$=MINI.$$, EE=MINI.EE, HTML=MINI.HTML;
 
 var conf = {
     base: '/id/8099985/',
+    // base: 'https://kyberia.sk/id/8099985/',
     // base: 'http://localhost:8000/',
     name: 'KyMoNo',
     version: 'v0.0.1',
@@ -17,7 +18,7 @@ var templates = {
 
 var App = {
     loading: function() { 
-        $('#app').fill(EE('div', {$: 'sp-circle'})); 
+        $('#app').fill(EE('div', {$: 'sp-circle'}));
     },
     open: function(call) {
         $('a', '.menu-item').set('-active');
@@ -422,6 +423,7 @@ $(function() {
 
 /* Get diff to current date */
 function dateDiffMins(d) {
+    if (!d) return Infinity;
     var reDate = /(\d{4})-(\d{2})-(\d{2})\s(\d{2}):(\d{2}):(\d{2})/
     var m = d.match(reDate);
 
