@@ -12,6 +12,12 @@ var conf = {
     recent: 1000*60*60*24*3
 };
 
+var userConf = {
+    global: {
+        fontSize: 1.3
+    }
+}
+
 var templates = {
     bookmarks: '7269244'
 }
@@ -29,6 +35,10 @@ var App = {
     /* Display Error */
     err: function(msg) {
         console.log('Error ' + msg);
+    },
+
+    onNavigation: function(event) {
+        // TODO detect if this back event instead of click in navigation.. somehow?
     }
 
 
@@ -48,19 +58,18 @@ $(function() {
         } catch (e) {
             // whatever
         }
+
+        window.onhashchange = App.onNavigation;
+
         $('body').fill();
         $('head').add(EE('title', conf.name + ' ' + conf.version));
         $('head').add(EE('link', {'@rel': 'stylesheet', '@type': 'text/css', '@href': conf.css}));
 
-        try {
-            document.body.requestFullscreen();
-        } catch (e) {}
-
-        // window.scrollTo(0,1);
+        // has to be a reaction to user request -- add menu entry
+        // goFullScreen();
     })();
 
     /* add main menu */
-
     var homeBtn = EE('a', {$: 'btn btn-menu active', '@title': 'Home'}, 'H');
     homeBtn.onClick(App.open, [App.Home]);
 
@@ -73,6 +82,23 @@ $(function() {
     var kBtn = EE('a', {$: 'btn btn-menu', '@title': 'K'}, 'K');
     kBtn.onClick(App.open, [App.K]);
 
+    var menuBtn = EE('a', {$: 'btn btn-menu', '@title': 'Menu'}, '≡');
+    menuBtn.onClick(function() {
+        $('#dropdown').set('active');
+    });
+
+    /* dropdown menu -- much TODO */
+    var dropdown = EE('div', {id: 'dropdown'}, [
+        EE('a', {$: 'btn dropdown-item'}, 'Somewhere'),
+        EE('a', {$: 'btn dropdown-item'}, 'Over The'),
+        EE('a', {$: 'btn dropdown-item'}, 'Rainbow')
+    ]);
+
+    var fullscreen = EE('a', {$: 'btn dropdown-item'}, 'Fullscreen');
+    fullscreen.onClick(goFullScreen);
+
+    dropdown.add(fullscreen);
+
     (function addMenu() {
         $('body').add(EE('ul', {id: 'main-menu'}, [
             EE('li', {$: 'menu-item'}, homeBtn),
@@ -80,12 +106,18 @@ $(function() {
             EE('li', {$: 'menu-item'}, mailBtn),
             EE('li', {$: 'menu-item'}, kBtn),
             EE('ul', {$: 'main-menu-right'}, 
-                EE('li', {$: 'menu-item'}, EE('a', {$: 'btn btn-menu', '@title': 'Whatever'}, '#'))
+                EE('li', {$: 'menu-item'}, menuBtn)
             )
         ]))
     })();
 
-    $('body').add(EE('div', {id: 'app'}));
+    $('body').add(dropdown);
+
+    $('body').add(EE('div', {
+        id: 'app',
+        '$marginTop': Math.floor((userConf.global.fontSize * 82) + 18) + 'px'
+    }));
+    $('body').set('$fontSize', userConf.global.fontSize + 'em'); // TODO move to config
 
     setTimeout(function() {
         // App.Home();
@@ -99,6 +131,7 @@ $(function() {
 (function(app) {
     app.Home = function() {
         $('#app').fill();
+        location.hash = "#home";
         app.err("Not implemented");
     }
 })(App);
@@ -112,6 +145,8 @@ $(function() {
 
     /* main entry point */
     app.Bookmarks = function() {
+
+        location.hash = "#bookmarks";
 
         loadContent(templates.bookmarks, function(content) {
             var names = [];
@@ -134,7 +169,7 @@ $(function() {
             unreadBtn.onClick(toggleNewFilter);
             $('.filter-menu').add(unreadBtn);
 
-            $('.filter-menu').add('visited in last');
+            $('.filter-menu').add('visited in the last');
             var recentButton;
             recentButton = EE('span', {$: 'btn btn-filter'}, timeRanges[timeRangeIndex][0]);
             recentButton.onClick(updateFilter, [1]);
@@ -200,7 +235,7 @@ $(function() {
 
             updateFilter(0);
 
-            /* possibly disable on mobile */
+            /* add to configuration */
             $$('#book-filter').focus();
 
             app.buildSearchIndex(names)
@@ -296,6 +331,7 @@ $(function() {
 (function(app) {
     app.Mail = function() {
         $('#app').fill();
+        location.hash = "#mail";
         app.err("Not implemented");
     }
 })(App);
@@ -305,6 +341,7 @@ $(function() {
 (function(app) {
     app.K = function() {
         $('#app').fill();
+        location.hash = "#k";
         app.err("Not implemented");
     }
 })(App);
@@ -431,7 +468,7 @@ $(function() {
 
 /* Get diff to current date */
 function dateDiffMins(d) {
-    if (!d) return Infinity;
+    if (!d) return 0;
     var reDate = /(\d{4})-(\d{2})-(\d{2})\s(\d{2}):(\d{2}):(\d{2})/
     var m = d.match(reDate);
 
@@ -440,7 +477,21 @@ function dateDiffMins(d) {
         return (((new Date()) - lastVisit) / (60 * 1000));
     }
 
-    return Infinity;
+    return 0;
+}
+
+
+function goFullScreen() {
+    var elem = document.body;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    } else if (elem.msRequestFullscreen) {
+      elem.msRequestFullscreen();
+    } else if (elem.mozRequestFullScreen) {
+      elem.mozRequestFullScreen();
+    } else if (elem.webkitRequestFullscreen) {
+      elem.webkitRequestFullscreen();
+    }
 }
 
 
