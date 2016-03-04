@@ -3,12 +3,12 @@ var MINI = require('minified');
 var _=MINI._, $=MINI.$, $$=MINI.$$, EE=MINI.EE, HTML=MINI.HTML;
 
 var conf = {
-    base: 'http://localhost:8000/',
-    // base: '/id/8099985/',
+    // base: 'http://localhost:8000/',
+    base: '/id/8099985/',
     name: 'KyMoNo',
     version: 'v0.0.1',
-    css: 'kymono.css',
-    // css: 'https://rawgit.com/rplnt/kymono/master/kymono.css',
+    // css: 'kymono.css',
+    css: 'https://rawgit.com/rplnt/kymono/master/kymono.css',
     recent: 1000*60*60*24*3
 };
 
