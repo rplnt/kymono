@@ -3,23 +3,24 @@ var MINI = require('minified');
 var _=MINI._, $=MINI.$, $$=MINI.$$, EE=MINI.EE, HTML=MINI.HTML;
 
 var conf = {
-    base: '/id/8099985/',
-    // base: 'http://localhost:8000/',
+    base: 'http://localhost:8000/',
+    // base: '/id/8099985/',
     name: 'KyMoNo',
     version: 'v0.0.1',
-    css: 'https://rawgit.com/rplnt/kymono/master/kymono.css',
-    // css: 'kymono.css',
+    css: 'kymono.css',
+    // css: 'https://rawgit.com/rplnt/kymono/master/kymono.css',
     recent: 1000*60*60*24*3
 };
 
 var userConf = {
     global: {
-        fontSize: 1.3
+        fontSize: 1.9
     }
 }
 
 var templates = {
-    bookmarks: '7269244'
+    bookmarks: '7269244',
+    home: '7269265'
 }
 
 var App = {
@@ -94,11 +95,6 @@ $(function() {
         EE('a', {$: 'btn dropdown-item'}, 'Rainbow')
     ]);
 
-    var fullscreen = EE('a', {$: 'btn dropdown-item'}, 'Fullscreen');
-    fullscreen.onClick(goFullScreen);
-
-    dropdown.add(fullscreen);
-
     (function addMenu() {
         $('body').add(EE('ul', {id: 'main-menu'}, [
             EE('li', {$: 'menu-item'}, homeBtn),
@@ -111,17 +107,16 @@ $(function() {
         ]))
     })();
 
+    $('body').add(EE('div', {$: 'pad'}, '^'));
+
     $('body').add(dropdown);
 
-    $('body').add(EE('div', {
-        id: 'app',
-        '$marginTop': Math.floor((userConf.global.fontSize * 82) + 18) + 'px'
-    }));
+    $('body').add(EE('div', {id: 'app'}));
+
     $('body').set('$fontSize', userConf.global.fontSize + 'em'); // TODO move to config
 
     setTimeout(function() {
-        // App.Home();
-        App.Bookmarks();
+        App.Home();
     }, 0);
 });
 
@@ -130,9 +125,54 @@ $(function() {
 /**************** HOME ****************/
 (function(app) {
     app.Home = function() {
-        $('#app').fill();
         location.hash = "#home";
-        app.err("Not implemented");
+        
+        loadContent(templates.home, function(content) {
+            $('#app').fill();
+
+            /* most populated nodes */
+            var mpnData = $('mpn', content);
+            if (mpnData) {
+                mpn(mpnData);
+            }
+
+
+
+
+        });
+    }
+
+    mpnBlacklist = [19, 4830026, 3777728, 5898094, 2176597, 3660841, 1522695, 1569351, 
+                    7607525, 788016, 7568906, 3579407];
+    function mpn(content) {
+
+        $('#app').add(EE('div', {$: 'cat-header cat'}, 'most.populated.nodes'));
+        $('#app').add(EE('div', {id: 'mpn'}));
+
+        var maxCnt = null;
+        var limitOne = 4;
+        $('node', content).per(function(node, i) {
+            if (limitOne <= 0) return;
+
+            var nodeName = node.get('innerHTML');
+            var nodeId = parseInt(node.get('@node'));
+
+            if (!nodeName || !nodeId) return;
+
+            if (nodeId < 30 || nodeName.toLowerCase().startsWith('bookm') || mpnBlacklist.indexOf(nodeId) > -1) {
+                return;
+            }
+
+            nodeName = nodeName.trim().trunc(20);
+
+            var cnt = parseInt(node.get('@count'));
+            if (maxCnt == null)  maxCnt = cnt;
+            if (cnt <= 1) limitOne--;
+
+            var a = EE('a', {$: 'node-link mpn-link', '@data-id': nodeId, '@href': '/id/' + nodeId}, nodeName);
+
+            $('#mpn').add(EE('span', {'$fontSize': (2.5*(cnt/maxCnt) - 0.2) + 'em'}, ['(', a, ') ']));
+        });
     }
 })(App);
 
@@ -145,7 +185,6 @@ $(function() {
 
     /* main entry point */
     app.Bookmarks = function() {
-
         location.hash = "#bookmarks";
 
         loadContent(templates.bookmarks, function(content) {
@@ -169,7 +208,7 @@ $(function() {
             unreadBtn.onClick(toggleNewFilter);
             $('.filter-menu').add(unreadBtn);
 
-            $('.filter-menu').add('visited in the last');
+            $('.filter-menu').add('visited in');
             var recentButton;
             recentButton = EE('span', {$: 'btn btn-filter'}, timeRanges[timeRangeIndex][0]);
             recentButton.onClick(updateFilter, [1]);
@@ -202,20 +241,21 @@ $(function() {
                 /* individual bookmarks */
                 var bookmarks = EE('div', {$: 'book-cat'}, catTitle);
                 $('book-mark', cat).per(function(bkm, i) {
-                    var bookName = EE('a', {$: 'book name'}, bkm.get('innerHTML').trim());
-                    bookName.onClick(app.openNode, [bkm.get('@node')]);
+                    var nodeId = bkm.get('@node');
+                    var bookName = EE('a', {$: 'book-name node-link', '@data-id': nodeId, '@href': '/id/' + nodeId}, bkm.get('innerHTML').trim());
+                    /* TODO move to global handler */
+                    bookName.onClick(app.openNode, [nodeId]);
 
                     var bookUnread = null;
                     var unread = bkm.get('@unread');
                     if (unread != 0) {
-                        bookUnread = EE('span', {$: 'book unread'}, unread);
+                        bookUnread = EE('span', {$: 'book-unread'}, unread);
                     }
 
                     var visited = dateDiffMins(bkm.get('@visit'));
                     bookmarks.add(EE('div', {
                             id: 'book-' + bookId,
                             $: 'bookmark',
-                            '@data-id': bkm.get('@node'),
                             '@data-unread': bkm.get('@unread'),
                             '@data-visit': Math.floor(visited|0)
                         }, [
@@ -299,7 +339,7 @@ $(function() {
     function submitSearch(e) {
         if (e.keyCode == 13) {
             if ($('.bookmark').not('.hidden').length == 1) {
-                app.openNode($('.bookmark').not('.hidden').get('%id'));
+                app.openNode($('a', $('.bookmark').not('.hidden')).get('%id'));
             }
         }
     }
@@ -481,18 +521,19 @@ function dateDiffMins(d) {
 }
 
 
-function goFullScreen() {
-    var elem = document.body;
-    if (elem.requestFullscreen) {
-      elem.requestFullscreen();
-    } else if (elem.msRequestFullscreen) {
-      elem.msRequestFullscreen();
-    } else if (elem.mozRequestFullScreen) {
-      elem.mozRequestFullScreen();
-    } else if (elem.webkitRequestFullscreen) {
-      elem.webkitRequestFullscreen();
-    }
-}
+// this is crap
+// function goFullScreen() {
+//     var elem = document.body;
+//     if (elem.requestFullscreen) {
+//       elem.requestFullscreen();
+//     } else if (elem.msRequestFullscreen) {
+//       elem.msRequestFullscreen();
+//     } else if (elem.mozRequestFullScreen) {
+//       elem.mozRequestFullScreen();
+//     } else if (elem.webkitRequestFullscreen) {
+//       elem.webkitRequestFullscreen();
+//     }
+// }
 
 
 
@@ -522,6 +563,12 @@ function loadContent(template, callback) {
         }
     );   
 }
+
+
+String.prototype.trunc = String.prototype.trunc ||
+    function(n){
+        return (this.length > n) ? this.substr(0, n-1)+'...' : this;
+    };
 
 
 
