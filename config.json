@@ -36,6 +36,11 @@
             "description": "NEW filter will also show nodes with new descendants",
             "type": "boolean",
             "value": true
+        }, {
+            "name": "defaultTimespan",
+            "description": "Default timespan of bookmarks filter",
+            "type": "enum",
+            "value": ["24H", "1W", "1M", "23Y"]
         }]
     }]
 }

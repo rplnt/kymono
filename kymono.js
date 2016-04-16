@@ -71,16 +71,16 @@ $(function() {
     })();
 
     /* add main menu */
-    var homeBtn = EE('a', {$: 'btn btn-menu active', '@title': 'Home'}, 'H');
+    var homeBtn = EE('a', {$: 'btn btn-menu', '@title': 'Home', id: 'home-btn'}, 'H');
     homeBtn.onClick(App.open, [App.Home]);
 
-    var bookmarksBtn = EE('a', {$: 'btn btn-menu', '@title': 'Bookmarks'}, 'B');
+    var bookmarksBtn = EE('a', {$: 'btn btn-menu', '@title': 'Bookmarks', id: 'bkm-btn'}, 'B');
     bookmarksBtn.onClick(App.open, [App.Bookmarks]);
 
-    var mailBtn = EE('a', {$: 'btn btn-menu', '@title': 'Mail'}, 'M');
+    var mailBtn = EE('a', {$: 'btn btn-menu', '@title': 'Mail', id: 'mail-btn'}, 'M');
     mailBtn.onClick(App.open, [App.Mail]);
 
-    var kBtn = EE('a', {$: 'btn btn-menu', '@title': 'K'}, 'K');
+    var kBtn = EE('a', {$: 'btn btn-menu', '@title': 'K', id: 'k-btn'}, 'K');
     kBtn.onClick(App.open, [App.K]);
 
     var menuBtn = EE('a', {$: 'btn btn-menu', '@title': 'Menu'}, '≡');
@@ -130,10 +130,12 @@ $(function() {
             switch (target) {
                 case 'H':
                 case 'home':
+                    $('#home-btn').set('+active');
                     App.Home();
                     break;
                 case 'B':
                 case '#bookmarks':
+                    $('#bkm-btn').set('+active');
                     App.Bookmarks();
                     break;
                 case '#settings':
@@ -221,7 +223,7 @@ $(function() {
                 break;
             default:
                 app.err('Invalid settings template');
-                break; // return;
+                break;  // return;
         }
 
         elmnt.onChange(function(input) {
@@ -253,9 +255,11 @@ $(function() {
             $('#app').fill();
 
             /* most populated nodes */
-            var mpnData = $('mpn', content);
-            if (mpnData) {
-                mpn(mpnData);
+            if (app.getOpt('home.mpnEnabled')) {
+                var mpnData = $('mpn', content);
+                if (mpnData) {
+                    mpn(mpnData);
+                }
             }
 
 
@@ -299,8 +303,8 @@ $(function() {
 
 /************** BOOKMARKS **************/
 (function(app) {
-
-    var timeRangeIndex = 1;
+    // TODO rewrite to use config in a sane way
+    var timeRangeIndex = {'24H': 0, '1W': 1, '1M': 2, '23Y': 3}[app.getOpt('bookmarks.defaultTimespan')];
     var timeRanges = [['24H', 24*60], ['1W', 7*24*60], ['1M', 30*24*60], ['23Y', 23*365*24*60]];
 
     /* main entry point */
@@ -315,7 +319,8 @@ $(function() {
             $('#app').fill();
 
             /* boomkmarks menu */
-            var filter = EE('input', {id: 'book-filter', $: 'book-filter', '@type': 'search', '@placeholder': 'Filter Bookmarks'});
+            var filterAttrs = {id: 'book-filter', $: 'book-filter', '@type': 'search', '@placeholder': 'Filter Bookmarks'};
+            var filter = EE('input', filterAttrs);
             filter.onChange(onInputChange);
             filter.on('|keypress', submitSearch);
             $('#app').add(filter);
@@ -399,8 +404,9 @@ $(function() {
 
             updateFilter(0);
 
-            /* add to configuration */
-            $$('#book-filter').focus();
+            if (app.getOpt('bookmarks.focusFilter')) {
+                $$('#book-filter').focus();
+            }
 
             app.buildSearchIndex(names)
         });
@@ -411,8 +417,7 @@ $(function() {
 
         $('.bookmark', '#app').per(function(elmnt, index) {
             if (elmnt.get('%visit') < timeRanges[timeRangeIndex][1]) {
-                                                                        // TODO config
-                if (!newOnly || (newOnly && (elmnt.get('%unread') > 0 || (false && elmnt.get('%descdnt') == '+')))) {
+                if (!newOnly || (newOnly && (elmnt.get('%unread') > 0 || (app.getOpt('bookmarks.includeDescdnt') && elmnt.get('%descdnt') == '+')))) {
                     elmnt.set('-hidden');
                 } else {
                     elmnt.set('+hidden');
@@ -694,11 +699,4 @@ String.prototype.trunc = String.prototype.trunc ||
     function(n){
         return (this.length > n) ? this.substr(0, n-1)+'...' : this;
     };
-
-
-
-
-
-
-
 
