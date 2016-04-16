@@ -100,7 +100,7 @@ body {
 }
 
 .mpn-link {
-    white-space: nowrap;
+    word-wrap: break-word;
 }
 
 

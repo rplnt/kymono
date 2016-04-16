@@ -2,21 +2,19 @@
 var MINI = require('minified');
 var _=MINI._, $=MINI.$, $$=MINI.$$, EE=MINI.EE, HTML=MINI.HTML;
 
+
 var conf = {
     base: 'http://localhost:8000/',
     // base: '/id/8099985/',
     name: 'KyMoNo',
-    version: 'v0.0.1',
+    version: 'v0.1.0',
     css: 'kymono.css',
     // css: 'https://rawgit.com/rplnt/kymono/master/kymono.css',
+    userConfig: 'config.json',
+    // userConfig: 'https://rawgit.com/rplnt/kymono/master/config.json',
     recent: 1000*60*60*24*3
 };
 
-var userConf = {
-    global: {
-        fontSize: 1.9
-    }
-}
 
 var templates = {
     bookmarks: '7269244',
@@ -24,6 +22,7 @@ var templates = {
 }
 
 var App = {
+    conf: null,
     loading: function() { 
         $('#app').fill(EE('div', {$: 'sp-circle'}));
     },
@@ -40,14 +39,15 @@ var App = {
 
     onNavigation: function(event) {
         // TODO detect if this back event instead of click in navigation.. somehow?
-    }
-
-
+    },
 };
 
 
 /* INIT */
 $(function() {
+
+    /* Load config */
+    // App.LoadConf();
 
     /* get rid of head and body */
     (function takeOver() {
@@ -113,21 +113,143 @@ $(function() {
 
     $('body').add(EE('div', {id: 'app'}));
 
-    $('body').set('$fontSize', userConf.global.fontSize + 'em'); // TODO move to config
-
     setTimeout(function() {
-        App.Home();
+        if (!localStorage.getItem('KyMoNo')) {
+            App.Settings();
+            localStorage.setItem('KyMoNo', conf.version);
+        } else {
+            $('body').set('$fontSize', App.getOpt('global.fontSize') + 'em');
+
+            var target;
+            if (location.hash) {
+                target = location.hash;
+            } else {
+                target = App.getOpt('global.defaultScreen');
+            }
+
+            switch (target) {
+                case 'H':
+                case 'home':
+                    App.Home();
+                    break;
+                case 'B':
+                case '#bookmarks':
+                    App.Bookmarks();
+                    break;
+                case '#settings':
+                default:
+                    App.Settings();
+                    break;
+            }
+        }
+        
     }, 0);
 });
+
+
+/************** SETTINGS **************/
+(function(app) {
+    app.Settings = function() {
+        location.hash = '#settings';
+
+        if (app.conf == null) {
+            app.conf = {};
+
+            loadDefaults(function(conf) {
+                $('#app').fill();
+
+                /* Iterate over config sections */
+                for (var i = 0; i < conf.template.length; i++) {
+                    $('#app').add(EE('div', {$: 'cat-header cat'}, conf.template[i].title));
+
+                    app.conf[conf.template[i].name] = {};
+
+                    /* render individual options */
+                    for (var n = 0; n < conf.template[i].settings.length; n++) {
+                        var opt = conf.template[i].settings[n];
+                        $('#app').add(EE('div', opt.description));
+                        processOption(conf.template[i].name, opt.name, opt.type, opt.value);
+                    }
+                }
+
+            });
+        }
+
+    }
+
+
+    app.getOpt = function(key) {
+        if (localStorage.getItem(key)) {
+            return JSON.parse(localStorage.getItem(key));
+        } else {
+            return null;
+        }
+    }
+
+
+    function processOption(cat, name, type, value) {
+        var key = cat + "." + name;
+
+        var current;
+        if (localStorage.getItem(key)) {
+            current = app.getOpt(key);
+        } else {
+            if (type == 'enum') {
+                localStorage.setItem(key, JSON.stringify(value[0]));
+                current = value[0];
+            } else {
+                localStorage.setItem(key, JSON.stringify(value));
+                current = value;
+            }
+        }
+
+        var elmnt;
+        switch (type) {
+            case 'int':
+            case 'float':
+            case 'string':
+                elmnt = EE('input', {'type': 'text'}).set('value', current);
+                break;
+            case 'boolean':
+                elmnt = EE('input', {'type': 'checkbox'}).set('checked', current);
+                break;
+            case 'enum':
+                elmnt = EE('select')
+                for (var o = 0; o < value.length; o++) {
+                    elmnt.add(EE('option', value[o]).set('selected', current == value[o]));
+                }
+                break;
+            default:
+                app.err('Invalid settings template');
+                break; // return;
+        }
+
+        elmnt.onChange(function(input) {
+            localStorage.setItem(key, JSON.stringify(input));
+        });
+
+        $('#app').add(elmnt);
+    }
+
+
+    function loadDefaults(callback) {
+        loadContent(conf.userConfig, function(response) {
+            callback($.parseJSON(response));
+        });
+    }
+
+})(App);
+
 
 
 
 /**************** HOME ****************/
 (function(app) {
     app.Home = function() {
-        location.hash = "#home";
+        location.hash = '#home';
         
-        loadContent(templates.home, function(content) {
+        loadContent(conf.base + templates.home, function(content) {
+            content = HTML(content);
             $('#app').fill();
 
             /* most populated nodes */
@@ -141,7 +263,6 @@ $(function() {
 
         });
     }
-
     mpnBlacklist = [19, 4830026, 3777728, 5898094, 2176597, 3660841, 1522695, 1569351, 
                     7607525, 788016, 7568906, 3579407];
     function mpn(content) {
@@ -163,15 +284,14 @@ $(function() {
                 return;
             }
 
-            nodeName = nodeName.trim().trunc(20);
-
+            var nodeNameShort = nodeName.trim().trunc(20).replace(/ /g, '\u00a0');
             var cnt = parseInt(node.get('@count'));
-            if (maxCnt == null)  maxCnt = cnt;
+            var nodeSize = (cnt>5 ?5.5:cnt) * 0.43;
+            console.log(cnt, nodeSize);
             if (cnt <= 1) limitOne--;
 
-            var a = EE('a', {$: 'node-link mpn-link', '@data-id': nodeId, '@href': '/id/' + nodeId}, nodeName);
-
-            $('#mpn').add(EE('span', {'$fontSize': (2.5*(cnt/maxCnt) - 0.2) + 'em'}, ['(', a, ') ']));
+            var a = EE('a', {$: 'node-link mpn-link', '@data-id': nodeId, '@href': '/id/' + nodeId, '@title': nodeName.trim() + ' ('+cnt+')'}, nodeNameShort);
+            $('#mpn').add(EE('span', {'$fontSize': nodeSize + 'em'}, ['(', a, ') ']));
         });
     }
 })(App);
@@ -185,9 +305,10 @@ $(function() {
 
     /* main entry point */
     app.Bookmarks = function() {
-        location.hash = "#bookmarks";
+        location.hash = '#bookmarks';
 
-        loadContent(templates.bookmarks, function(content) {
+        loadContent(conf.base + templates.bookmarks, function(content) {
+            content = HTML(content);
             var names = [];
             var bookId = 0;
 
@@ -247,9 +368,12 @@ $(function() {
                     bookName.onClick(app.openNode, [nodeId]);
 
                     var bookUnread = null;
+                    var newDescendants = bkm.get('@desc')=='yes'?'+':''
                     var unread = bkm.get('@unread');
                     if (unread != 0) {
-                        bookUnread = EE('span', {$: 'book-unread'}, unread);
+                        bookUnread = EE('span', {$: 'book-unread'}, '(' + unread + newDescendants + ')');
+                    } else if (newDescendants == '+') {
+                        bookUnread = EE('span', ' ' + newDescendants);
                     }
 
                     var visited = dateDiffMins(bkm.get('@visit'));
@@ -257,11 +381,11 @@ $(function() {
                             id: 'book-' + bookId,
                             $: 'bookmark',
                             '@data-unread': bkm.get('@unread'),
-                            '@data-visit': Math.floor(visited|0)
+                            '@data-visit': Math.floor(visited|0),
+                            '@data-descdnt': newDescendants
                         }, [
                             bookName,
-                            bookUnread,
-                            (bkm.get('@desc')=='yes'?' ...':'')
+                            bookUnread
                         ]
                     ));
                     names.push([bkm.get('innerHTML'), bookId])
@@ -287,7 +411,8 @@ $(function() {
 
         $('.bookmark', '#app').per(function(elmnt, index) {
             if (elmnt.get('%visit') < timeRanges[timeRangeIndex][1]) {
-                if (!newOnly || (newOnly && elmnt.get('%unread') > 0)) {
+                                                                        // TODO config
+                if (!newOnly || (newOnly && (elmnt.get('%unread') > 0 || (false && elmnt.get('%descdnt') == '+')))) {
                     elmnt.set('-hidden');
                 } else {
                     elmnt.set('+hidden');
@@ -371,8 +496,8 @@ $(function() {
 (function(app) {
     app.Mail = function() {
         $('#app').fill();
-        location.hash = "#mail";
-        app.err("Not implemented");
+        location.hash = '#mail';
+        app.err('Not implemented');
     }
 })(App);
 
@@ -381,8 +506,8 @@ $(function() {
 (function(app) {
     app.K = function() {
         $('#app').fill();
-        location.hash = "#k";
-        app.err("Not implemented");
+        location.hash = '#k';
+        app.err('Not implemented');
     }
 })(App);
 
@@ -546,22 +671,22 @@ function dateDiffMins(d) {
 })(App);
 
 
-/* todo */
-function loadContent(template, callback) {
+/* todo -> utils */
+function loadContent(uri, callback) {
     App.loading();
-    var uri = conf.base + template;
 
     console.log('Fetching (' + uri + ')');
 
     $.request('get', uri)
     .then(
         function success(response) {
-            callback(HTML(response));
+            console.log("Success");
+            callback(response);
         },
         function error(status, statusText, responseText) {
             App.err(uri + ' ' + status);
         }
-    );   
+    );
 }
 
 

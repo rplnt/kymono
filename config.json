@@ -1,0 +1,41 @@
+{
+    "version": 1,
+    "template": [{
+        "title": "Global",
+        "name": "global",
+        "settings": [{
+            "name": "fontSize",
+            "description": "Application font size",
+            "type": "float",
+            "value": 1.9
+        }, {
+            "name": "defaultScreen",
+            "description": "Screen to show when KyMoNo is started",
+            "type": "enum",
+            "value": ["H", "B", "M", "K"]
+        }]
+    }, {
+        "title": "Home",
+        "name": "home",
+        "settings": [{
+            "name": "mpnEnabled",
+            "description": "Enable Most Populated Nodes Module",
+            "type": "boolean",
+            "value": true
+        }]
+    }, {
+        "title": "Boookmarks",
+        "name": "bookmarks",
+        "settings": [{
+            "name": "focusFilter",
+            "description": "Focus to filter field on load",
+            "type": "boolean",
+            "value": false
+        }, {
+            "name": "includeDescdnt",
+            "description": "NEW filter will also show nodes with new descendants",
+            "type": "boolean",
+            "value": true
+        }]
+    }]
+}
