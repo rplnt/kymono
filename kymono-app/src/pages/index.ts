@@ -1,0 +1,5 @@
+export { Home } from './Home'
+export { Bookmarks } from './Bookmarks'
+export { Settings } from './Settings'
+export { Mail } from './Mail'
+export { K } from './K'
