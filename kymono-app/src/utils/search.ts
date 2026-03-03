@@ -106,8 +106,10 @@ export function searchIndex(index: SearchIndex, query: string): string[] | null 
 
 /**
  * Truncate a string with ellipsis
+ * Trims trailing spaces and punctuation before adding ellipsis
  */
 export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str
-  return str.substring(0, maxLength - 1) + '...'
+  const cut = str.substring(0, maxLength - 3).replace(/[\s\-.,;:!?'"()]+$/, '')
+  return cut + '...'
 }

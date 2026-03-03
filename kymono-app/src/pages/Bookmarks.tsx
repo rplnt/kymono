@@ -1,23 +1,10 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import type { BookmarkCategory, Bookmark, SearchIndex } from '@/types'
-import { TIME_RANGES, STORAGE_KEYS } from '@/config'
-import { parseBookmarksXml, openNode, buildSearchIndex, searchIndex, minutesSince } from '@/utils'
-import { mockBookmarksXml } from '@/mocks'
-
-function getStoredValue<T>(key: string, defaultValue: T): T {
-  const stored = localStorage.getItem(key)
-  if (stored !== null) {
-    try {
-      return JSON.parse(stored) as T
-    } catch {
-      return defaultValue
-    }
-  }
-  return defaultValue
-}
+import { TIME_RANGES, CONFIG_PATHS } from '@/config'
+import { fetchBookmarksData, openNode, buildSearchIndex, searchIndex, minutesSince, getConfigValue } from '@/utils'
 
 function getDefaultTimeRangeIndex(): number {
-  const defaultTimespan = getStoredValue<string>(STORAGE_KEYS.DEFAULT_TIMESPAN, '24H')
+  const defaultTimespan = getConfigValue<string>(CONFIG_PATHS.DEFAULT_TIMESPAN, '24H')
   const index = TIME_RANGES.findIndex(r => r.label === defaultTimespan)
   return index >= 0 ? index : 0
 }
@@ -35,29 +22,36 @@ export function Bookmarks() {
 
   // Load bookmarks data
   useEffect(() => {
-    const data = parseBookmarksXml(mockBookmarksXml)
-    setCategories(data)
+    async function loadData() {
+      try {
+        const data = await fetchBookmarksData()
+        setCategories(data)
 
-    // Build search index
-    const items: Array<[string, string]> = []
-    data.forEach(cat => {
-      cat.bookmarks.forEach(bm => {
-        items.push([bm.name, bm.id])
-      })
-    })
-    setIndex(buildSearchIndex(items))
-
-    setLoading(false)
+        // Build search index
+        const items: Array<[string, string]> = []
+        data.forEach(cat => {
+          cat.bookmarks.forEach(bm => {
+            items.push([bm.name, bm.id])
+          })
+        })
+        setIndex(buildSearchIndex(items))
+      } catch (error) {
+        console.error('Failed to load bookmarks:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
   }, [])
 
   // Auto-focus filter if setting enabled
   useEffect(() => {
-    if (!loading && getStoredValue(STORAGE_KEYS.FOCUS_FILTER, false)) {
+    if (!loading && getConfigValue(CONFIG_PATHS.FOCUS_FILTER, false)) {
       filterInputRef.current?.focus()
     }
   }, [loading])
 
-  const includeDescendants = getStoredValue(STORAGE_KEYS.INCLUDE_DESCENDANTS, true)
+  const includeDescendants = getConfigValue(CONFIG_PATHS.INCLUDE_DESCENDANTS, true)
   const currentTimeRange = TIME_RANGES[timeRangeIndex]
 
   // Filter bookmarks based on criteria
@@ -199,16 +193,17 @@ export function Bookmarks() {
                 href={`/id/${bookmark.node}`}
                 className="book-name node-link"
                 onClick={(e) => handleBookmarkClick(e, bookmark.node)}
-              >
-                {bookmark.name}
-              </a>
-              {bookmark.unread > 0 && (
+                dangerouslySetInnerHTML={{ __html: bookmark.nameHtml }}
+              />
+              {(bookmark.unread > 0 || bookmark.hasDescendants) && (
                 <span className="book-unread">
-                  ({bookmark.unread}{bookmark.hasDescendants ? '+' : ''})
+                  {bookmark.unread > 0 && (
+                    <span className="book-unread-count">{bookmark.unread}</span>
+                  )}
+                  {bookmark.hasDescendants && (
+                    <span className="book-unread-descendants" title="New in thread" />
+                  )}
                 </span>
-              )}
-              {bookmark.unread === 0 && bookmark.hasDescendants && (
-                <span> +</span>
               )}
             </div>
           ))}

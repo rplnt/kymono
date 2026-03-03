@@ -8,7 +8,7 @@ export interface SettingTemplate {
 export interface SettingOption {
   name: string
   description: string
-  type: 'int' | 'float' | 'string' | 'boolean' | 'enum'
+  type: 'int' | 'float' | 'string' | 'boolean' | 'enum' | 'moduleOrder'
   value: number | string | boolean | string[]
 }
 
@@ -28,6 +28,7 @@ export interface Bookmark {
   id: string
   node: string
   name: string
+  nameHtml: string
   unread: number
   hasDescendants: boolean
   visitedAt: Date | null

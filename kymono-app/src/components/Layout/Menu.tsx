@@ -1,36 +1,57 @@
 import { NavLink } from 'react-router-dom'
 
+interface MenuProps {
+  onToggleSidePanel: () => void
+  onCloseSidePanel: () => void
+}
+
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `btn btn-menu${isActive ? ' active' : ''}`
 
-export function Menu() {
+export function Menu({ onToggleSidePanel, onCloseSidePanel }: MenuProps) {
   return (
     <nav id="main-menu" role="navigation" aria-label="Main navigation">
       <div className="menu-item">
-        <NavLink to="/home" className={navLinkClass} title="Home">
+        <button
+          className="btn btn-menu"
+          onClick={onToggleSidePanel}
+          title="Menu"
+          aria-label="Toggle side panel"
+        >
+          &#9776;
+        </button>
+      </div>
+      <div className="menu-item">
+        <NavLink to="/home" className={navLinkClass} title="Home" onClick={onCloseSidePanel}>
           H
         </NavLink>
       </div>
       <div className="menu-item">
-        <NavLink to="/bookmarks" className={navLinkClass} title="Bookmarks">
+        <NavLink to="/bookmarks" className={navLinkClass} title="Bookmarks" onClick={onCloseSidePanel}>
           B
         </NavLink>
       </div>
       <div className="menu-item">
-        <NavLink to="/mail" className={navLinkClass} title="Mail">
-          M
+        <NavLink to="/k" className={navLinkClass} title="K" onClick={onCloseSidePanel}>
+          K
         </NavLink>
       </div>
       <div className="menu-item">
-        <NavLink to="/k" className={navLinkClass} title="K">
-          K
+        <NavLink to="/friends" className={navLinkClass} title="Friends" onClick={onCloseSidePanel}>
+          F
         </NavLink>
       </div>
       <div className="main-menu-right">
         <div className="menu-item">
-          <NavLink to="/settings" className={navLinkClass} title="Settings">
-            &#9881;
-          </NavLink>
+          <a
+            href="https://kyberia.sk/id/21"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-menu btn-mail"
+            title="Mail"
+          >
+&#9993;
+          </a>
         </div>
       </div>
     </nav>
