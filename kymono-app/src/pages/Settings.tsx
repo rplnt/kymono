@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import type { SettingTemplate, SettingOption, ConfigJson } from '@/types'
 import { getConfigValue, setConfigValue } from '@/utils'
 import { CONFIG_PATHS } from '@/config'
@@ -14,15 +14,15 @@ const settingsConfig: ConfigJson = {
           name: 'fontSize',
           description: 'Application font size',
           type: 'float',
-          value: 1.9
+          value: 1.9,
         },
         {
           name: 'defaultScreen',
           description: 'Screen to show when KyMoNo is started',
           type: 'enum',
-          value: ['H', 'B', 'K', 'F']
-        }
-      ]
+          value: ['H', 'B', 'K', 'F'],
+        },
+      ],
     },
     {
       title: 'Home',
@@ -32,21 +32,21 @@ const settingsConfig: ConfigJson = {
           name: 'quickBookmarksEnabled',
           description: 'Enable Quick Bookmarks module',
           type: 'boolean',
-          value: true
+          value: true,
         },
         {
           name: 'mpnEnabled',
           description: 'Enable Most Populated Nodes module',
           type: 'boolean',
-          value: true
+          value: true,
         },
         {
           name: 'moduleOrder',
           description: 'Module display order',
           type: 'moduleOrder',
-          value: ['quickBookmarks', 'mpn']
-        }
-      ]
+          value: ['quickBookmarks', 'mpn'],
+        },
+      ],
     },
     {
       title: 'Bookmarks',
@@ -56,33 +56,33 @@ const settingsConfig: ConfigJson = {
           name: 'focusFilter',
           description: 'Focus to filter field on load',
           type: 'boolean',
-          value: false
+          value: false,
         },
         {
           name: 'includeDescendants',
           description: 'NEW filter will also show nodes with new descendants',
           type: 'boolean',
-          value: true
+          value: true,
         },
         {
           name: 'defaultTimespan',
           description: 'Default timespan of bookmarks filter',
           type: 'enum',
-          value: ['24H', '1W', '1M', '23Y']
-        }
-      ]
-    }
-  ]
+          value: ['24H', '1W', '1M', '23Y'],
+        },
+      ],
+    },
+  ],
 }
 
 const MODULE_LABELS: Record<string, string> = {
   quickBookmarks: 'Quick Bookmarks',
-  mpn: 'Most Populated Nodes'
+  mpn: 'Most Populated Nodes',
 }
 
 const MODULE_ORDER_PATHS: Record<string, string> = {
   quickBookmarks: CONFIG_PATHS.QUICK_BOOKMARKS_ORDER,
-  mpn: CONFIG_PATHS.MPN_ORDER
+  mpn: CONFIG_PATHS.MPN_ORDER,
 }
 
 interface SettingControlProps {
@@ -94,9 +94,7 @@ type SettingValue = string | number | boolean | string[]
 
 function SettingControl({ category, option }: SettingControlProps) {
   const path = `${category}.${option.name}`
-  const defaultValue = option.type === 'enum'
-    ? (option.value as string[])[0]
-    : option.value
+  const defaultValue = option.type === 'enum' ? (option.value as string[])[0] : option.value
 
   const [value, setValue] = useState<SettingValue>(() =>
     getConfigValue(path, defaultValue as SettingValue)
@@ -190,7 +188,12 @@ function SettingControl({ category, option }: SettingControlProps) {
         setConfigValue(MODULE_ORDER_PATHS[moduleId], index - 1)
         setConfigValue(MODULE_ORDER_PATHS[prevModuleId], index)
         // Trigger re-render and notify Home
-        handleChange([...currentOrder.slice(0, index - 1), moduleId, prevModuleId, ...currentOrder.slice(index + 1)])
+        handleChange([
+          ...currentOrder.slice(0, index - 1),
+          moduleId,
+          prevModuleId,
+          ...currentOrder.slice(index + 1),
+        ])
         window.dispatchEvent(new StorageEvent('storage', { key: MODULE_ORDER_PATHS[moduleId] }))
       }
 
@@ -202,7 +205,12 @@ function SettingControl({ category, option }: SettingControlProps) {
         setConfigValue(MODULE_ORDER_PATHS[moduleId], index + 1)
         setConfigValue(MODULE_ORDER_PATHS[nextModuleId], index)
         // Trigger re-render and notify Home
-        handleChange([...currentOrder.slice(0, index), nextModuleId, moduleId, ...currentOrder.slice(index + 2)])
+        handleChange([
+          ...currentOrder.slice(0, index),
+          nextModuleId,
+          moduleId,
+          ...currentOrder.slice(index + 2),
+        ])
         window.dispatchEvent(new StorageEvent('storage', { key: MODULE_ORDER_PATHS[moduleId] }))
       }
 
@@ -259,21 +267,7 @@ function SettingSection({ section }: SettingSectionProps) {
 }
 
 export function Settings() {
-  const [config, setConfig] = useState<SettingTemplate[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    setConfig(settingsConfig.template)
-    setLoading(false)
-  }, [])
-
-  if (loading) {
-    return (
-      <div>
-        <div className="sp-circle" />
-      </div>
-    )
-  }
+  const [config] = useState<SettingTemplate[]>(settingsConfig.template)
 
   return (
     <div>

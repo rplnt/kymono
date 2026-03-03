@@ -8,11 +8,16 @@ import { getConfigValue, hasConfig, initConfig } from '@/utils'
 function getDefaultRoute(): string {
   const defaultScreen = getConfigValue<string>(CONFIG_PATHS.DEFAULT_SCREEN, 'H')
   switch (defaultScreen) {
-    case 'H': return '/home'
-    case 'B': return '/bookmarks'
-    case 'K': return '/k'
-    case 'F': return '/friends'
-    default: return '/home'
+    case 'H':
+      return '/home'
+    case 'B':
+      return '/bookmarks'
+    case 'K':
+      return '/k'
+    case 'F':
+      return '/friends'
+    default:
+      return '/home'
   }
 }
 

@@ -8,7 +8,7 @@
   --color-bg-surface: #1a1a1a;
   --color-bg-menu: #0d0d0d;
 
-  --color-phosphor: #6DAE42;
+  --color-phosphor: #6dae42;
   --color-phosphor-bright: #8fd460;
   --color-phosphor-dim: #4a7a2e;
   --color-phosphor-glow: rgba(109, 174, 66, 0.15);
@@ -63,7 +63,9 @@
 /* ============================================================
    Reset & Base
    ============================================================ */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -624,7 +626,9 @@ body::before {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ============================================================
@@ -702,7 +706,8 @@ body::before {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.5;
   }
   50% {
@@ -721,11 +726,21 @@ body::before {
   animation: fadeIn var(--transition-normal) ease-out backwards;
 }
 
-.book-cat:nth-child(1) .bookmark { animation-delay: 0ms; }
-.book-cat:nth-child(2) .bookmark { animation-delay: 30ms; }
-.book-cat:nth-child(3) .bookmark { animation-delay: 60ms; }
-.book-cat:nth-child(4) .bookmark { animation-delay: 90ms; }
-.book-cat:nth-child(5) .bookmark { animation-delay: 120ms; }
+.book-cat:nth-child(1) .bookmark {
+  animation-delay: 0ms;
+}
+.book-cat:nth-child(2) .bookmark {
+  animation-delay: 30ms;
+}
+.book-cat:nth-child(3) .bookmark {
+  animation-delay: 60ms;
+}
+.book-cat:nth-child(4) .bookmark {
+  animation-delay: 90ms;
+}
+.book-cat:nth-child(5) .bookmark {
+  animation-delay: 120ms;
+}
 
 /* ============================================================
    Home Modules
@@ -862,10 +877,18 @@ body::before {
 /* ============================================================
    Utility Classes
    ============================================================ */
-.text-center { text-align: center; }
-.text-right { text-align: right; }
-.text-muted { color: var(--color-text-muted); }
-.text-error { color: var(--color-error); }
+.text-center {
+  text-align: center;
+}
+.text-right {
+  text-align: right;
+}
+.text-muted {
+  color: var(--color-text-muted);
+}
+.text-error {
+  color: var(--color-error);
+}
 
 /* ============================================================
    Responsive Adjustments

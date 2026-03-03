@@ -99,7 +99,7 @@ export function MpnModule() {
   }
 
   const toggleCollapse = () => {
-    setCollapsed(prev => !prev)
+    setCollapsed((prev) => !prev)
   }
 
   // Hide if disabled
@@ -110,9 +110,7 @@ export function MpnModule() {
   return (
     <div className="mpn-module home-module">
       <div className="module-header" onClick={toggleCollapse}>
-        <span className="module-title">
-          {collapsed ? '▸' : '▾'} most.populated.nodes
-        </span>
+        <span className="module-title">{collapsed ? '▸' : '▾'} most.populated.nodes</span>
         <button className="module-reload" onClick={handleReload} title="Reload">
           ↻
         </button>
@@ -120,7 +118,11 @@ export function MpnModule() {
 
       {!collapsed && (
         <div className="module-content">
-          {loading && <div className="module-loading"><div className="sp-circle" /></div>}
+          {loading && (
+            <div className="module-loading">
+              <div className="sp-circle" />
+            </div>
+          )}
 
           {!loading && filteredNodes.length === 0 && (
             <p className="module-empty">No data available</p>

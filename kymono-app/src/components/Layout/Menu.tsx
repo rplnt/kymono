@@ -27,7 +27,12 @@ export function Menu({ onToggleSidePanel, onCloseSidePanel }: MenuProps) {
         </NavLink>
       </div>
       <div className="menu-item">
-        <NavLink to="/bookmarks" className={navLinkClass} title="Bookmarks" onClick={onCloseSidePanel}>
+        <NavLink
+          to="/bookmarks"
+          className={navLinkClass}
+          title="Bookmarks"
+          onClick={onCloseSidePanel}
+        >
           B
         </NavLink>
       </div>
@@ -50,7 +55,7 @@ export function Menu({ onToggleSidePanel, onCloseSidePanel }: MenuProps) {
             className="btn btn-menu btn-mail"
             title="Mail"
           >
-&#9993;
+            &#9993;
           </a>
         </div>
       </div>

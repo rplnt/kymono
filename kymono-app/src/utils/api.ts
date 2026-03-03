@@ -86,7 +86,7 @@ export function parseBookmarksXml(xml: string): BookmarkCategory[] {
         nameHtml,
         unread: parseInt(bmEl.getAttribute('unread') || '0', 10),
         hasDescendants: bmEl.getAttribute('desc') === 'yes',
-        visitedAt: parseVisitDate(bmEl.getAttribute('visit') || '')
+        visitedAt: parseVisitDate(bmEl.getAttribute('visit') || ''),
       })
     })
 
@@ -96,7 +96,7 @@ export function parseBookmarksXml(xml: string): BookmarkCategory[] {
     categories.push({
       name: catEl.getAttribute('name') || '...',
       unread: parseInt(catEl.getAttribute('unread') || '0', 10),
-      bookmarks
+      bookmarks,
     })
   })
 
@@ -127,8 +127,7 @@ export function parseMpnXml(xml: string): MpnNode[] {
   })
 
   // Convert to array, preserving insertion order (order of first appearance)
-  return Array.from(nodeMap.entries())
-    .map(([id, { name, count }]) => ({ id, name, count }))
+  return Array.from(nodeMap.entries()).map(([id, { name, count }]) => ({ id, name, count }))
 }
 
 /**

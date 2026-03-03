@@ -21,7 +21,7 @@ export function Layout() {
   const mainRef = useRef<HTMLElement>(null)
 
   const toggleSidePanel = useCallback(() => {
-    setSidePanelOpen(prev => !prev)
+    setSidePanelOpen((prev) => !prev)
   }, [])
 
   const closeSidePanel = useCallback(() => {
@@ -36,14 +36,17 @@ export function Layout() {
     }
   }, [])
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isPulling) return
-    const currentY = e.touches[0].clientY
-    const distance = currentY - touchStartY.current
-    if (distance > 0) {
-      setPullDistance(Math.min(distance, PULL_THRESHOLD * 1.5))
-    }
-  }, [isPulling])
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!isPulling) return
+      const currentY = e.touches[0].clientY
+      const distance = currentY - touchStartY.current
+      if (distance > 0) {
+        setPullDistance(Math.min(distance, PULL_THRESHOLD * 1.5))
+      }
+    },
+    [isPulling]
+  )
 
   const handleTouchEnd = useCallback(() => {
     if (pullDistance >= PULL_THRESHOLD) {
@@ -73,11 +76,7 @@ export function Layout() {
   }, [])
 
   return (
-    <div
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
+    <div onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
       <Menu onToggleSidePanel={toggleSidePanel} onCloseSidePanel={closeSidePanel} />
       <SidePanel isOpen={sidePanelOpen} onClose={closeSidePanel} />
       <div className="pad" />
@@ -86,7 +85,7 @@ export function Layout() {
           className="pull-indicator"
           style={{
             height: pullDistance,
-            opacity: Math.min(pullDistance / PULL_THRESHOLD, 1)
+            opacity: Math.min(pullDistance / PULL_THRESHOLD, 1),
           }}
         >
           {pullDistance >= PULL_THRESHOLD ? '↻ Release to reload' : '↓ Pull to reload'}

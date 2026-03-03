@@ -18,21 +18,21 @@ const MODULES: ModuleConfig[] = [
     id: 'quickBookmarks',
     component: QuickBookmarks,
     orderPath: CONFIG_PATHS.QUICK_BOOKMARKS_ORDER,
-    defaultOrder: 0
+    defaultOrder: 0,
   },
   {
     id: 'mpn',
     component: MpnModule,
     orderPath: CONFIG_PATHS.MPN_ORDER,
-    defaultOrder: 1
-  }
+    defaultOrder: 1,
+  },
 ]
 
 function getSortedModules(): ModuleConfig[] {
   // Get modules with their current order indices
-  const modulesWithOrder = MODULES.map(mod => ({
+  const modulesWithOrder = MODULES.map((mod) => ({
     ...mod,
-    order: getConfigValue<number>(mod.orderPath, mod.defaultOrder)
+    order: getConfigValue<number>(mod.orderPath, mod.defaultOrder),
   }))
 
   // Sort by order index (handles gaps automatically)
@@ -46,7 +46,7 @@ export function Home() {
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       // Check if any module order path changed
-      const isOrderPath = MODULES.some(mod => mod.orderPath === e.key)
+      const isOrderPath = MODULES.some((mod) => mod.orderPath === e.key)
       if (isOrderPath) {
         setSortedModules(getSortedModules())
       }

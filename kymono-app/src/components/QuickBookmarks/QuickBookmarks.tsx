@@ -6,7 +6,9 @@ import { fetchBookmarksData, openNode, minutesSince, getConfigValue } from '@/ut
 export function QuickBookmarks() {
   const [categories, setCategories] = useState<BookmarkCategory[]>([])
   const [loading, setLoading] = useState(true)
-  const [enabled, setEnabled] = useState(() => getConfigValue(CONFIG_PATHS.QUICK_BOOKMARKS_ENABLED, true))
+  const [enabled, setEnabled] = useState(() =>
+    getConfigValue(CONFIG_PATHS.QUICK_BOOKMARKS_ENABLED, true)
+  )
   const [collapsed, setCollapsed] = useState(false)
 
   // Load bookmarks data
@@ -87,7 +89,7 @@ export function QuickBookmarks() {
   }
 
   const toggleCollapse = () => {
-    setCollapsed(prev => !prev)
+    setCollapsed((prev) => !prev)
   }
 
   // Hide if disabled
@@ -98,9 +100,7 @@ export function QuickBookmarks() {
   return (
     <div className="quick-bookmarks home-module">
       <div className="module-header" onClick={toggleCollapse}>
-        <span className="module-title">
-          {collapsed ? '▸' : '▾'} quick.bookmarks
-        </span>
+        <span className="module-title">{collapsed ? '▸' : '▾'} quick.bookmarks</span>
         <button className="module-reload" onClick={handleReload} title="Reload">
           ↻
         </button>
@@ -108,7 +108,11 @@ export function QuickBookmarks() {
 
       {!collapsed && (
         <div className="module-content">
-          {loading && <div className="module-loading"><div className="sp-circle" /></div>}
+          {loading && (
+            <div className="module-loading">
+              <div className="sp-circle" />
+            </div>
+          )}
 
           {!loading && recentBookmarks.length === 0 && (
             <p className="module-empty">No new replies in the last month</p>

@@ -2,9 +2,21 @@ import type { SearchIndex } from '@/types'
 
 // Slovak character normalization map
 const SLOVAK_CHARS: Record<string, string> = {
-  'ľ': 'l', 'š': 's', 'č': 'c', 'ť': 't', 'ž': 'z',
-  'ý': 'y', 'á': 'a', 'í': 'i', 'é': 'e', 'ú': 'u',
-  'ä': 'a', 'ň': 'n', 'ô': 'o', 'ř': 'r', 'ď': 'd'
+  ľ: 'l',
+  š: 's',
+  č: 'c',
+  ť: 't',
+  ž: 'z',
+  ý: 'y',
+  á: 'a',
+  í: 'i',
+  é: 'e',
+  ú: 'u',
+  ä: 'a',
+  ň: 'n',
+  ô: 'o',
+  ř: 'r',
+  ď: 'd',
 }
 
 const RE_SLOVAK = /[ľščťžýáíéúäňôřď]/g
@@ -29,7 +41,7 @@ function normalizeText(text: string): string {
 export function buildSearchIndex(items: Array<[string, string]>): SearchIndex {
   const index: SearchIndex = {
     prefixIndex: {},
-    wordToIds: {}
+    wordToIds: {},
   }
 
   for (const [name, id] of items) {
@@ -70,7 +82,9 @@ export function buildSearchIndex(items: Array<[string, string]>): SearchIndex {
 export function searchIndex(index: SearchIndex, query: string): string[] | null {
   if (!query || query.length < 2) return null
 
-  const words = normalizeText(query).split(/\s+/).filter(w => w.length >= 2)
+  const words = normalizeText(query)
+    .split(/\s+/)
+    .filter((w) => w.length >= 2)
   if (words.length === 0) return null
 
   let resultIds: string[] | null = null
@@ -84,7 +98,7 @@ export function searchIndex(index: SearchIndex, query: string): string[] | null 
     for (const word of prefixWords) {
       if (word.startsWith(queryWord)) {
         const ids = index.wordToIds[word] || []
-        ids.forEach(id => {
+        ids.forEach((id) => {
           if (!matchingIds.includes(id)) {
             matchingIds.push(id)
           }
@@ -97,7 +111,7 @@ export function searchIndex(index: SearchIndex, query: string): string[] | null 
       resultIds = matchingIds
     } else {
       // Subsequent words - intersect with existing results
-      resultIds = resultIds.filter(id => matchingIds.includes(id))
+      resultIds = resultIds.filter((id) => matchingIds.includes(id))
     }
   }
 
