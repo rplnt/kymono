@@ -46,19 +46,6 @@ export function Menu({ onToggleSidePanel, onCloseSidePanel }: MenuProps) {
           F
         </NavLink>
       </div>
-      <div className="main-menu-right">
-        <div className="menu-item">
-          <a
-            href="https://kyberia.sk/id/21"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-menu btn-mail"
-            title="Mail"
-          >
-            &#9993;
-          </a>
-        </div>
-      </div>
     </nav>
   )
 }

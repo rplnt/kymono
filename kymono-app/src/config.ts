@@ -5,6 +5,7 @@ const isLocalhost =
   typeof window !== 'undefined' &&
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 const apiBase = isLocalhost ? 'http://localhost:8099' : ''
+const externalBase = isLocalhost ? 'https://kyberia.sk' : ''
 
 export const config = {
   base: '/id/8099985/',
@@ -12,9 +13,12 @@ export const config = {
   version: 'v2.0.0',
   configUrl: 'https://cdn.jsdelivr.net/gh/rplnt/kymono@master/config.json',
   apiBase,
+  externalBase,
   templates: {
     bookmarks: '9300218',
     mpn: '7269265',
+    nodeView: '9300812',
+    children: '9300813',
   },
   mpnBlacklist: [
     4830026, 3777728, 5898094, 2176597, 3660841, 7465941, 1522695, 1569351, 7607525, 788016,

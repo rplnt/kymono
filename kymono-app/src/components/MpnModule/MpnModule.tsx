@@ -1,25 +1,31 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { MpnNode } from '@/types'
+import { useConfigValue } from '@/contexts'
 import { config, CONFIG_PATHS } from '@/config'
-import { fetchMpnData, openNode, truncate, getConfigValue } from '@/utils'
+import { fetchMpnData, truncate } from '@/utils'
 
 // Max number of single-user nodes to display
 const MAX_SINGLE_COUNT_NODES = 10
 
 export function MpnModule() {
+  const navigate = useNavigate()
   const [nodes, setNodes] = useState<MpnNode[]>([])
   const [loading, setLoading] = useState(true)
-  const [enabled, setEnabled] = useState(() => getConfigValue(CONFIG_PATHS.MPN_ENABLED, true))
+  const [error, setError] = useState<string | null>(null)
+  const [enabled] = useConfigValue(CONFIG_PATHS.MPN_ENABLED, true)
   const [collapsed, setCollapsed] = useState(false)
 
   // Load MPN data
   const loadData = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const allNodes = await fetchMpnData()
       setNodes(allNodes)
-    } catch (error) {
-      console.error('Failed to load MPN data:', error)
+    } catch (err) {
+      console.error('Failed to load MPN data:', err)
+      setError('Failed to load data')
     } finally {
       setLoading(false)
     }
@@ -29,17 +35,6 @@ export function MpnModule() {
     loadData()
   }, [loadData])
 
-  // Listen for settings changes
-  useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === CONFIG_PATHS.MPN_ENABLED) {
-        setEnabled(getConfigValue(CONFIG_PATHS.MPN_ENABLED, true))
-      }
-    }
-    window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
-  }, [])
-
   // Filter nodes according to original logic
   const filteredNodes = useMemo(() => {
     // First pass: filter by blacklist, ID, and bookm prefix
@@ -48,6 +43,7 @@ export function MpnModule() {
       const nodeName = node.name.toLowerCase()
 
       return !(
+        !node.name.trim() ||
         nodeId <= 100 ||
         nodeName.startsWith('bookm') ||
         config.mpnBlacklist.includes(nodeId)
@@ -82,15 +78,17 @@ export function MpnModule() {
     return result
   }, [nodes])
 
-  // Calculate font size: (count > 5 ? 5.5 : count) * 0.43
+  // Calculate font size with larger spread for high counts
   const getFontSize = (count: number): string => {
-    const size = (count > 5 ? 5.5 : count) * 0.43
+    // Base 0.5em for count=1, scaling up to 3.5em for count>=6
+    const cappedCount = Math.min(count, 6)
+    const size = 0.5 + (cappedCount - 1) * 0.6
     return `${size}em`
   }
 
   const handleNodeClick = (e: React.MouseEvent, nodeId: string) => {
     e.preventDefault()
-    openNode(nodeId)
+    navigate(`/id/${nodeId}`)
   }
 
   const handleReload = (e: React.MouseEvent) => {
@@ -124,14 +122,23 @@ export function MpnModule() {
             </div>
           )}
 
-          {!loading && filteredNodes.length === 0 && (
+          {!loading && error && (
+            <p className="module-error">
+              {error}{' '}
+              <button className="module-retry" onClick={handleReload}>
+                Retry
+              </button>
+            </p>
+          )}
+
+          {!loading && !error && filteredNodes.length === 0 && (
             <p className="module-empty">No data available</p>
           )}
 
           {filteredNodes.length > 0 && (
             <div id="mpn">
               {filteredNodes.map((node) => (
-                <span key={node.id} style={{ fontSize: getFontSize(node.count) }}>
+                <span key={node.id} className="mpn-entry" style={{ fontSize: getFontSize(node.count) }}>
                   {'('}
                   <a
                     href={`/id/${node.id}`}

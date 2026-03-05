@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { BookmarkCategory, Bookmark, SearchIndex } from '@/types'
 import { TIME_RANGES, CONFIG_PATHS } from '@/config'
 import {
   fetchBookmarksData,
-  openNode,
   buildSearchIndex,
   searchIndex,
   minutesSince,
@@ -17,8 +17,10 @@ function getDefaultTimeRangeIndex(): number {
 }
 
 export function Bookmarks() {
+  const navigate = useNavigate()
   const [categories, setCategories] = useState<BookmarkCategory[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [filterText, setFilterText] = useState('')
   const [showNewOnly, setShowNewOnly] = useState(true)
   const [timeRangeIndex, setTimeRangeIndex] = useState(getDefaultTimeRangeIndex)
@@ -28,28 +30,32 @@ export function Bookmarks() {
   const filterInputRef = useRef<HTMLInputElement>(null)
 
   // Load bookmarks data
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const data = await fetchBookmarksData()
-        setCategories(data)
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await fetchBookmarksData()
+      setCategories(data)
 
-        // Build search index
-        const items: Array<[string, string]> = []
-        data.forEach((cat) => {
-          cat.bookmarks.forEach((bm) => {
-            items.push([bm.name, bm.id])
-          })
+      // Build search index
+      const items: Array<[string, string]> = []
+      data.forEach((cat) => {
+        cat.bookmarks.forEach((bm) => {
+          items.push([bm.name, bm.id])
         })
-        setIndex(buildSearchIndex(items))
-      } catch (error) {
-        console.error('Failed to load bookmarks:', error)
-      } finally {
-        setLoading(false)
-      }
+      })
+      setIndex(buildSearchIndex(items))
+    } catch (err) {
+      console.error('Failed to load bookmarks:', err)
+      setError('Failed to load bookmarks')
+    } finally {
+      setLoading(false)
     }
-    loadData()
   }, [])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   // Auto-focus filter if setting enabled
   useEffect(() => {
@@ -114,9 +120,9 @@ export function Bookmarks() {
   // Handle Enter key to open single result
   const handleFilterKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && totalVisibleBookmarks === 1) {
-      const singleBookmark = visibleData.flatMap((cat) => cat.visibleBookmarks).find(() => true)
+      const singleBookmark = visibleData.flatMap((cat) => cat.visibleBookmarks).at(0)
       if (singleBookmark) {
-        openNode(singleBookmark.node)
+        navigate(`/id/${singleBookmark.node}`)
       }
     }
   }
@@ -147,13 +153,24 @@ export function Bookmarks() {
   // Handle bookmark click
   const handleBookmarkClick = (e: React.MouseEvent, nodeId: string) => {
     e.preventDefault()
-    openNode(nodeId)
+    navigate(`/id/${nodeId}`)
   }
 
   if (loading) {
     return (
       <div>
         <div className="sp-circle" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="error-container">
+        <p className="error-message">{error}</p>
+        <button className="btn btn-retry" onClick={loadData}>
+          Retry
+        </button>
       </div>
     )
   }

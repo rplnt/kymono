@@ -52,3 +52,46 @@ export interface TimeRange {
   label: string
   minutes: number
 }
+
+// Node view types
+export interface NodeAncestor {
+  id: string
+  name: string
+}
+
+export interface NodeData {
+  id: string
+  name: string
+  content: string
+  parentId: string
+  parentName: string
+  creatorId: string
+  owner: string
+  templateId: string
+  createdAt: Date
+  updatedAt: Date | null
+  karma: number
+  imageUrl: string
+  ancestors: NodeAncestor[]
+}
+
+// Node comment/child types
+export interface NodeComment {
+  id: string
+  parentId: string
+  depth: number
+  creatorId: string
+  owner: string
+  name: string
+  content: string
+  templateId: string
+  createdAt: Date
+  updatedAt: Date | null
+  karma: number
+  childrenCount: number
+  imageUrl: string
+  isNew: boolean
+  isOrphan: boolean
+  contentChanged: boolean
+  isHardlink: boolean
+}

@@ -1,24 +1,28 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { Bookmark, BookmarkCategory } from '@/types'
+import { useConfigValue } from '@/contexts'
 import { TIME_RANGES, CONFIG_PATHS } from '@/config'
-import { fetchBookmarksData, openNode, minutesSince, getConfigValue } from '@/utils'
+import { fetchBookmarksData, minutesSince } from '@/utils'
 
 export function QuickBookmarks() {
+  const navigate = useNavigate()
   const [categories, setCategories] = useState<BookmarkCategory[]>([])
   const [loading, setLoading] = useState(true)
-  const [enabled, setEnabled] = useState(() =>
-    getConfigValue(CONFIG_PATHS.QUICK_BOOKMARKS_ENABLED, true)
-  )
+  const [error, setError] = useState<string | null>(null)
+  const [enabled] = useConfigValue(CONFIG_PATHS.QUICK_BOOKMARKS_ENABLED, true)
   const [collapsed, setCollapsed] = useState(false)
 
   // Load bookmarks data
   const loadData = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const data = await fetchBookmarksData()
       setCategories(data)
-    } catch (error) {
-      console.error('Failed to load bookmarks:', error)
+    } catch (err) {
+      console.error('Failed to load bookmarks:', err)
+      setError('Failed to load bookmarks')
     } finally {
       setLoading(false)
     }
@@ -27,17 +31,6 @@ export function QuickBookmarks() {
   useEffect(() => {
     loadData()
   }, [loadData])
-
-  // Listen for settings changes
-  useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === CONFIG_PATHS.QUICK_BOOKMARKS_ENABLED) {
-        setEnabled(getConfigValue(CONFIG_PATHS.QUICK_BOOKMARKS_ENABLED, true))
-      }
-    }
-    window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
-  }, [])
 
   // Filter to bookmarks from last month with new replies, sorted by last visited, limit 10
   // Prioritize those with unread, then fill with descendants-only
@@ -80,7 +73,7 @@ export function QuickBookmarks() {
   // Handle bookmark click
   const handleBookmarkClick = (e: React.MouseEvent, nodeId: string) => {
     e.preventDefault()
-    openNode(nodeId)
+    navigate(`/id/${nodeId}`)
   }
 
   const handleReload = (e: React.MouseEvent) => {
@@ -114,7 +107,16 @@ export function QuickBookmarks() {
             </div>
           )}
 
-          {!loading && recentBookmarks.length === 0 && (
+          {!loading && error && (
+            <p className="module-error">
+              {error}{' '}
+              <button className="module-retry" onClick={handleReload}>
+                Retry
+              </button>
+            </p>
+          )}
+
+          {!loading && !error && recentBookmarks.length === 0 && (
             <p className="module-empty">No new replies in the last month</p>
           )}
 

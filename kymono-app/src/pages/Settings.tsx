@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { SettingTemplate, SettingOption, ConfigJson } from '@/types'
-import { getConfigValue, setConfigValue } from '@/utils'
+import { useConfig } from '@/contexts'
 import { CONFIG_PATHS } from '@/config'
 
 const settingsConfig: ConfigJson = {
@@ -85,26 +85,86 @@ const MODULE_ORDER_PATHS: Record<string, string> = {
   mpn: CONFIG_PATHS.MPN_ORDER,
 }
 
+type SettingValue = string | number | boolean | string[]
+
+interface ModuleOrderControlProps {
+  defaultOrder: string[]
+}
+
+function ModuleOrderControl({ defaultOrder }: ModuleOrderControlProps) {
+  const { getValue, setValue: setConfigValue } = useConfig()
+  const [, forceUpdate] = useState(0)
+
+  const currentOrder = [...defaultOrder].sort((a, b) => {
+    const orderA = getValue<number>(MODULE_ORDER_PATHS[a], defaultOrder.indexOf(a))
+    const orderB = getValue<number>(MODULE_ORDER_PATHS[b], defaultOrder.indexOf(b))
+    return orderA - orderB
+  })
+
+  const moveUp = (index: number) => {
+    if (index === 0) return
+    const moduleId = currentOrder[index]
+    const prevModuleId = currentOrder[index - 1]
+    setConfigValue(MODULE_ORDER_PATHS[moduleId], index - 1)
+    setConfigValue(MODULE_ORDER_PATHS[prevModuleId], index)
+    forceUpdate((n) => n + 1)
+  }
+
+  const moveDown = (index: number) => {
+    if (index === currentOrder.length - 1) return
+    const moduleId = currentOrder[index]
+    const nextModuleId = currentOrder[index + 1]
+    setConfigValue(MODULE_ORDER_PATHS[moduleId], index + 1)
+    setConfigValue(MODULE_ORDER_PATHS[nextModuleId], index)
+    forceUpdate((n) => n + 1)
+  }
+
+  return (
+    <div className="setting-order-list">
+      {currentOrder.map((moduleId, index) => (
+        <div key={moduleId} className="setting-order-item">
+          <span className="setting-order-label">{MODULE_LABELS[moduleId] || moduleId}</span>
+          <div className="setting-order-arrows">
+            <button
+              className="setting-order-btn"
+              onClick={() => moveUp(index)}
+              disabled={index === 0}
+              title="Move up"
+            >
+              ▲
+            </button>
+            <button
+              className="setting-order-btn"
+              onClick={() => moveDown(index)}
+              disabled={index === currentOrder.length - 1}
+              title="Move down"
+            >
+              ▼
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 interface SettingControlProps {
   category: string
   option: SettingOption
 }
 
-type SettingValue = string | number | boolean | string[]
-
 function SettingControl({ category, option }: SettingControlProps) {
+  const { getValue, setValue: setConfigValue } = useConfig()
   const path = `${category}.${option.name}`
   const defaultValue = option.type === 'enum' ? (option.value as string[])[0] : option.value
 
   const [value, setValue] = useState<SettingValue>(() =>
-    getConfigValue(path, defaultValue as SettingValue)
+    getValue(path, defaultValue as SettingValue)
   )
 
   const handleChange = (newValue: SettingValue) => {
     setValue(newValue)
     setConfigValue(path, newValue)
-    // Dispatch storage event so other components can react
-    window.dispatchEvent(new StorageEvent('storage', { key: path }))
   }
 
   switch (option.type) {
@@ -171,77 +231,8 @@ function SettingControl({ category, option }: SettingControlProps) {
         </select>
       )
 
-    case 'moduleOrder': {
-      // Get current order from stored values, fall back to default
-      const defaultOrder = option.value as string[]
-      const currentOrder = [...defaultOrder].sort((a, b) => {
-        const orderA = getConfigValue<number>(MODULE_ORDER_PATHS[a], defaultOrder.indexOf(a))
-        const orderB = getConfigValue<number>(MODULE_ORDER_PATHS[b], defaultOrder.indexOf(b))
-        return orderA - orderB
-      })
-
-      const moveUp = (index: number) => {
-        if (index === 0) return
-        const moduleId = currentOrder[index]
-        const prevModuleId = currentOrder[index - 1]
-        // Swap order values
-        setConfigValue(MODULE_ORDER_PATHS[moduleId], index - 1)
-        setConfigValue(MODULE_ORDER_PATHS[prevModuleId], index)
-        // Trigger re-render and notify Home
-        handleChange([
-          ...currentOrder.slice(0, index - 1),
-          moduleId,
-          prevModuleId,
-          ...currentOrder.slice(index + 1),
-        ])
-        window.dispatchEvent(new StorageEvent('storage', { key: MODULE_ORDER_PATHS[moduleId] }))
-      }
-
-      const moveDown = (index: number) => {
-        if (index === currentOrder.length - 1) return
-        const moduleId = currentOrder[index]
-        const nextModuleId = currentOrder[index + 1]
-        // Swap order values
-        setConfigValue(MODULE_ORDER_PATHS[moduleId], index + 1)
-        setConfigValue(MODULE_ORDER_PATHS[nextModuleId], index)
-        // Trigger re-render and notify Home
-        handleChange([
-          ...currentOrder.slice(0, index),
-          nextModuleId,
-          moduleId,
-          ...currentOrder.slice(index + 2),
-        ])
-        window.dispatchEvent(new StorageEvent('storage', { key: MODULE_ORDER_PATHS[moduleId] }))
-      }
-
-      return (
-        <div className="setting-order-list">
-          {currentOrder.map((moduleId, index) => (
-            <div key={moduleId} className="setting-order-item">
-              <span className="setting-order-label">{MODULE_LABELS[moduleId] || moduleId}</span>
-              <div className="setting-order-arrows">
-                <button
-                  className="setting-order-btn"
-                  onClick={() => moveUp(index)}
-                  disabled={index === 0}
-                  title="Move up"
-                >
-                  ▲
-                </button>
-                <button
-                  className="setting-order-btn"
-                  onClick={() => moveDown(index)}
-                  disabled={index === currentOrder.length - 1}
-                  title="Move down"
-                >
-                  ▼
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )
-    }
+    case 'moduleOrder':
+      return <ModuleOrderControl defaultOrder={option.value as string[]} />
 
     default:
       return <span>Unknown type: {option.type}</span>

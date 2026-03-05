@@ -1,6 +1,31 @@
-import type { BookmarkCategory, Bookmark, MpnNode, ConfigJson } from '@/types'
+import type { BookmarkCategory, Bookmark, MpnNode, ConfigJson, NodeData, NodeAncestor, NodeComment } from '@/types'
 import { config } from '@/config'
 import { parseVisitDate } from './date'
+
+// Safe color patterns - hex, named colors, rgb/rgba, hsl/hsla
+const SAFE_COLOR_PATTERNS = [
+  /^#[0-9a-f]{3}$/i, // #RGB
+  /^#[0-9a-f]{6}$/i, // #RRGGBB
+  /^#[0-9a-f]{8}$/i, // #RRGGBBAA
+  /^[a-z]{3,20}$/i, // Named colors (red, blue, darkgreen, etc.)
+  /^rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/i, // rgb(r,g,b)
+  /^rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*[\d.]+\s*\)$/i, // rgba(r,g,b,a)
+  /^hsl\(\s*\d{1,3}\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*\)$/i, // hsl(h,s%,l%)
+  /^hsla\(\s*\d{1,3}\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*,\s*[\d.]+\s*\)$/i, // hsla(h,s%,l%,a)
+]
+
+/**
+ * Validate and sanitize a color value to prevent CSS injection
+ */
+function sanitizeColor(color: string): string | null {
+  const trimmed = color.trim()
+  for (const pattern of SAFE_COLOR_PATTERNS) {
+    if (pattern.test(trimmed)) {
+      return trimmed
+    }
+  }
+  return null
+}
 
 /**
  * Sanitize HTML to only allow colors, bold, and italics
@@ -34,21 +59,25 @@ function sanitizeBookmarkHtml(html: string): string {
       return `<i>${children}</i>`
     }
 
-    // Font tag - only keep color
+    // Font tag - only keep color if safe
     if (tag === 'font') {
-      const color = el.getAttribute('color')
+      const rawColor = el.getAttribute('color')
+      const color = rawColor ? sanitizeColor(rawColor) : null
       if (color) {
         return `<span style="color:${color}">${children}</span>`
       }
       return children
     }
 
-    // Span - only keep color from style
+    // Span - only keep color from style if safe
     if (tag === 'span') {
       const style = el.getAttribute('style') || ''
       const colorMatch = style.match(/color\s*:\s*([^;]+)/i)
       if (colorMatch) {
-        return `<span style="color:${colorMatch[1].trim()}">${children}</span>`
+        const color = sanitizeColor(colorMatch[1])
+        if (color) {
+          return `<span style="color:${color}">${children}</span>`
+        }
       }
       return children
     }
@@ -62,10 +91,12 @@ function sanitizeBookmarkHtml(html: string): string {
 
 /**
  * Parse bookmarks XML-like data into structured format
+ * Uses HTML parser for tolerance of malformed markup in bookmark names
  */
 export function parseBookmarksXml(xml: string): BookmarkCategory[] {
   const parser = new DOMParser()
-  const doc = parser.parseFromString(`<root>${xml}</root>`, 'text/xml')
+  // Use HTML parser for better tolerance of malformed content
+  const doc = parser.parseFromString(`<div>${xml}</div>`, 'text/html')
 
   const categories: BookmarkCategory[] = []
   const catElements = doc.querySelectorAll('category')
@@ -109,7 +140,8 @@ export function parseBookmarksXml(xml: string): BookmarkCategory[] {
  */
 export function parseMpnXml(xml: string): MpnNode[] {
   const parser = new DOMParser()
-  const doc = parser.parseFromString(`<root>${xml}</root>`, 'text/xml')
+  // Use HTML parser for consistency and tolerance
+  const doc = parser.parseFromString(`<div>${xml}</div>`, 'text/html')
 
   // Aggregate counts by node ID
   const nodeMap = new Map<string, { name: string; count: number }>()
@@ -133,12 +165,11 @@ export function parseMpnXml(xml: string): MpnNode[] {
 /**
  * Extract content from HTML response
  * Looks for content inside a hidden div with id="kmn"
+ * Uses regex to preserve raw XML content (HTML parser mangles CDATA and self-closing tags)
  */
 function extractContent(html: string): string {
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(html, 'text/html')
-  const kmnDiv = doc.getElementById('kmn')
-  return kmnDiv?.innerHTML || ''
+  const match = html.match(/<div[^>]*id=["']kmn["'][^>]*>([\s\S]*?)<\/div>/i)
+  return match?.[1] || ''
 }
 
 /**
@@ -181,8 +212,137 @@ export async function fetchConfig(url: string): Promise<ConfigJson> {
 }
 
 /**
+ * Parse node XML data into structured format
+ */
+export function parseNodeXml(xml: string): NodeData | null {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(`<root>${xml}</root>`, 'text/xml')
+
+  const nodeEl = doc.querySelector('node')
+  if (!nodeEl) return null
+
+  const nameEl = nodeEl.querySelector('name')
+  const contentEl = nodeEl.querySelector('content')
+  const ownerEl = nodeEl.querySelector('owner')
+  const parentEl = nodeEl.querySelector('parent')
+  const ancestorEls = nodeEl.querySelectorAll('ancestors > ancestor')
+
+  const updatedAttr = nodeEl.getAttribute('updated')
+
+  const ancestors: NodeAncestor[] = []
+  ancestorEls.forEach((el) => {
+    ancestors.push({
+      id: el.getAttribute('node') || '',
+      name: el.textContent?.trim() || '',
+    })
+  })
+
+  return {
+    id: nodeEl.getAttribute('node') || '',
+    name: nameEl?.textContent?.trim() || '',
+    content: contentEl?.textContent || '',
+    parentId: parentEl?.getAttribute('node') || '',
+    parentName: parentEl?.textContent?.trim() || '',
+    creatorId: ownerEl?.getAttribute('node') || '',
+    owner: ownerEl?.textContent?.trim() || '',
+    templateId: nodeEl.getAttribute('template') || '',
+    createdAt: new Date(nodeEl.getAttribute('created') || ''),
+    updatedAt: updatedAttr ? new Date(updatedAttr) : null,
+    karma: parseInt(nodeEl.getAttribute('k') || '0', 10) || 0,
+    imageUrl: nodeEl.getAttribute('image') || '',
+    ancestors,
+  }
+}
+
+/**
+ * Fetch and parse node data from server
+ * @param nodeId - The node ID to fetch
+ * @param templateId - The template ID to use for rendering (defaults to config.templates.nodeView)
+ */
+export async function fetchNodeData(
+  nodeId: string,
+  templateId?: string
+): Promise<NodeData> {
+  const effectiveTemplateId = templateId || config.templates.nodeView
+  // Use the node's own ID in the path, not the base config path
+  const url = `${config.apiBase}/id/${nodeId}/${effectiveTemplateId}`
+
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch node data: ${response.status}`)
+  }
+
+  const html = await response.text()
+  const content = extractContent(html)
+  const nodeData = parseNodeXml(content)
+
+  if (!nodeData) {
+    throw new Error('Failed to parse node data')
+  }
+
+  return nodeData
+}
+
+/**
  * Open a node in a new tab
+ * @deprecated Use navigation to internal Node view instead
  */
 export function openNode(nodeId: string): void {
   window.open(`https://kyberia.sk/id/${nodeId}`, '_blank')
+}
+
+/**
+ * Parse children/comments XML data into structured format
+ */
+export function parseChildrenXml(xml: string): NodeComment[] {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(`<root>${xml}</root>`, 'text/xml')
+
+  const comments: NodeComment[] = []
+  const childEls = doc.querySelectorAll('child')
+
+  childEls.forEach((el) => {
+    const nameEl = el.querySelector('name')
+    const ownerEl = el.querySelector('owner')
+    const parentEl = el.querySelector('parent')
+    const contentEl = el.querySelector('content')
+    const updatedAttr = el.getAttribute('updated')
+
+    comments.push({
+      id: el.getAttribute('node') || '',
+      parentId: parentEl?.getAttribute('node') || '',
+      depth: parseInt(el.getAttribute('depth') || '0', 10),
+      creatorId: ownerEl?.getAttribute('node') || '',
+      owner: ownerEl?.textContent?.trim() || '',
+      name: nameEl?.textContent?.trim() || '',
+      content: contentEl?.textContent || '',
+      templateId: el.getAttribute('template') || '',
+      createdAt: new Date(el.getAttribute('created') || ''),
+      updatedAt: updatedAttr ? new Date(updatedAttr) : null,
+      karma: parseInt(el.getAttribute('k') || '0', 10) || 0,
+      childrenCount: parseInt(el.getAttribute('children') || '0', 10),
+      imageUrl: el.getAttribute('image') || '',
+      isNew: el.getAttribute('new') === 'yes',
+      isOrphan: el.getAttribute('orphan') === 'yes',
+      contentChanged: el.getAttribute('changed') === 'yes',
+      isHardlink: el.getAttribute('status') === 'linked',
+    })
+  })
+
+  return comments
+}
+
+/**
+ * Fetch and parse children/comments data from server
+ * @param nodeId - The node ID to fetch children for
+ */
+export async function fetchNodeChildren(nodeId: string): Promise<NodeComment[]> {
+  const url = `${config.apiBase}/id/${nodeId}/${config.templates.children}`
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch children: ${response.status}`)
+  }
+  const html = await response.text()
+  const content = extractContent(html)
+  return parseChildrenXml(content)
 }

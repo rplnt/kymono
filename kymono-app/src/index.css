@@ -333,11 +333,26 @@ body::before {
   padding: var(--space-4) 0;
   text-align: center;
   line-height: var(--line-height-tight);
+  max-width: 80%;
+  margin: 0 auto;
+}
+
+@media (max-width: 600px) {
+  #mpn {
+    max-width: 100%;
+  }
+}
+
+.mpn-entry {
+  display: inline-flex;
+  max-width: 100%;
+  vertical-align: bottom;
 }
 
 .mpn-link {
-  display: inline;
-  word-wrap: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   transition: all var(--transition-fast);
 }
 
@@ -795,6 +810,40 @@ body::before {
   font-style: italic;
 }
 
+.module-error {
+  padding: var(--space-4);
+  color: var(--color-error, #ff6b6b);
+  font-size: var(--font-size-sm);
+}
+
+.module-retry,
+.btn-retry {
+  background: transparent;
+  border: 1px solid var(--color-phosphor-dim);
+  color: var(--color-phosphor);
+  padding: var(--space-1) var(--space-3);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.module-retry:hover,
+.btn-retry:hover {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-phosphor);
+}
+
+.error-container {
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.error-message {
+  color: var(--color-error, #ff6b6b);
+  margin-bottom: var(--space-4);
+}
+
 .module-content {
   position: relative;
   min-height: 2em;
@@ -874,6 +923,109 @@ body::before {
   background: var(--color-bg-elevated);
 }
 
+.side-panel-node {
+  padding: var(--space-2);
+}
+
+.side-panel-node .node-image {
+  margin-bottom: var(--space-2);
+  text-align: center;
+}
+
+.side-panel-node .node-image img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--color-bg-surface);
+}
+
+.side-panel-node .node-name {
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-4);
+  max-height: 3em;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+.side-panel-node .node-meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.side-panel-node .node-meta-label {
+  color: var(--color-text-muted);
+  margin-right: var(--space-1);
+}
+
+.side-panel-node .node-meta-value {
+  color: var(--color-text-primary);
+}
+
+.side-panel-node .node-karma {
+  text-align: center;
+  margin-top: var(--space-3);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-error);
+}
+
+.side-panel-node .node-karma-value {
+  margin-right: var(--space-1);
+}
+
+.side-panel-node .node-karma-icon {
+  /* inherits red from parent */
+}
+
+.side-panel-node .node-ancestors {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-bg-surface);
+}
+
+.side-panel-node .node-ancestors-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: var(--space-2);
+}
+
+.side-panel-node .node-ancestors-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.side-panel-node .node-ancestor-link {
+  font-size: var(--font-size-sm);
+  font-family: monospace;
+  color: var(--color-text-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.side-panel-node .node-ancestor-link:hover {
+  color: var(--color-text-secondary);
+}
+
+.side-panel-node .node-timestamp-clickable {
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.side-panel-node .node-timestamp-clickable:hover {
+  color: var(--color-phosphor);
+}
+
+.side-panel-node .node-edited-marker {
+  color: var(--color-phosphor);
+  margin-left: 2px;
+}
+
 /* ============================================================
    Utility Classes
    ============================================================ */
@@ -918,4 +1070,229 @@ body::before {
   .setting-select {
     width: 100%;
   }
+}
+
+/* ============================================================
+   Node View Page
+   ============================================================ */
+.node-view {
+  max-width: 100%;
+  margin-top: calc(-1 * var(--space-4));
+}
+
+.node-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-surface);
+  border-left: 3px solid var(--color-phosphor);
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition-fast);
+}
+
+.node-header:hover {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-phosphor-bright);
+}
+
+.node-title {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: var(--color-text-primary);
+  word-wrap: break-word;
+  flex: 1;
+  min-width: 0;
+}
+
+.node-external-link {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  padding: var(--space-1);
+  transition: color var(--transition-fast);
+}
+
+.node-external-link:hover {
+  color: var(--color-text-primary);
+}
+
+.node-parent {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+.node-content-box {
+  padding-top: var(--space-3);
+  padding-left: var(--space-3);
+  position: relative;
+}
+
+.node-content-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100px;
+  background: linear-gradient(to bottom, var(--color-phosphor), transparent);
+  pointer-events: none;
+}
+
+.node-content {
+  color: var(--color-phosphor);
+  line-height: var(--line-height-relaxed);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.node-content a {
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.node-content a:hover {
+  color: var(--color-text-secondary);
+}
+
+.node-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Node Comments */
+.node-comments {
+  margin-top: var(--space-4);
+}
+
+.comment {
+  margin-bottom: var(--space-3);
+}
+
+.comment-header {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  padding: 0 var(--space-2);
+  background: var(--color-bg-surface);
+  border-left: 2px solid var(--color-phosphor-dim);
+  cursor: pointer;
+}
+
+.comment-body {
+  padding: var(--space-1) var(--space-2);
+  border-left: 2px solid var(--color-phosphor-dim);
+}
+
+.comment-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+  object-fit: cover;
+  object-position: top left;
+}
+
+.comment-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--font-size-sm);
+}
+
+.comment-meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: baseline;
+}
+
+.comment-author {
+  color: var(--color-text-primary);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.comment-author:hover {
+  color: var(--color-text-secondary);
+}
+
+.comment-title {
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.comment-title:hover {
+  color: var(--color-text-secondary);
+}
+
+.comment-date {
+  color: var(--color-text-secondary);
+}
+
+.comment-date .edited-marker {
+  color: var(--color-phosphor);
+  margin-left: 2px;
+}
+
+.comment-karma {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.comment-content {
+  color: var(--color-phosphor);
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-1);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.comment-content a {
+  color: var(--color-text-primary);
+}
+
+.comment-content a:hover {
+  color: var(--color-text-secondary);
+}
+
+.comment-more {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.comment-more:hover {
+  color: var(--color-phosphor);
+}
+
+.comment-badge {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+
+.comment-new {
+  color: var(--color-phosphor-bright);
+  background: var(--color-phosphor-glow);
+}
+
+.comment.comment-orphan .comment-header {
+  border-left-style: dashed;
+}
+
+.comment-changed {
+  color: var(--color-error);
+}
+
+.comment-hardlink {
+  color: var(--color-text-muted);
 }

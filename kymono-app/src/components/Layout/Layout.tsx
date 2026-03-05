@@ -2,14 +2,8 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Menu } from './Menu'
 import { SidePanel } from './SidePanel'
+import { useConfigValue } from '@/contexts'
 import { CONFIG_PATHS } from '@/config'
-import { getConfigValue } from '@/utils'
-
-function getFontScale(): number {
-  const value = getConfigValue<number>(CONFIG_PATHS.FONT_SIZE, 1)
-  // Convert legacy em values to scale factor (1.9em -> ~1.2 scale)
-  return value > 1 ? value / 1.6 : value
-}
 
 const PULL_THRESHOLD = 80
 
@@ -18,7 +12,9 @@ export function Layout() {
   const [pullDistance, setPullDistance] = useState(0)
   const [isPulling, setIsPulling] = useState(false)
   const touchStartY = useRef(0)
-  const mainRef = useRef<HTMLElement>(null)
+
+  // Get font size from config - reactively updates when changed in settings
+  const [fontSizeValue] = useConfigValue<number>(CONFIG_PATHS.FONT_SIZE, 1)
 
   const toggleSidePanel = useCallback(() => {
     setSidePanelOpen((prev) => !prev)
@@ -56,24 +52,12 @@ export function Layout() {
     setIsPulling(false)
   }, [pullDistance])
 
-  // Apply font scale on mount and listen for changes
+  // Apply font scale when config value changes
   useEffect(() => {
-    const applyFontScale = () => {
-      const scale = getFontScale()
-      document.documentElement.style.fontSize = `${scale * 16}px`
-    }
-
-    applyFontScale()
-
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === CONFIG_PATHS.FONT_SIZE) {
-        applyFontScale()
-      }
-    }
-
-    window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
-  }, [])
+    // Convert legacy em values to scale factor (1.9em -> ~1.2 scale)
+    const scale = fontSizeValue > 1 ? fontSizeValue / 1.6 : fontSizeValue
+    document.documentElement.style.fontSize = `${scale * 16}px`
+  }, [fontSizeValue])
 
   return (
     <div onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
@@ -91,7 +75,7 @@ export function Layout() {
           {pullDistance >= PULL_THRESHOLD ? '↻ Release to reload' : '↓ Pull to reload'}
         </div>
       )}
-      <main id="app" ref={mainRef}>
+      <main id="app">
         <Outlet />
       </main>
     </div>

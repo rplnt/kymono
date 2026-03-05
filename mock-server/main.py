@@ -19,16 +19,26 @@ app.add_middleware(
 HTML_DIR = Path(__file__).parent / "html"
 
 
-@app.get("/id/8099985/{node_id}")
-async def get_node(node_id: str) -> HTMLResponse:
-    """Serve HTML file for a given node ID."""
-    file_path = HTML_DIR / f"{node_id}.html"
+@app.get("/id/8099985/{template_id}")
+async def get_base_template(template_id: str) -> HTMLResponse:
+    """Serve HTML for base path (bookmarks, MPN)."""
+    file_path = HTML_DIR / "base" / f"{template_id}.html"
 
     if not file_path.exists():
-        raise HTTPException(status_code=404, detail=f"Node {node_id} not found")
+        raise HTTPException(status_code=404, detail=f"Template {template_id} not found")
 
-    content = file_path.read_text(encoding="utf-8")
-    return HTMLResponse(content=content)
+    return HTMLResponse(content=file_path.read_text(encoding="utf-8"))
+
+
+@app.get("/id/{node_id}/{template_id}")
+async def get_node_template(node_id: str, template_id: str) -> HTMLResponse:
+    """Serve HTML for node with specific template."""
+    file_path = HTML_DIR / "nodes" / node_id / f"{template_id}.html"
+
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail=f"Node {node_id} template {template_id} not found")
+
+    return HTMLResponse(content=file_path.read_text(encoding="utf-8"))
 
 
 @app.get("/")

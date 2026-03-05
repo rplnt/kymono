@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { Layout } from '@/components/Layout'
-import { Home, Bookmarks, Settings, K, Friends } from '@/pages'
+import { Home, Bookmarks, Settings, K, Friends, Node } from '@/pages'
+import { ConfigProvider, NodeProvider } from '@/contexts'
 import { config, CONFIG_PATHS } from '@/config'
 import { getConfigValue, hasConfig, initConfig } from '@/utils'
 
@@ -43,19 +44,24 @@ function FirstRunHandler() {
 
 function App() {
   return (
-    <HashRouter>
-      <FirstRunHandler />
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to={getDefaultRoute()} replace />} />
-          <Route path="home" element={<Home />} />
-          <Route path="bookmarks" element={<Bookmarks />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="k" element={<K />} />
-          <Route path="friends" element={<Friends />} />
-        </Route>
-      </Routes>
-    </HashRouter>
+    <ConfigProvider>
+      <HashRouter>
+        <NodeProvider>
+          <FirstRunHandler />
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Navigate to={getDefaultRoute()} replace />} />
+              <Route path="home" element={<Home />} />
+              <Route path="bookmarks" element={<Bookmarks />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="k" element={<K />} />
+              <Route path="friends" element={<Friends />} />
+              <Route path="id/:nodeId" element={<Node />} />
+            </Route>
+          </Routes>
+        </NodeProvider>
+      </HashRouter>
+    </ConfigProvider>
   )
 }
 
