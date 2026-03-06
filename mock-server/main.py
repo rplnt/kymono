@@ -1,8 +1,10 @@
+import argparse
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+import httpx
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 
 app = FastAPI()
 
@@ -18,10 +20,41 @@ app.add_middleware(
 # Directory containing HTML files
 HTML_DIR = Path(__file__).parent / "html"
 
+# Proxy configuration (set at startup)
+PROXY_MODE = False
+PROXY_HOST = ""
+PROXY_PHPSESSID = ""
+
+
+def configure_proxy(host: str, phpsessid: str) -> None:
+    """Configure proxy mode settings."""
+    global PROXY_MODE, PROXY_HOST, PROXY_PHPSESSID
+    PROXY_MODE = True
+    PROXY_HOST = host.rstrip("/")
+    PROXY_PHPSESSID = phpsessid
+
+
+async def proxy_request(path: str) -> Response:
+    """Forward request to the proxy target."""
+    url = f"{PROXY_HOST}{path}"
+    cookies = {"PHPSESSID": PROXY_PHPSESSID}
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, cookies=cookies, follow_redirects=True)
+        print(f"PROXY: {path} -> {response.status_code} ({len(response.content)} bytes)")
+        return Response(
+            content=response.content,
+            status_code=response.status_code,
+            headers={"content-type": response.headers.get("content-type", "text/html")},
+        )
+
 
 @app.get("/id/8099985/{template_id}")
-async def get_base_template(template_id: str) -> HTMLResponse:
+async def get_base_template(template_id: str, request: Request) -> Response:
     """Serve HTML for base path (bookmarks, MPN)."""
+    if PROXY_MODE:
+        return await proxy_request(f"/id/8099985/{template_id}")
+
     file_path = HTML_DIR / "base" / f"{template_id}.html"
 
     if not file_path.exists():
@@ -31,8 +64,11 @@ async def get_base_template(template_id: str) -> HTMLResponse:
 
 
 @app.get("/id/{node_id}/{template_id}")
-async def get_node_template(node_id: str, template_id: str) -> HTMLResponse:
+async def get_node_template(node_id: str, template_id: str, request: Request) -> Response:
     """Serve HTML for node with specific template."""
+    if PROXY_MODE:
+        return await proxy_request(f"/id/{node_id}/{template_id}")
+
     file_path = HTML_DIR / "nodes" / node_id / f"{template_id}.html"
 
     if not file_path.exists():
@@ -44,9 +80,50 @@ async def get_node_template(node_id: str, template_id: str) -> HTMLResponse:
 @app.get("/")
 async def root():
     """Health check endpoint."""
-    return {"status": "ok", "html_dir": str(HTML_DIR)}
+    return {
+        "status": "ok",
+        "mode": "proxy" if PROXY_MODE else "mock",
+        "proxy_host": PROXY_HOST if PROXY_MODE else None,
+        "html_dir": str(HTML_DIR) if not PROXY_MODE else None,
+    }
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8099)
+
+    parser = argparse.ArgumentParser(description="Mock/Proxy server for kymono app")
+    parser.add_argument(
+        "--proxy",
+        action="store_true",
+        help="Enable proxy mode (forward requests to real server)",
+    )
+    parser.add_argument(
+        "--host",
+        type=str,
+        default="https://kyberia.sk",
+        help="Target host for proxy mode (default: https://kyberia.sk)",
+    )
+    parser.add_argument(
+        "--phpsessid",
+        type=str,
+        default="",
+        help="PHPSESSID cookie value for authentication",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8099,
+        help="Port to run the server on (default: 8099)",
+    )
+
+    args = parser.parse_args()
+
+    if args.proxy:
+        if not args.phpsessid:
+            parser.error("--phpsessid is required when using --proxy mode")
+        configure_proxy(args.host, args.phpsessid)
+        print(f"Running in PROXY mode -> {args.host}")
+    else:
+        print(f"Running in MOCK mode (serving from {HTML_DIR})")
+
+    uvicorn.run(app, host="0.0.0.0", port=args.port)

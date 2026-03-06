@@ -72,6 +72,18 @@ const settingsConfig: ConfigJson = {
         },
       ],
     },
+    {
+      title: 'Node',
+      name: 'node',
+      settings: [
+        {
+          name: 'commentToolbar',
+          description: 'Show navigation toolbar on comments',
+          type: 'boolean',
+          value: true,
+        },
+      ],
+    },
   ],
 }
 

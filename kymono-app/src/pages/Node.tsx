@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { NodeData, NodeComment } from '@/types'
 import { useCurrentNode } from '@/contexts'
-import { fetchNodeData, fetchNodeChildren } from '@/utils'
-import { config } from '@/config'
+import { fetchNodeData, fetchNodeChildren, getConfigValue } from '@/utils'
+import { config, CONFIG_PATHS } from '@/config'
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('sk-SK', {
@@ -61,6 +61,10 @@ export function Node() {
   const [commentsLoading, setCommentsLoading] = useState(false)
   const [contentCollapsed, setContentCollapsed] = useState(false)
   const [collapsedComments, setCollapsedComments] = useState<Set<string>>(new Set())
+  const [showReplyForm, setShowReplyForm] = useState(false)
+  const [replyTitle, setReplyTitle] = useState('')
+  const [replyContent, setReplyContent] = useState('')
+  const showCommentToolbar = getConfigValue(CONFIG_PATHS.COMMENT_TOOLBAR, true)
 
   const toggleCommentCollapsed = (commentId: string) => {
     setCollapsedComments((prev) => {
@@ -164,6 +168,33 @@ export function Node() {
 
   return (
     <div className="node-view">
+      {/* Who in Where */}
+      <div className="node-meta-bar">
+        <a
+          className="node-meta-link"
+          onClick={(e) => {
+            e.preventDefault()
+            navigate(`/id/${node.creatorId}`)
+          }}
+        >
+          {node.owner}
+        </a>
+        {node.parentId && (
+          <>
+            <span className="node-meta-sep">in</span>
+            <a
+              className="node-meta-link"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate(`/id/${node.parentId}`)
+              }}
+            >
+              {node.parentName}
+            </a>
+          </>
+        )}
+      </div>
+
       <div className="node-header" onClick={() => setContentCollapsed((prev) => !prev)}>
         <span className="node-title">
           {contentCollapsed ? '▸' : '▾'} {node.name}
@@ -176,7 +207,11 @@ export function Node() {
           title="Open on kyberia.sk"
           onClick={(e) => e.stopPropagation()}
         >
-          &#8599;
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            <polyline points="15 3 21 3 21 9" />
+            <line x1="10" y1="14" x2="21" y2="3" />
+          </svg>
         </a>
       </div>
 
@@ -188,6 +223,42 @@ export function Node() {
             dangerouslySetInnerHTML={{ __html: node.content }}
             onClick={handleContentClick}
           />
+        </div>
+      )}
+
+      {/* Node actions toolbar */}
+      <div className="node-actions">
+        {node.canWrite && (
+          <button
+            className="node-action-btn"
+            onClick={() => setShowReplyForm(!showReplyForm)}
+          >
+            reply
+          </button>
+        )}
+        <button className="node-action-btn">K</button>
+      </div>
+
+      {/* Reply form */}
+      {showReplyForm && (
+        <div className="reply-form">
+          <input
+            type="text"
+            className="reply-title"
+            placeholder="Title (optional)"
+            value={replyTitle}
+            onChange={(e) => setReplyTitle(e.target.value)}
+          />
+          <textarea
+            className="reply-content"
+            placeholder="Write your comment..."
+            value={replyContent}
+            onChange={(e) => setReplyContent(e.target.value)}
+            rows={4}
+          />
+          <div className="reply-actions">
+            <button className="reply-submit">Add</button>
+          </div>
         </div>
       )}
 
@@ -204,6 +275,7 @@ export function Node() {
               return (
               <div
                 key={comment.id}
+                id={`comment-${comment.id}`}
                 className={`comment${comment.isOrphan ? ' comment-orphan' : ''}`}
                 style={{ marginLeft: `${getCommentIndent(level)}px` }}
               >
@@ -263,17 +335,45 @@ export function Node() {
                     dangerouslySetInnerHTML={{ __html: comment.content }}
                     onClick={handleContentClick}
                   />
-                  {comment.childrenCount > 0 && (
-                    <a
-                      className="comment-more"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        navigate(`/id/${comment.id}`)
-                      }}
-                    >
-                      ({comment.childrenCount} more)
-                    </a>
-                  )}
+                </div>
+              )}
+              {showCommentToolbar && (
+                <div className="comment-toolbar">
+                  <button
+                    className="toolbar-btn"
+                    onClick={() => {
+                      const el = document.getElementById(`comment-${comment.id}`)
+                      if (el) {
+                        const menuHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--menu-height')) || 56
+                        const top = el.getBoundingClientRect().top + window.scrollY - menuHeight - 8
+                        window.scrollTo({ top, behavior: 'smooth' })
+                      }
+                    }}
+                  >
+                    up
+                  </button>
+                  <span className="toolbar-sep">|</span>
+                  <button
+                    className="toolbar-btn"
+                    onClick={() => {
+                      const menuHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--menu-height')) || 56
+                      // Find next sibling (same depth, same parent)
+                      const idx = comments.findIndex((c) => c.id === comment.id)
+                      for (let i = idx + 1; i < comments.length; i++) {
+                        if (comments[i].depth === comment.depth && comments[i].parentId === comment.parentId) {
+                          const el = document.getElementById(`comment-${comments[i].id}`)
+                          if (el) {
+                            const top = el.getBoundingClientRect().top + window.scrollY - menuHeight - 8
+                            window.scrollTo({ top, behavior: 'smooth' })
+                          }
+                          break
+                        }
+                        if (comments[i].depth < comment.depth) break
+                      }
+                    }}
+                  >
+                    next
+                  </button>
                 </div>
               )}
             </div>

@@ -165,11 +165,17 @@ export function parseMpnXml(xml: string): MpnNode[] {
 /**
  * Extract content from HTML response
  * Looks for content inside a hidden div with id="kmn"
- * Uses regex to preserve raw XML content (HTML parser mangles CDATA and self-closing tags)
+ * Uses greedy match to find the last </div> closing the kmn element
  */
 function extractContent(html: string): string {
-  const match = html.match(/<div[^>]*id=["']kmn["'][^>]*>([\s\S]*?)<\/div>/i)
-  return match?.[1] || ''
+  const startMatch = html.match(/<div[^>]*id=["']kmn["'][^>]*>/i)
+  if (!startMatch) return ''
+
+  const startIdx = startMatch.index! + startMatch[0].length
+  const endIdx = html.lastIndexOf('</div>')
+
+  if (endIdx <= startIdx) return ''
+  return html.substring(startIdx, endIdx).trim()
 }
 
 /**
@@ -251,6 +257,7 @@ export function parseNodeXml(xml: string): NodeData | null {
     karma: parseInt(nodeEl.getAttribute('k') || '0', 10) || 0,
     imageUrl: nodeEl.getAttribute('image') || '',
     ancestors,
+    canWrite: nodeEl.getAttribute('write') === 'yes',
   }
 }
 

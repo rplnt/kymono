@@ -73,6 +73,7 @@ export interface NodeData {
   karma: number
   imageUrl: string
   ancestors: NodeAncestor[]
+  canWrite: boolean
 }
 
 // Node comment/child types

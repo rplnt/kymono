@@ -125,17 +125,17 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
               {/* Ancestors (cwbe coordinates) */}
               {currentNode.ancestors.length > 0 && (
                 <div className="node-ancestors">
-                  <div className="node-ancestors-label">cwbe</div>
+                  <div className="node-ancestors-label">coordinates</div>
                   <div className="node-ancestors-list">
                     {currentNode.ancestors.map((ancestor) => (
                       <a
                         key={ancestor.id}
                         href={`#/id/${ancestor.id}`}
                         className="node-ancestor-link"
-                        title={ancestor.name}
+                        title={ancestor.id}
                         onClick={(e) => handleAncestorClick(e, ancestor.id)}
                       >
-                        {ancestor.id}
+                        <span className="node-ancestor-name">{ancestor.name}</span>
                       </a>
                     ))}
                   </div>

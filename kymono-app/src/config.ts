@@ -16,7 +16,7 @@ export const config = {
   externalBase,
   templates: {
     bookmarks: '9300218',
-    mpn: '7269265',
+    mpn: '9300200',
     nodeView: '9300812',
     children: '9300813',
   },
@@ -45,4 +45,5 @@ export const CONFIG_PATHS = {
   FOCUS_FILTER: 'bookmarks.focusFilter',
   INCLUDE_DESCENDANTS: 'bookmarks.includeDescendants',
   DEFAULT_TIMESPAN: 'bookmarks.defaultTimespan',
+  COMMENT_TOOLBAR: 'node.commentToolbar',
 } as const
