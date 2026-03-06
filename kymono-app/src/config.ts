@@ -17,8 +17,7 @@ export const config = {
   templates: {
     bookmarks: '9300218',
     mpn: '9300200',
-    nodeView: '9300812',
-    children: '9300813',
+    node: '9300812',
   },
   mpnBlacklist: [
     4830026, 3777728, 5898094, 2176597, 3660841, 7465941, 1522695, 1569351, 7607525, 788016,

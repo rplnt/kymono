@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useCurrentNode } from '@/contexts'
 
@@ -10,12 +9,6 @@ interface SidePanelProps {
 export function SidePanel({ isOpen, onClose }: SidePanelProps) {
   const { currentNode } = useCurrentNode()
   const navigate = useNavigate()
-  const [showEdited, setShowEdited] = useState(false)
-
-  // Reset showEdited when node changes
-  useEffect(() => {
-    setShowEdited(false)
-  }, [currentNode?.id])
 
   const handleAuthorClick = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -91,10 +84,7 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
               {/* Created date (at:) */}
               <div className="node-meta">
                 <span className="node-meta-label">at:</span>
-                <span
-                  className={`node-meta-value${currentNode.updatedAt ? ' node-timestamp-clickable' : ''}`}
-                  onClick={() => currentNode.updatedAt && setShowEdited(!showEdited)}
-                >
+                <span className="node-meta-value">
                   {currentNode.createdAt.toLocaleDateString('sk-SK', {
                     day: '2-digit',
                     month: '2-digit',
@@ -102,12 +92,11 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
-                  {currentNode.updatedAt && <span className="node-edited-marker">*</span>}
                 </span>
               </div>
 
-              {/* Edited date (ed:) - shown on click */}
-              {showEdited && currentNode.updatedAt && (
+              {/* Edited date (ed:) - always shown when available */}
+              {currentNode.updatedAt && (
                 <div className="node-meta">
                   <span className="node-meta-label">ed:</span>
                   <span className="node-meta-value">

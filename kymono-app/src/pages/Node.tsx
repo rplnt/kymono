@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { NodeData, NodeComment } from '@/types'
 import { useCurrentNode } from '@/contexts'
-import { fetchNodeData, fetchNodeChildren, getConfigValue } from '@/utils'
+import { fetchNodeData, getConfigValue } from '@/utils'
 import { config, CONFIG_PATHS } from '@/config'
 
 function formatDate(date: Date): string {
@@ -58,7 +58,6 @@ export function Node() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [comments, setComments] = useState<NodeComment[]>([])
-  const [commentsLoading, setCommentsLoading] = useState(false)
   const [contentCollapsed, setContentCollapsed] = useState(false)
   const [collapsedComments, setCollapsedComments] = useState<Set<string>>(new Set())
   const [showReplyForm, setShowReplyForm] = useState(false)
@@ -88,9 +87,10 @@ export function Node() {
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchNodeData(nodeId)
-      setNode(data)
-      setCurrentNode(data)
+      const response = await fetchNodeData(nodeId)
+      setNode(response.node)
+      setComments(response.children)
+      setCurrentNode(response.node)
     } catch (err) {
       console.error('Failed to load node:', err)
       setError('Failed to load node')
@@ -109,16 +109,6 @@ export function Node() {
       setCurrentNode(null)
     }
   }, [setCurrentNode])
-
-  // Fetch comments after node loads
-  useEffect(() => {
-    if (!node) return
-    setCommentsLoading(true)
-    fetchNodeChildren(node.id)
-      .then(setComments)
-      .catch((err) => console.error('Failed to load comments:', err))
-      .finally(() => setCommentsLoading(false))
-  }, [node])
 
   // Handle clicks on local links in content
   const handleContentClick = (e: React.MouseEvent) => {
@@ -197,7 +187,7 @@ export function Node() {
 
       <div className="node-header" onClick={() => setContentCollapsed((prev) => !prev)}>
         <span className="node-title">
-          {contentCollapsed ? '▸' : '▾'} {node.name}
+          {contentCollapsed ? '▸' : '▾'} <span dangerouslySetInnerHTML={{ __html: node.nameHtml }} />
         </span>
         <a
           href={externalUrl}
@@ -264,9 +254,7 @@ export function Node() {
 
       {/* Comments section */}
       <div className="node-comments">
-        {commentsLoading ? (
-          <div className="sp-circle" />
-        ) : comments.length > 0 ? (
+        {comments.length > 0 ? (
           (() => {
             const minDepth = Math.min(...comments.map((c) => c.depth))
             return comments.map((comment) => {
@@ -280,15 +268,25 @@ export function Node() {
                 style={{ marginLeft: `${getCommentIndent(level)}px` }}
               >
               <div className="comment-header" onClick={() => toggleCommentCollapsed(comment.id)}>
-                <img
-                  src={comment.imageUrl}
-                  alt=""
-                  className="comment-avatar"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    navigate(`/id/${comment.creatorId}`)
-                  }}
-                />
+                {comment.imageUrl ? (
+                  <img
+                    src={comment.imageUrl}
+                    alt=""
+                    className="comment-avatar"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/id/${comment.creatorId}`)
+                    }}
+                  />
+                ) : (
+                  <div
+                    className="comment-avatar comment-avatar-placeholder"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/id/${comment.creatorId}`)
+                    }}
+                  />
+                )}
                 <div className="comment-meta">
                   <div className="comment-meta-line">
                     <a

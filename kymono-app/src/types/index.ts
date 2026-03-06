@@ -62,6 +62,7 @@ export interface NodeAncestor {
 export interface NodeData {
   id: string
   name: string
+  nameHtml: string
   content: string
   parentId: string
   parentName: string
@@ -95,4 +96,12 @@ export interface NodeComment {
   isOrphan: boolean
   contentChanged: boolean
   isHardlink: boolean
+}
+
+// Combined node + children response
+export interface NodeResponse {
+  node: NodeData
+  children: NodeComment[]
+  listingAmount: number
+  offset: number
 }

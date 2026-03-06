@@ -1,4 +1,4 @@
-import type { BookmarkCategory, Bookmark, MpnNode, ConfigJson, NodeData, NodeAncestor, NodeComment } from '@/types'
+import type { BookmarkCategory, Bookmark, MpnNode, ConfigJson, NodeData, NodeAncestor, NodeComment, NodeResponse } from '@/types'
 import { config } from '@/config'
 import { parseVisitDate } from './date'
 
@@ -28,10 +28,19 @@ function sanitizeColor(color: string): string | null {
 }
 
 /**
+ * Strip all HTML tags and return plain text
+ */
+function stripHtml(html: string): string {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html')
+  return doc.body.textContent?.trim() || ''
+}
+
+/**
  * Sanitize HTML to only allow colors, bold, and italics
  * Strips font size, face, and other attributes
  */
-function sanitizeBookmarkHtml(html: string): string {
+function sanitizeHtml(html: string): string {
   const parser = new DOMParser()
   const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html')
   const root = doc.body.firstChild as HTMLElement
@@ -90,92 +99,216 @@ function sanitizeBookmarkHtml(html: string): string {
 }
 
 /**
- * Parse bookmarks XML-like data into structured format
- * Uses HTML parser for tolerance of malformed markup in bookmark names
+ * Construct image URL from node ID
+ * Pattern: /images/nodes/X/Y/ID.gif where X=first digit, Y=second digit
  */
-export function parseBookmarksXml(xml: string): BookmarkCategory[] {
-  const parser = new DOMParser()
-  // Use HTML parser for better tolerance of malformed content
-  const doc = parser.parseFromString(`<div>${xml}</div>`, 'text/html')
-
-  const categories: BookmarkCategory[] = []
-  const catElements = doc.querySelectorAll('category')
-
-  catElements.forEach((catEl) => {
-    const bookmarks: Bookmark[] = []
-    const bookmarkElements = catEl.querySelectorAll('bookmark')
-
-    bookmarkElements.forEach((bmEl, index) => {
-      const rawHtml = bmEl.innerHTML || ''
-      const nameHtml = sanitizeBookmarkHtml(rawHtml)
-      const name = bmEl.textContent?.trim() || ''
-
-      bookmarks.push({
-        id: `bm-${catEl.getAttribute('name')}-${index}`,
-        node: bmEl.getAttribute('node') || '',
-        name,
-        nameHtml,
-        unread: parseInt(bmEl.getAttribute('unread') || '0', 10),
-        hasDescendants: bmEl.getAttribute('desc') === 'yes',
-        visitedAt: parseVisitDate(bmEl.getAttribute('visit') || ''),
-      })
-    })
-
-    // Skip empty categories
-    if (bookmarks.length === 0) return
-
-    categories.push({
-      name: catEl.getAttribute('name') || '...',
-      unread: parseInt(catEl.getAttribute('unread') || '0', 10),
-      bookmarks,
-    })
-  })
-
-  return categories
+function getImageUrl(nodeId: string): string {
+  if (!nodeId || nodeId.length < 2) return ''
+  return `${config.externalBase}/images/nodes/${nodeId[0]}/${nodeId[1]}/${nodeId}.gif`
 }
 
 /**
- * Parse MPN (Most Populated Nodes) XML-like data
- * Aggregates user entries by node ID and counts occurrences
+ * Convert newlines to <br> tags if nl2br flag is set
  */
-export function parseMpnXml(xml: string): MpnNode[] {
-  const parser = new DOMParser()
-  // Use HTML parser for consistency and tolerance
-  const doc = parser.parseFromString(`<div>${xml}</div>`, 'text/html')
+function applyNl2br(content: string, nl2br: unknown): string {
+  if (nl2br === '1' || nl2br === 1 || nl2br === true) {
+    return content.replace(/\n/g, '<br>\n')
+  }
+  return content
+}
 
-  // Aggregate counts by node ID
+/**
+ * Extract JSON data from HTML response
+ * Looks for content inside a <script type="application/json" id="..."> tag
+ */
+function extractJson<T>(html: string, id: string): T | null {
+  const regex = new RegExp(`<script[^>]*id="${id}"[^>]*>([\\s\\S]*?)</script>`, 'i')
+  const match = html.match(regex)
+  if (!match) return null
+  try {
+    return JSON.parse(match[1])
+  } catch {
+    return null
+  }
+}
+
+// Raw JSON types from server
+interface RawMpnItem {
+  id: string
+  name: string
+}
+
+interface RawBookmarkChild {
+  id: string
+  name: string
+  unread: string | number
+  hasDescendants: boolean
+  lastVisit: string
+}
+
+interface RawBookmarkCategory {
+  id: string | null
+  name: string
+  unread: number | null
+  children: RawBookmarkChild[]
+}
+
+interface RawNodeAncestor {
+  link: string
+  name: string
+}
+
+interface RawNode {
+  node_id: string
+  node_name: string
+  node_content: string
+  node_parent: string
+  node_parent_name: string
+  node_creator: string
+  owner: string
+  template_id: string
+  node_created: string
+  node_updated: string | null
+  k: string | number
+  ancestors: RawNodeAncestor[]
+  // Additional fields we don't map but exist
+  [key: string]: unknown
+}
+
+interface RawChild {
+  node_id: string
+  node_parent: string
+  node_name: string
+  node_content: string
+  node_creator: string
+  login: string
+  template_id: string
+  node_created: string
+  node_updated: string | null
+  k: string | number
+  node_children_count: string | number
+  depth: string | number
+  orphan: number
+  node_status?: string
+  // Additional fields
+  [key: string]: unknown
+}
+
+interface RawNodeResponse {
+  node: RawNode
+  canWrite: boolean
+  listing_amount: number
+  offset: number
+  children: RawChild[]
+}
+
+/**
+ * Parse MPN JSON data
+ * Aggregates entries by node ID and counts occurrences
+ */
+function parseMpnJson(items: RawMpnItem[]): MpnNode[] {
   const nodeMap = new Map<string, { name: string; count: number }>()
-  const userElements = doc.querySelectorAll('mpn > user')
 
-  userElements.forEach((el) => {
-    const id = el.getAttribute('id') || ''
-    const name = el.textContent?.trim() || ''
-
-    if (nodeMap.has(id)) {
-      nodeMap.get(id)!.count++
+  for (const item of items) {
+    if (nodeMap.has(item.id)) {
+      nodeMap.get(item.id)!.count++
     } else {
-      nodeMap.set(id, { name, count: 1 })
+      nodeMap.set(item.id, { name: item.name, count: 1 })
     }
-  })
+  }
 
-  // Convert to array, preserving insertion order (order of first appearance)
   return Array.from(nodeMap.entries()).map(([id, { name, count }]) => ({ id, name, count }))
 }
 
 /**
- * Extract content from HTML response
- * Looks for content inside a hidden div with id="kmn"
- * Uses greedy match to find the last </div> closing the kmn element
+ * Parse bookmarks JSON data
  */
-function extractContent(html: string): string {
-  const startMatch = html.match(/<div[^>]*id=["']kmn["'][^>]*>/i)
-  if (!startMatch) return ''
+function parseBookmarksJson(categories: RawBookmarkCategory[]): BookmarkCategory[] {
+  const result: BookmarkCategory[] = []
 
-  const startIdx = startMatch.index! + startMatch[0].length
-  const endIdx = html.lastIndexOf('</div>')
+  for (const cat of categories) {
+    // Skip categories with no children
+    if (cat.children.length === 0) continue
 
-  if (endIdx <= startIdx) return ''
-  return html.substring(startIdx, endIdx).trim()
+    const bookmarks: Bookmark[] = cat.children.map((child, index) => {
+      const nameHtml = sanitizeHtml(child.name)
+      // Strip HTML for plain text name
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(`<div>${child.name}</div>`, 'text/html')
+      const name = doc.body.textContent?.trim() || ''
+
+      return {
+        id: `bm-${cat.id || 'uncategorized'}-${index}`,
+        node: child.id,
+        name,
+        nameHtml,
+        unread: typeof child.unread === 'string' ? parseInt(child.unread, 10) : child.unread,
+        hasDescendants: child.hasDescendants,
+        visitedAt: parseVisitDate(child.lastVisit),
+      }
+    })
+
+    result.push({
+      name: cat.name || (cat.id === null ? 'uncategorized' : '...'),
+      unread: cat.unread ?? 0,
+      bookmarks,
+    })
+  }
+
+  return result
+}
+
+/**
+ * Parse node JSON data into NodeData
+ */
+function parseNodeJson(raw: RawNode, canWrite: boolean): NodeData {
+  const ancestors: NodeAncestor[] = (raw.ancestors || []).map((a) => ({
+    id: a.link,
+    name: stripHtml(a.name || ''),
+  }))
+
+  return {
+    id: raw.node_id,
+    name: stripHtml(raw.node_name || ''),
+    nameHtml: sanitizeHtml(raw.node_name || ''),
+    content: applyNl2br(raw.node_content || '', raw.nl2br),
+    parentId: raw.node_parent,
+    parentName: stripHtml(raw.node_parent_name || ''),
+    creatorId: raw.node_creator,
+    owner: raw.owner || '',
+    templateId: raw.template_id,
+    createdAt: new Date(raw.node_created),
+    updatedAt: raw.node_updated ? new Date(raw.node_updated) : null,
+    karma: typeof raw.k === 'string' ? parseInt(raw.k, 10) : raw.k,
+    imageUrl: getImageUrl(raw.node_id),
+    ancestors,
+    canWrite,
+  }
+}
+
+/**
+ * Parse child/comment JSON data into NodeComment
+ */
+function parseChildJson(raw: RawChild): NodeComment {
+  return {
+    id: raw.node_id,
+    parentId: raw.node_parent,
+    depth: typeof raw.depth === 'string' ? parseInt(raw.depth, 10) : raw.depth,
+    creatorId: raw.node_creator,
+    owner: raw.login || '',
+    name: stripHtml(raw.node_name || ''),
+    content: applyNl2br(raw.node_content || '', raw.nl2br),
+    templateId: raw.template_id,
+    createdAt: new Date(raw.node_created),
+    updatedAt: raw.node_updated ? new Date(raw.node_updated) : null,
+    karma: typeof raw.k === 'string' ? parseInt(raw.k, 10) : raw.k,
+    childrenCount: typeof raw.node_children_count === 'string' ? parseInt(raw.node_children_count, 10) : raw.node_children_count,
+    imageUrl: getImageUrl(raw.node_creator),
+    isNew: false, // TODO: Calculate from last_visit if needed
+    isOrphan: raw.orphan === 1,
+    contentChanged: false, // TODO: Calculate from last_visit if needed
+    isHardlink: raw.node_status === 'linked',
+  }
 }
 
 /**
@@ -188,8 +321,11 @@ export async function fetchMpnData(): Promise<MpnNode[]> {
     throw new Error(`Failed to fetch MPN data: ${response.status}`)
   }
   const html = await response.text()
-  const content = extractContent(html)
-  return parseMpnXml(content)
+  const data = extractJson<RawMpnItem[]>(html, 'kymono.mpn')
+  if (!data) {
+    throw new Error('Failed to parse MPN data')
+  }
+  return parseMpnJson(data)
 }
 
 /**
@@ -202,8 +338,11 @@ export async function fetchBookmarksData(): Promise<BookmarkCategory[]> {
     throw new Error(`Failed to fetch bookmarks data: ${response.status}`)
   }
   const html = await response.text()
-  const content = extractContent(html)
-  return parseBookmarksXml(content)
+  const data = extractJson<RawBookmarkCategory[]>(html, 'kymono.bookmarks')
+  if (!data) {
+    throw new Error('Failed to parse bookmarks data')
+  }
+  return parseBookmarksJson(data)
 }
 
 /**
@@ -218,60 +357,15 @@ export async function fetchConfig(url: string): Promise<ConfigJson> {
 }
 
 /**
- * Parse node XML data into structured format
- */
-export function parseNodeXml(xml: string): NodeData | null {
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(`<root>${xml}</root>`, 'text/xml')
-
-  const nodeEl = doc.querySelector('node')
-  if (!nodeEl) return null
-
-  const nameEl = nodeEl.querySelector('name')
-  const contentEl = nodeEl.querySelector('content')
-  const ownerEl = nodeEl.querySelector('owner')
-  const parentEl = nodeEl.querySelector('parent')
-  const ancestorEls = nodeEl.querySelectorAll('ancestors > ancestor')
-
-  const updatedAttr = nodeEl.getAttribute('updated')
-
-  const ancestors: NodeAncestor[] = []
-  ancestorEls.forEach((el) => {
-    ancestors.push({
-      id: el.getAttribute('node') || '',
-      name: el.textContent?.trim() || '',
-    })
-  })
-
-  return {
-    id: nodeEl.getAttribute('node') || '',
-    name: nameEl?.textContent?.trim() || '',
-    content: contentEl?.textContent || '',
-    parentId: parentEl?.getAttribute('node') || '',
-    parentName: parentEl?.textContent?.trim() || '',
-    creatorId: ownerEl?.getAttribute('node') || '',
-    owner: ownerEl?.textContent?.trim() || '',
-    templateId: nodeEl.getAttribute('template') || '',
-    createdAt: new Date(nodeEl.getAttribute('created') || ''),
-    updatedAt: updatedAttr ? new Date(updatedAttr) : null,
-    karma: parseInt(nodeEl.getAttribute('k') || '0', 10) || 0,
-    imageUrl: nodeEl.getAttribute('image') || '',
-    ancestors,
-    canWrite: nodeEl.getAttribute('write') === 'yes',
-  }
-}
-
-/**
- * Fetch and parse node data from server
+ * Fetch and parse node data from server (includes children)
  * @param nodeId - The node ID to fetch
- * @param templateId - The template ID to use for rendering (defaults to config.templates.nodeView)
+ * @param templateId - The template ID to use for rendering (defaults to config.templates.node)
  */
 export async function fetchNodeData(
   nodeId: string,
   templateId?: string
-): Promise<NodeData> {
-  const effectiveTemplateId = templateId || config.templates.nodeView
-  // Use the node's own ID in the path, not the base config path
+): Promise<NodeResponse> {
+  const effectiveTemplateId = templateId || config.templates.node
   const url = `${config.apiBase}/id/${nodeId}/${effectiveTemplateId}`
 
   const response = await fetch(url)
@@ -280,14 +374,18 @@ export async function fetchNodeData(
   }
 
   const html = await response.text()
-  const content = extractContent(html)
-  const nodeData = parseNodeXml(content)
+  const data = extractJson<RawNodeResponse>(html, 'kymono.node')
 
-  if (!nodeData) {
+  if (!data) {
     throw new Error('Failed to parse node data')
   }
 
-  return nodeData
+  return {
+    node: parseNodeJson(data.node, data.canWrite ?? false),
+    children: (data.children || []).map(parseChildJson),
+    listingAmount: data.listing_amount,
+    offset: data.offset,
+  }
 }
 
 /**
@@ -296,60 +394,4 @@ export async function fetchNodeData(
  */
 export function openNode(nodeId: string): void {
   window.open(`https://kyberia.sk/id/${nodeId}`, '_blank')
-}
-
-/**
- * Parse children/comments XML data into structured format
- */
-export function parseChildrenXml(xml: string): NodeComment[] {
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(`<root>${xml}</root>`, 'text/xml')
-
-  const comments: NodeComment[] = []
-  const childEls = doc.querySelectorAll('child')
-
-  childEls.forEach((el) => {
-    const nameEl = el.querySelector('name')
-    const ownerEl = el.querySelector('owner')
-    const parentEl = el.querySelector('parent')
-    const contentEl = el.querySelector('content')
-    const updatedAttr = el.getAttribute('updated')
-
-    comments.push({
-      id: el.getAttribute('node') || '',
-      parentId: parentEl?.getAttribute('node') || '',
-      depth: parseInt(el.getAttribute('depth') || '0', 10),
-      creatorId: ownerEl?.getAttribute('node') || '',
-      owner: ownerEl?.textContent?.trim() || '',
-      name: nameEl?.textContent?.trim() || '',
-      content: contentEl?.textContent || '',
-      templateId: el.getAttribute('template') || '',
-      createdAt: new Date(el.getAttribute('created') || ''),
-      updatedAt: updatedAttr ? new Date(updatedAttr) : null,
-      karma: parseInt(el.getAttribute('k') || '0', 10) || 0,
-      childrenCount: parseInt(el.getAttribute('children') || '0', 10),
-      imageUrl: el.getAttribute('image') || '',
-      isNew: el.getAttribute('new') === 'yes',
-      isOrphan: el.getAttribute('orphan') === 'yes',
-      contentChanged: el.getAttribute('changed') === 'yes',
-      isHardlink: el.getAttribute('status') === 'linked',
-    })
-  })
-
-  return comments
-}
-
-/**
- * Fetch and parse children/comments data from server
- * @param nodeId - The node ID to fetch children for
- */
-export async function fetchNodeChildren(nodeId: string): Promise<NodeComment[]> {
-  const url = `${config.apiBase}/id/${nodeId}/${config.templates.children}`
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch children: ${response.status}`)
-  }
-  const html = await response.text()
-  const content = extractContent(html)
-  return parseChildrenXml(content)
 }
