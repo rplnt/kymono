@@ -17,11 +17,12 @@ export const config = {
   templates: {
     bookmarks: '9300218',
     mpn: '9300200',
+    sidebar: '9301169',
     node: '9300812',
   },
   mpnBlacklist: [
     4830026, 3777728, 5898094, 2176597, 3660841, 7465941, 1522695, 1569351, 7607525, 788016,
-    7194717, 7568906, 3579407, 8873929, 8894278, 5286347, 8340566,
+    7194717, 7568906, 3579407, 8873929, 8894278, 5286347, 8340566, 8099985,
   ] as number[],
 }
 
@@ -43,7 +44,6 @@ export const CONFIG_PATHS = {
   QUICK_BOOKMARKS_ORDER: 'home.quickBookmarksOrder',
   FOCUS_FILTER: 'bookmarks.focusFilter',
   INCLUDE_DESCENDANTS: 'bookmarks.includeDescendants',
-  DEFAULT_TIMESPAN: 'bookmarks.defaultTimespan',
   COMMENT_TOOLBAR: 'node.commentToolbar',
   RELATIVE_TIME: 'node.relativeTime',
 } as const

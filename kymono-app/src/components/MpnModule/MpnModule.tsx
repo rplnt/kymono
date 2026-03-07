@@ -37,7 +37,6 @@ export function MpnModule() {
 
   // Filter nodes according to original logic
   const filteredNodes = useMemo(() => {
-    // First pass: filter by blacklist, ID, and bookm prefix
     const filtered = nodes.filter((node) => {
       const nodeId = parseInt(node.id, 10)
       const nodeName = node.name.toLowerCase()
@@ -50,7 +49,6 @@ export function MpnModule() {
       )
     })
 
-    // Find the index of the last node with count > 1
     let lastHighCountIndex = -1
     for (let i = filtered.length - 1; i >= 0; i--) {
       if (filtered[i].count > 1) {
@@ -59,7 +57,6 @@ export function MpnModule() {
       }
     }
 
-    // Keep all nodes up to lastHighCountIndex, then limit trailing count=1 nodes
     const result: MpnNode[] = []
     let tailCount = 0
 
@@ -67,7 +64,6 @@ export function MpnModule() {
       if (i <= lastHighCountIndex) {
         result.push(filtered[i])
       } else {
-        // We're in the tail of count=1 nodes
         if (tailCount < MAX_SINGLE_COUNT_NODES) {
           result.push(filtered[i])
           tailCount++
@@ -78,9 +74,7 @@ export function MpnModule() {
     return result
   }, [nodes])
 
-  // Calculate font size with larger spread for high counts
   const getFontSize = (count: number): string => {
-    // Base 0.5em for count=1, scaling up to 3.5em for count>=6
     const cappedCount = Math.min(count, 6)
     const size = 0.5 + (cappedCount - 1) * 0.6
     return `${size}em`
@@ -96,18 +90,13 @@ export function MpnModule() {
     loadData()
   }
 
-  const toggleCollapse = () => {
-    setCollapsed((prev) => !prev)
-  }
-
-  // Hide if disabled
   if (!enabled) {
     return null
   }
 
   return (
     <div className="mpn-module home-module">
-      <div className="module-header" onClick={toggleCollapse}>
+      <div className="module-header" onClick={() => setCollapsed((prev) => !prev)}>
         <span className="module-title">{collapsed ? '▸' : '▾'} most.populated.nodes</span>
         <button className="module-reload" onClick={handleReload} title="Reload">
           ↻

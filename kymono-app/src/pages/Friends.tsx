@@ -1,4 +1,7 @@
+import { useTitle } from '@/utils/useTitle'
+
 export function Friends() {
+  useTitle('Friends')
   return (
     <div className="empty-state">
       <div className="empty-state-icon">&#9829;</div>

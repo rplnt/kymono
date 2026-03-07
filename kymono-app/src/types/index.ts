@@ -41,6 +41,33 @@ export interface MpnNode {
   count: number
 }
 
+export interface OnlineFriend {
+  userId: string
+  login: string
+  imageUrl: string
+  locationId: string
+  location: string
+  idleMinutes: number
+  idleSeconds: number
+}
+
+export interface LatestReply {
+  id: string
+  name: string
+  parentId: string
+  parentName: string
+  creatorId: string
+  login: string
+  imageUrl: string
+  content: string
+  createdAt: string
+}
+
+export interface SidebarData {
+  friends: OnlineFriend[]
+  replies: LatestReply[]
+}
+
 // Search index types
 export interface SearchIndex {
   prefixIndex: Record<string, string[]>

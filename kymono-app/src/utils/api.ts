@@ -1,4 +1,4 @@
-import type { BookmarkCategory, Bookmark, MpnNode, ConfigJson, NodeData, NodeAncestor, NodeComment, NodeResponse } from '@/types'
+import type { BookmarkCategory, Bookmark, MpnNode, OnlineFriend, LatestReply, SidebarData, ConfigJson, NodeData, NodeAncestor, NodeComment, NodeResponse } from '@/types'
 import { config } from '@/config'
 import { parseVisitDate } from './date'
 
@@ -304,7 +304,7 @@ function parseChildJson(raw: RawChild): NodeComment {
     createdAt: new Date(raw.node_created),
     updatedAt: raw.node_updated ? new Date(raw.node_updated) : null,
     karma: typeof raw.k === 'string' ? parseInt(raw.k, 10) : raw.k,
-    childrenCount: typeof raw.node_children_count === 'string' ? parseInt(raw.node_children_count, 10) : raw.node_children_count,
+    childrenCount: typeof raw.node_children_count === 'string' ? parseInt(raw.node_children_count, 10) : (raw.node_children_count || 0),
     imageUrl: getImageUrl(raw.node_creator),
     isNew: false, // TODO: Calculate from last_visit if needed
     isOrphan: raw.orphan === 1,
@@ -328,6 +328,51 @@ export async function fetchMpnData(): Promise<MpnNode[]> {
     throw new Error('Failed to parse MPN data')
   }
   return parseMpnJson(data)
+}
+
+interface RawReply {
+  node_id: string
+  node_name: string
+  node_parent: string
+  parent_name: string
+  node_creator: string
+  login: string
+  node_content: string
+  node_created: string
+}
+
+/**
+ * Fetch and parse sidebar data (friends + latest replies) from server
+ */
+export async function fetchSidebarData(): Promise<SidebarData> {
+  const url = `${config.apiBase}${config.base}${config.templates.sidebar}`
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch sidebar data: ${response.status}`)
+  }
+  const html = await response.text()
+
+  const friendsRaw = extractJson<Omit<OnlineFriend, 'imageUrl'>[]>(html, 'kymono.friends')
+  const friends = friendsRaw
+    ? friendsRaw.map((f) => ({ ...f, imageUrl: getImageUrl(f.userId) }))
+    : []
+
+  const repliesRaw = extractJson<RawReply[]>(html, 'kymono.replies')
+  const replies: LatestReply[] = repliesRaw
+    ? repliesRaw.map((r) => ({
+        id: r.node_id,
+        name: stripHtml(r.node_name || ''),
+        parentId: r.node_parent,
+        parentName: stripHtml(r.parent_name || ''),
+        creatorId: r.node_creator,
+        login: r.login,
+        imageUrl: getImageUrl(r.node_creator),
+        content: stripHtml(r.node_content || ''),
+        createdAt: r.node_created,
+      }))
+    : []
+
+  return { friends, replies }
 }
 
 /**
@@ -388,12 +433,4 @@ export async function fetchNodeData(
     listingAmount: data.listing_amount,
     offset: data.offset,
   }
-}
-
-/**
- * Open a node in a new tab
- * @deprecated Use navigation to internal Node view instead
- */
-export function openNode(nodeId: string): void {
-  window.open(`https://kyberia.sk/id/${nodeId}`, '_blank')
 }

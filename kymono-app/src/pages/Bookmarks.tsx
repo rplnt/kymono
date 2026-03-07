@@ -7,23 +7,53 @@ import {
   buildSearchIndex,
   searchIndex,
   minutesSince,
-  getConfigValue,
 } from '@/utils'
+import { useConfigValue } from '@/contexts'
+import { useTitle } from '@/utils/useTitle'
 
-function getDefaultTimeRangeIndex(): number {
-  const defaultTimespan = getConfigValue<string>(CONFIG_PATHS.DEFAULT_TIMESPAN, '24H')
-  const index = TIME_RANGES.findIndex((r) => r.label === defaultTimespan)
-  return index >= 0 ? index : 0
+const STORAGE_KEY = 'kymono.bookmarks.filters'
+
+interface BookmarkFilters {
+  showNewOnly: boolean
+  timeRangeIndex: number
+}
+
+function loadFilters(): BookmarkFilters {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      return {
+        showNewOnly: typeof parsed.showNewOnly === 'boolean' ? parsed.showNewOnly : true,
+        timeRangeIndex:
+          typeof parsed.timeRangeIndex === 'number' &&
+          parsed.timeRangeIndex >= 0 &&
+          parsed.timeRangeIndex < TIME_RANGES.length
+            ? parsed.timeRangeIndex
+            : 0,
+      }
+    }
+  } catch {
+    // Invalid JSON, use defaults
+  }
+  return { showNewOnly: true, timeRangeIndex: 0 }
+}
+
+function saveFilters(filters: BookmarkFilters): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(filters))
 }
 
 export function Bookmarks() {
+  useTitle('Bookmarks')
   const navigate = useNavigate()
+  const [focusFilter] = useConfigValue(CONFIG_PATHS.FOCUS_FILTER, false)
+  const [includeDescendants] = useConfigValue(CONFIG_PATHS.INCLUDE_DESCENDANTS, true)
   const [categories, setCategories] = useState<BookmarkCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filterText, setFilterText] = useState('')
-  const [showNewOnly, setShowNewOnly] = useState(true)
-  const [timeRangeIndex, setTimeRangeIndex] = useState(getDefaultTimeRangeIndex)
+  const [showNewOnly, setShowNewOnly] = useState(() => loadFilters().showNewOnly)
+  const [timeRangeIndex, setTimeRangeIndex] = useState(() => loadFilters().timeRangeIndex)
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
   const [index, setIndex] = useState<SearchIndex | null>(null)
 
@@ -59,12 +89,11 @@ export function Bookmarks() {
 
   // Auto-focus filter if setting enabled
   useEffect(() => {
-    if (!loading && getConfigValue(CONFIG_PATHS.FOCUS_FILTER, false)) {
+    if (!loading && focusFilter) {
       filterInputRef.current?.focus()
     }
-  }, [loading])
+  }, [loading, focusFilter])
 
-  const includeDescendants = getConfigValue(CONFIG_PATHS.INCLUDE_DESCENDANTS, true)
   const currentTimeRange = TIME_RANGES[timeRangeIndex]
 
   // Filter bookmarks based on criteria
@@ -129,12 +158,20 @@ export function Bookmarks() {
 
   // Toggle NEW/ALL filter
   const toggleNewFilter = () => {
-    setShowNewOnly((prev) => !prev)
+    setShowNewOnly((prev) => {
+      const next = !prev
+      saveFilters({ showNewOnly: next, timeRangeIndex })
+      return next
+    })
   }
 
   // Cycle time range
   const cycleTimeRange = () => {
-    setTimeRangeIndex((prev) => (prev + 1) % TIME_RANGES.length)
+    setTimeRangeIndex((prev) => {
+      const next = (prev + 1) % TIME_RANGES.length
+      saveFilters({ showNewOnly, timeRangeIndex: next })
+      return next
+    })
   }
 
   // Toggle category collapsed state
@@ -198,8 +235,8 @@ export function Bookmarks() {
         </button>
       </div>
 
-      {visibleData.map((cat) => (
-        <div key={cat.name} className="book-cat">
+      {visibleData.map((cat, catIndex) => (
+        <div key={`${catIndex}-${cat.name}`} className="book-cat">
           <div className="cat-header" onClick={() => toggleCategory(cat.name)}>
             <span className="cat name">{cat.name}</span>
             {cat.unread > 0 && <span className="cat unread">{cat.unread}</span>}

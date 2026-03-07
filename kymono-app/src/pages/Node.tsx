@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { NodeData, NodeComment } from '@/types'
-import { useCurrentNode } from '@/contexts'
-import { fetchNodeData, getConfigValue } from '@/utils'
+import { useCurrentNode, useConfigValue } from '@/contexts'
+import { fetchNodeData } from '@/utils'
+import { useTitle } from '@/utils/useTitle'
 import { config, CONFIG_PATHS } from '@/config'
 
 function formatDate(date: Date): string {
@@ -62,8 +63,10 @@ export function Node() {
   const [collapsedComments, setCollapsedComments] = useState<Set<string>>(new Set())
   const [replyTitle, setReplyTitle] = useState('')
   const [replyContent, setReplyContent] = useState('')
-  const showCommentToolbar = getConfigValue(CONFIG_PATHS.COMMENT_TOOLBAR, true)
-  const useRelativeTime = getConfigValue(CONFIG_PATHS.RELATIVE_TIME, true)
+  const [showCommentToolbar] = useConfigValue(CONFIG_PATHS.COMMENT_TOOLBAR, true)
+  const [useRelativeTime] = useConfigValue(CONFIG_PATHS.RELATIVE_TIME, true)
+
+  useTitle(node?.name)
 
   const toggleCommentCollapsed = (commentId: string) => {
     setCollapsedComments((prev) => {
@@ -84,6 +87,8 @@ export function Node() {
       return
     }
 
+    setNode(null)
+    setComments([])
     setLoading(true)
     setError(null)
     try {
@@ -196,6 +201,7 @@ export function Node() {
           <span className="node-meta">
             <span className="node-meta-label">by</span>
             <a
+              href={`#/id/${node.creatorId}`}
               className="node-meta-link"
               onClick={(e) => {
                 e.stopPropagation()
@@ -292,6 +298,7 @@ export function Node() {
                 <div className="comment-meta">
                   <div className="comment-meta-line">
                     <a
+                      href={`#/id/${comment.creatorId}`}
                       className="comment-author"
                       onClick={(e) => {
                         e.preventDefault()
@@ -317,6 +324,7 @@ export function Node() {
                     {comment.isHardlink && <span className="comment-badge comment-hardlink">link</span>}
                   </div>
                   <a
+                    href={`#/id/${comment.id}`}
                     className="comment-title"
                     onClick={(e) => {
                       e.preventDefault()

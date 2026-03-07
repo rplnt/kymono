@@ -1,5 +1,13 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useCurrentNode } from '@/contexts'
+import { FriendsOnline } from '@/components/FriendsOnline'
+import { LatestReplies } from '@/components/LatestReplies'
+import { fetchSidebarData } from '@/utils'
+import type { OnlineFriend, LatestReply } from '@/types'
+
+const COOLDOWN_MS = 60_000
+const LAST_LOADED_KEY = 'kymono.sidebar.lastLoaded'
 
 interface SidePanelProps {
   isOpen: boolean
@@ -9,6 +17,53 @@ interface SidePanelProps {
 export function SidePanel({ isOpen, onClose }: SidePanelProps) {
   const { currentNode } = useCurrentNode()
   const navigate = useNavigate()
+  const location = useLocation()
+  const isHome = location.pathname === '/' || location.pathname === '/home' || location.pathname === '/bookmarks'
+  const isNode = location.pathname.startsWith('/id/')
+  const [friends, setFriends] = useState<OnlineFriend[]>([])
+  const [replies, setReplies] = useState<LatestReply[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const lastFetchedAt = useRef(0)
+  const [lastLoadedAt] = useState<string | null>(
+    () => localStorage.getItem(LAST_LOADED_KEY)
+  )
+
+  const loadSidebar = useCallback(async () => {
+    const now = Date.now()
+    if (now - lastFetchedAt.current < COOLDOWN_MS) return
+
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await fetchSidebarData()
+      setFriends(data.friends)
+      setReplies(data.replies)
+      lastFetchedAt.current = Date.now()
+      const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19)
+      localStorage.setItem(LAST_LOADED_KEY, timestamp)
+    } catch (err) {
+      console.error('Failed to load sidebar:', err)
+      setError('Failed to load sidebar')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isOpen && isHome) {
+      loadSidebar()
+    }
+  }, [isOpen, isHome, loadSidebar])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
 
   const handleAuthorClick = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -43,7 +98,18 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
       {/* Panel */}
       <aside className={`side-panel${isOpen ? ' open' : ''}`} aria-hidden={!isOpen}>
         <div className="side-panel-content">
-          {currentNode && (
+          {isHome && loading && friends.length === 0 && replies.length === 0 && (
+            <div className="sidebar-loading">loading...</div>
+          )}
+
+          {isHome && !loading && error && (
+            <div className="sidebar-error">{error}</div>
+          )}
+
+          {isHome && <LatestReplies replies={replies} lastLoadedAt={lastLoadedAt} />}
+          {isHome && <FriendsOnline friends={friends} />}
+
+          {isNode && currentNode && (
             <div className="side-panel-node">
               {/* Node icon/image */}
               {currentNode.imageUrl && (

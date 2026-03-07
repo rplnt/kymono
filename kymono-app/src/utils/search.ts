@@ -39,10 +39,8 @@ function normalizeText(text: string): string {
  * @param items Array of [name, id] tuples
  */
 export function buildSearchIndex(items: Array<[string, string]>): SearchIndex {
-  const index: SearchIndex = {
-    prefixIndex: {},
-    wordToIds: {},
-  }
+  const prefixSets: Record<string, Set<string>> = {}
+  const wordIdSets: Record<string, Set<string>> = {}
 
   for (const [name, id] of items) {
     const words = normalizeText(name).split(/\s+/).filter(Boolean)
@@ -52,25 +50,21 @@ export function buildSearchIndex(items: Array<[string, string]>): SearchIndex {
 
       const prefix = word.substring(0, 2)
 
-      // Add word to prefix index
-      if (!index.prefixIndex[prefix]) {
-        index.prefixIndex[prefix] = []
-      }
-      if (!index.prefixIndex[prefix].includes(word)) {
-        index.prefixIndex[prefix].push(word)
-      }
+      if (!prefixSets[prefix]) prefixSets[prefix] = new Set()
+      prefixSets[prefix].add(word)
 
-      // Map word to IDs
-      if (!index.wordToIds[word]) {
-        index.wordToIds[word] = []
-      }
-      if (!index.wordToIds[word].includes(id)) {
-        index.wordToIds[word].push(id)
-      }
+      if (!wordIdSets[word]) wordIdSets[word] = new Set()
+      wordIdSets[word].add(id)
     }
   }
 
-  return index
+  const prefixIndex: Record<string, string[]> = {}
+  for (const [k, v] of Object.entries(prefixSets)) prefixIndex[k] = [...v]
+
+  const wordToIds: Record<string, string[]> = {}
+  for (const [k, v] of Object.entries(wordIdSets)) wordToIds[k] = [...v]
+
+  return { prefixIndex, wordToIds }
 }
 
 /**
@@ -87,35 +81,32 @@ export function searchIndex(index: SearchIndex, query: string): string[] | null 
     .filter((w) => w.length >= 2)
   if (words.length === 0) return null
 
-  let resultIds: string[] | null = null
+  let resultSet: Set<string> | null = null
 
   for (const queryWord of words) {
     const prefix = queryWord.substring(0, 2)
-    const matchingIds: string[] = []
+    const matchingIds = new Set<string>()
 
     // Find all words that start with the query word
     const prefixWords = index.prefixIndex[prefix] || []
     for (const word of prefixWords) {
       if (word.startsWith(queryWord)) {
         const ids = index.wordToIds[word] || []
-        ids.forEach((id) => {
-          if (!matchingIds.includes(id)) {
-            matchingIds.push(id)
-          }
-        })
+        for (const id of ids) matchingIds.add(id)
       }
     }
 
-    if (resultIds === null) {
-      // First word - initialize results
-      resultIds = matchingIds
+    if (resultSet === null) {
+      resultSet = matchingIds
     } else {
-      // Subsequent words - intersect with existing results
-      resultIds = resultIds.filter((id) => matchingIds.includes(id))
+      // Intersect with existing results
+      for (const id of resultSet) {
+        if (!matchingIds.has(id)) resultSet.delete(id)
+      }
     }
   }
 
-  return resultIds ?? []
+  return resultSet ? [...resultSet] : []
 }
 
 /**

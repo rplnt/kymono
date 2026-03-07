@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import type { SettingTemplate, SettingOption, ConfigJson } from '@/types'
 import { useConfig } from '@/contexts'
 import { CONFIG_PATHS } from '@/config'
+import { useTitle } from '@/utils/useTitle'
 
 const settingsConfig: ConfigJson = {
   version: 1,
@@ -12,9 +12,9 @@ const settingsConfig: ConfigJson = {
       settings: [
         {
           name: 'fontSize',
-          description: 'Application font size',
-          type: 'float',
-          value: 1.9,
+          description: 'Size',
+          type: 'enum',
+          value: ['S', 'M', 'L'],
         },
         {
           name: 'defaultScreen',
@@ -64,12 +64,6 @@ const settingsConfig: ConfigJson = {
           type: 'boolean',
           value: true,
         },
-        {
-          name: 'defaultTimespan',
-          description: 'Default timespan of bookmarks filter',
-          type: 'enum',
-          value: ['24H', '1W', '1M', '23Y'],
-        },
       ],
     },
     {
@@ -111,7 +105,6 @@ interface ModuleOrderControlProps {
 
 function ModuleOrderControl({ defaultOrder }: ModuleOrderControlProps) {
   const { getValue, setValue: setConfigValue } = useConfig()
-  const [, forceUpdate] = useState(0)
 
   const currentOrder = [...defaultOrder].sort((a, b) => {
     const orderA = getValue<number>(MODULE_ORDER_PATHS[a], defaultOrder.indexOf(a))
@@ -125,7 +118,6 @@ function ModuleOrderControl({ defaultOrder }: ModuleOrderControlProps) {
     const prevModuleId = currentOrder[index - 1]
     setConfigValue(MODULE_ORDER_PATHS[moduleId], index - 1)
     setConfigValue(MODULE_ORDER_PATHS[prevModuleId], index)
-    forceUpdate((n) => n + 1)
   }
 
   const moveDown = (index: number) => {
@@ -134,7 +126,6 @@ function ModuleOrderControl({ defaultOrder }: ModuleOrderControlProps) {
     const nextModuleId = currentOrder[index + 1]
     setConfigValue(MODULE_ORDER_PATHS[moduleId], index + 1)
     setConfigValue(MODULE_ORDER_PATHS[nextModuleId], index)
-    forceUpdate((n) => n + 1)
   }
 
   return (
@@ -175,13 +166,9 @@ function SettingControl({ category, option }: SettingControlProps) {
   const { getValue, setValue: setConfigValue } = useConfig()
   const path = `${category}.${option.name}`
   const defaultValue = option.type === 'enum' ? (option.value as string[])[0] : option.value
-
-  const [value, setValue] = useState<SettingValue>(() =>
-    getValue(path, defaultValue as SettingValue)
-  )
+  const value = getValue(path, defaultValue as SettingValue)
 
   const handleChange = (newValue: SettingValue) => {
-    setValue(newValue)
     setConfigValue(path, newValue)
   }
 
@@ -276,11 +263,10 @@ function SettingSection({ section }: SettingSectionProps) {
 }
 
 export function Settings() {
-  const [config] = useState<SettingTemplate[]>(settingsConfig.template)
-
+  useTitle('Settings')
   return (
     <div>
-      {config.map((section) => (
+      {settingsConfig.template.map((section) => (
         <SettingSection key={section.name} section={section} />
       ))}
     </div>

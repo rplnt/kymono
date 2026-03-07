@@ -32,6 +32,6 @@ export function dateDiffMins(dateStr: string): number {
  * Calculate minutes since a Date object
  */
 export function minutesSince(date: Date | null): number {
-  if (!date) return 0
+  if (!date) return Infinity
   return Math.floor((Date.now() - date.getTime()) / (60 * 1000))
 }

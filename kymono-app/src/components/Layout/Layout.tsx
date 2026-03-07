@@ -14,7 +14,7 @@ export function Layout() {
   const touchStartY = useRef(0)
 
   // Get font size from config - reactively updates when changed in settings
-  const [fontSizeValue] = useConfigValue<number>(CONFIG_PATHS.FONT_SIZE, 1)
+  const [fontSizeValue] = useConfigValue<string>(CONFIG_PATHS.FONT_SIZE, 'M')
 
   const toggleSidePanel = useCallback(() => {
     setSidePanelOpen((prev) => !prev)
@@ -52,11 +52,10 @@ export function Layout() {
     setIsPulling(false)
   }, [pullDistance])
 
-  // Apply font scale when config value changes
+  // Apply font scale to root — menu uses px so it stays fixed
+  const sizeMap: Record<string, number> = { S: 14, M: 16, L: 19 }
   useEffect(() => {
-    // Convert legacy em values to scale factor (1.9em -> ~1.2 scale)
-    const scale = fontSizeValue > 1 ? fontSizeValue / 1.6 : fontSizeValue
-    document.documentElement.style.fontSize = `${scale * 16}px`
+    document.documentElement.style.fontSize = `${sizeMap[fontSizeValue] || 16}px`
   }, [fontSizeValue])
 
   return (

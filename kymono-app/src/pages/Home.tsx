@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useMemo } from 'react'
 import { CONFIG_PATHS } from '@/config'
-import { getConfigValue } from '@/utils'
+import { useConfig } from '@/contexts'
+import { useTitle } from '@/utils/useTitle'
 import { QuickBookmarks } from '@/components/QuickBookmarks'
 import { MpnModule } from '@/components/MpnModule'
 
@@ -28,32 +29,17 @@ const MODULES: ModuleConfig[] = [
   },
 ]
 
-function getSortedModules(): ModuleConfig[] {
-  // Get modules with their current order indices
-  const modulesWithOrder = MODULES.map((mod) => ({
-    ...mod,
-    order: getConfigValue<number>(mod.orderPath, mod.defaultOrder),
-  }))
-
-  // Sort by order index (handles gaps automatically)
-  return modulesWithOrder.sort((a, b) => a.order - b.order)
-}
-
 export function Home() {
-  const [sortedModules, setSortedModules] = useState<ModuleConfig[]>(getSortedModules)
+  useTitle('Home')
+  const { getValue } = useConfig()
 
-  // Listen for settings changes
-  useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      // Check if any module order path changed
-      const isOrderPath = MODULES.some((mod) => mod.orderPath === e.key)
-      if (isOrderPath) {
-        setSortedModules(getSortedModules())
-      }
-    }
-    window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
-  }, [])
+  const sortedModules = useMemo(() => {
+    const modulesWithOrder = MODULES.map((mod) => ({
+      ...mod,
+      order: getValue<number>(mod.orderPath, mod.defaultOrder),
+    }))
+    return modulesWithOrder.sort((a, b) => a.order - b.order)
+  }, [getValue])
 
   return (
     <div>

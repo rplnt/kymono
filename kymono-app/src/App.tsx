@@ -1,67 +1,82 @@
-import { useEffect } from 'react'
-import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { Component } from 'react'
+import type { ReactNode, ErrorInfo } from 'react'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Layout } from '@/components/Layout'
 import { Home, Bookmarks, Settings, K, Friends, Node } from '@/pages'
-import { ConfigProvider, NodeProvider } from '@/contexts'
+import { ConfigProvider, NodeProvider, useConfig } from '@/contexts'
 import { config, CONFIG_PATHS } from '@/config'
-import { getConfigValue, hasConfig, initConfig } from '@/utils'
+import { hasConfig, initConfig } from '@/utils'
 
-function getDefaultRoute(): string {
-  const defaultScreen = getConfigValue<string>(CONFIG_PATHS.DEFAULT_SCREEN, 'H')
-  switch (defaultScreen) {
-    case 'H':
-      return '/home'
-    case 'B':
-      return '/bookmarks'
-    case 'K':
-      return '/k'
-    case 'F':
-      return '/friends'
-    default:
-      return '/home'
+interface ErrorBoundaryState {
+  hasError: boolean
+}
+
+class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false }
+
+  static getDerivedStateFromError(): ErrorBoundaryState {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Uncaught error:', error, info)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="error-container">
+          <p className="error-message">Something went wrong.</p>
+          <button className="btn btn-retry" onClick={() => window.location.reload()}>
+            Reload
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
   }
 }
 
-function FirstRunHandler() {
-  const navigate = useNavigate()
-  const location = useLocation()
+function IndexRedirect() {
+  const { getValue } = useConfig()
 
-  useEffect(() => {
-    const isFirstRun = !hasConfig()
+  if (!hasConfig()) {
+    initConfig(config.version)
+    return <Navigate to="/settings" replace />
+  }
 
-    if (isFirstRun) {
-      // First run: initialize config and show settings
-      initConfig(config.version)
-      navigate('/settings', { replace: true })
-    } else if (location.pathname === '/') {
-      // Not first run, at root: go to default screen
-      navigate(getDefaultRoute(), { replace: true })
-    }
-  }, [navigate, location.pathname])
+  const defaultScreen = getValue<string>(CONFIG_PATHS.DEFAULT_SCREEN, 'H')
+  const route =
+    defaultScreen === 'B' ? '/bookmarks' :
+    defaultScreen === 'K' ? '/k' :
+    defaultScreen === 'F' ? '/friends' :
+    '/home'
 
-  return null
+  return <Navigate to={route} replace />
 }
 
 function App() {
   return (
+    <ErrorBoundary>
     <ConfigProvider>
       <HashRouter>
         <NodeProvider>
-          <FirstRunHandler />
           <Routes>
             <Route path="/" element={<Layout />}>
-              <Route index element={<Navigate to={getDefaultRoute()} replace />} />
+              <Route index element={<IndexRedirect />} />
               <Route path="home" element={<Home />} />
               <Route path="bookmarks" element={<Bookmarks />} />
               <Route path="settings" element={<Settings />} />
               <Route path="k" element={<K />} />
               <Route path="friends" element={<Friends />} />
               <Route path="id/:nodeId" element={<Node />} />
+              <Route path="*" element={<Navigate to="/home" replace />} />
             </Route>
           </Routes>
         </NodeProvider>
       </HashRouter>
     </ConfigProvider>
+    </ErrorBoundary>
   )
 }
 
