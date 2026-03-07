@@ -113,6 +113,7 @@ export interface NodeData {
   updatedAt: Date | null
   karma: number
   imageUrl: string
+  creatorImageUrl: string
   ancestors: NodeAncestor[]
   canWrite: boolean
   childrenCount: number

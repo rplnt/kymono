@@ -15,6 +15,8 @@ export function Layout() {
 
   // Get font size from config - reactively updates when changed in settings
   const [fontSizeValue] = useConfigValue<string>(CONFIG_PATHS.FONT_SIZE, 'M')
+  const [responsiveYoutube] = useConfigValue<boolean>(CONFIG_PATHS.RESPONSIVE_YOUTUBE, true)
+  const [responsiveImages] = useConfigValue<boolean>(CONFIG_PATHS.RESPONSIVE_IMAGES, true)
 
   const toggleSidePanel = useCallback(() => {
     setSidePanelOpen((prev) => !prev)
@@ -53,13 +55,18 @@ export function Layout() {
   }, [pullDistance])
 
   // Apply font scale to root — menu uses px so it stays fixed
-  const sizeMap: Record<string, number> = { S: 14, M: 16, L: 19 }
+  const sizeMap: Record<string, number> = { S: 16, M: 18, L: 21, XL: 24 }
   useEffect(() => {
     document.documentElement.style.fontSize = `${sizeMap[fontSizeValue] || 16}px`
   }, [fontSizeValue])
 
   return (
-    <div onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+    <div
+      className={`${responsiveYoutube ? 'responsive-youtube' : ''} ${responsiveImages ? 'responsive-images' : ''}`}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <Menu onToggleSidePanel={toggleSidePanel} onCloseSidePanel={closeSidePanel} />
       <SidePanel isOpen={sidePanelOpen} onClose={closeSidePanel} />
       <div className="pad" />

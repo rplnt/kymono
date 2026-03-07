@@ -35,3 +35,44 @@ export function minutesSince(date: Date | null): number {
   if (!date) return Infinity
   return Math.floor((Date.now() - date.getTime()) / (60 * 1000))
 }
+
+/**
+ * Format a Date as a localized string
+ */
+export function formatDate(date: Date): string {
+  return date.toLocaleDateString('sk-SK', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+/**
+ * Format a Date as a relative time string (e.g., "2h", "3d")
+ */
+export function formatRelativeDate(date: Date): string {
+  const diff = Date.now() - date.getTime()
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  const weeks = Math.floor(days / 7)
+  const months = Math.floor(days / 30)
+  const years = Math.floor(days / 365)
+
+  if (minutes < 1) return 'now'
+  if (minutes < 60) return `${minutes}m`
+  if (hours < 24) return `${hours}h`
+  if (days < 7) return `${days}d`
+  if (weeks < 5) return `${weeks}w`
+  if (months < 12) return `${months}mo`
+  return `${years}y`
+}
+
+/**
+ * Format a date string as relative time
+ */
+export function formatRelativeString(dateStr: string): string {
+  return formatRelativeDate(new Date(dateStr))
+}

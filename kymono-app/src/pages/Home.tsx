@@ -17,15 +17,15 @@ interface ModuleConfig {
 
 const MODULES: ModuleConfig[] = [
   {
-    id: 'quickBookmarks',
-    component: QuickBookmarks,
-    orderPath: CONFIG_PATHS.QUICK_BOOKMARKS_ORDER,
-    defaultOrder: 0,
-  },
-  {
     id: 'mpn',
     component: MpnModule,
     orderPath: CONFIG_PATHS.MPN_ORDER,
+    defaultOrder: 0,
+  },
+  {
+    id: 'quickBookmarks',
+    component: QuickBookmarks,
+    orderPath: CONFIG_PATHS.QUICK_BOOKMARKS_ORDER,
     defaultOrder: 1,
   },
   {

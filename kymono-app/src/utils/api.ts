@@ -1,4 +1,18 @@
-import type { BookmarkCategory, Bookmark, MpnNode, OnlineFriend, LatestReply, SidebarData, ConfigJson, NodeData, NodeAncestor, NodeComment, NodeResponse, KItem, FriendSubmission } from '@/types'
+import type {
+  BookmarkCategory,
+  Bookmark,
+  MpnNode,
+  OnlineFriend,
+  LatestReply,
+  SidebarData,
+  ConfigJson,
+  NodeData,
+  NodeAncestor,
+  NodeComment,
+  NodeResponse,
+  KItem,
+  FriendSubmission,
+} from '@/types'
 import { config } from '@/config'
 import { parseVisitDate } from './date'
 
@@ -214,6 +228,8 @@ interface RawKItem {
 
 interface RawNodeResponse {
   node: RawNode
+  nodeImageUrl?: string
+  creatorImageUrl?: string
   canWrite: boolean
   listing_amount: number
   offset: number
@@ -280,7 +296,13 @@ function parseBookmarksJson(categories: RawBookmarkCategory[]): BookmarkCategory
 /**
  * Parse node JSON data into NodeData
  */
-function parseNodeJson(raw: RawNode, canWrite: boolean, views: number = 0): NodeData {
+function parseNodeJson(
+  raw: RawNode,
+  canWrite: boolean,
+  views: number = 0,
+  nodeImageUrl?: string,
+  creatorImageUrl?: string
+): NodeData {
   const ancestors: NodeAncestor[] = (raw.ancestors || []).map((a) => ({
     id: a.link,
     name: stripHtml(a.name || ''),
@@ -299,10 +321,14 @@ function parseNodeJson(raw: RawNode, canWrite: boolean, views: number = 0): Node
     createdAt: new Date(raw.node_created),
     updatedAt: raw.node_updated ? new Date(raw.node_updated) : null,
     karma: typeof raw.k === 'string' ? parseInt(raw.k, 10) : raw.k,
-    imageUrl: getImageUrl(raw.node_id),
+    imageUrl: nodeImageUrl || getImageUrl(raw.node_id),
+    creatorImageUrl: creatorImageUrl || getImageUrl(raw.node_creator),
     ancestors,
     canWrite,
-    childrenCount: typeof raw.node_children_count === 'string' ? parseInt(raw.node_children_count, 10) : (raw.node_children_count || 0),
+    childrenCount:
+      typeof raw.node_children_count === 'string'
+        ? parseInt(raw.node_children_count, 10)
+        : raw.node_children_count || 0,
     views,
   }
 }
@@ -323,7 +349,10 @@ function parseChildJson(raw: RawChild): NodeComment {
     createdAt: new Date(raw.node_created),
     updatedAt: raw.node_updated ? new Date(raw.node_updated) : null,
     karma: typeof raw.k === 'string' ? parseInt(raw.k, 10) : raw.k,
-    childrenCount: typeof raw.node_children_count === 'string' ? parseInt(raw.node_children_count, 10) : (raw.node_children_count || 0),
+    childrenCount:
+      typeof raw.node_children_count === 'string'
+        ? parseInt(raw.node_children_count, 10)
+        : raw.node_children_count || 0,
     imageUrl: getImageUrl(raw.node_creator),
     isNew: false, // TODO: Calculate from last_visit if needed
     isOrphan: raw.orphan === 1,
@@ -358,6 +387,7 @@ interface RawReply {
   login: string
   node_content: string
   node_created: string
+  imageUrl?: string
 }
 
 /**
@@ -371,9 +401,12 @@ export async function fetchSidebarData(): Promise<SidebarData> {
   }
   const html = await response.text()
 
-  const friendsRaw = extractJson<Omit<OnlineFriend, 'imageUrl'>[]>(html, 'kymono.friends')
+  const friendsRaw = extractJson<(Omit<OnlineFriend, 'imageUrl'> & { imageUrl?: string })[]>(
+    html,
+    'kymono.friends'
+  )
   const friends = friendsRaw
-    ? friendsRaw.map((f) => ({ ...f, imageUrl: getImageUrl(f.userId) }))
+    ? friendsRaw.map((f) => ({ ...f, imageUrl: f.imageUrl || getImageUrl(f.userId) }))
     : []
 
   const repliesRaw = extractJson<RawReply[]>(html, 'kymono.replies')
@@ -385,7 +418,7 @@ export async function fetchSidebarData(): Promise<SidebarData> {
         parentName: stripHtml(r.parent_name || ''),
         creatorId: r.node_creator,
         login: r.login,
-        imageUrl: getImageUrl(r.node_creator),
+        imageUrl: r.imageUrl || getImageUrl(r.node_creator),
         content: stripHtml(r.node_content || ''),
         createdAt: r.node_created,
       }))
@@ -427,10 +460,7 @@ export async function fetchConfig(url: string): Promise<ConfigJson> {
  * @param nodeId - The node ID to fetch
  * @param templateId - The template ID to use for rendering (defaults to config.templates.node)
  */
-export async function fetchNodeData(
-  nodeId: string,
-  templateId?: string
-): Promise<NodeResponse> {
+export async function fetchNodeData(nodeId: string, templateId?: string): Promise<NodeResponse> {
   const effectiveTemplateId = templateId || config.templates.node
   const url = `${config.apiBase}/id/${nodeId}/${effectiveTemplateId}`
 
@@ -447,7 +477,13 @@ export async function fetchNodeData(
   }
 
   return {
-    node: parseNodeJson(data.node, data.canWrite ?? false, typeof data.node_views === 'string' ? parseInt(data.node_views, 10) : (data.node_views || 0)),
+    node: parseNodeJson(
+      data.node,
+      data.canWrite ?? false,
+      typeof data.node_views === 'string' ? parseInt(data.node_views, 10) : data.node_views || 0,
+      data.nodeImageUrl,
+      data.creatorImageUrl
+    ),
     children: (data.children || []).map(parseChildJson),
     listingAmount: data.listing_amount,
     offset: data.offset,
@@ -470,7 +506,10 @@ function parseKItem(raw: RawKItem): KItem {
     createdAt: new Date(raw.node_created),
     updatedAt: raw.node_updated ? new Date(raw.node_updated) : null,
     karma: typeof raw.k === 'string' ? parseInt(raw.k, 10) : raw.k,
-    childrenCount: typeof raw.node_children_count === 'string' ? parseInt(raw.node_children_count, 10) : (raw.node_children_count || 0),
+    childrenCount:
+      typeof raw.node_children_count === 'string'
+        ? parseInt(raw.node_children_count, 10)
+        : raw.node_children_count || 0,
     imageUrl: getImageUrl(raw.node_creator),
   }
 }
@@ -502,6 +541,7 @@ interface RawFriendSubmission {
   node_content: string
   node_created: string
   k: string | number
+  imageUrl?: string
 }
 
 /**
@@ -536,7 +576,7 @@ export async function fetchFriendsSubmissions(): Promise<FriendSubmission[]> {
     parentName: stripHtml(r.parent_name || ''),
     creatorId: r.node_creator,
     login: r.login,
-    imageUrl: getImageUrl(r.node_creator),
+    imageUrl: r.imageUrl || getImageUrl(r.node_creator),
     content: stripHtml(r.node_content || ''),
     createdAt: r.node_created,
     karma: typeof r.k === 'string' ? parseInt(r.k, 10) : r.k,

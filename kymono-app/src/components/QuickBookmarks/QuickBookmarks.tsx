@@ -4,6 +4,7 @@ import type { Bookmark, BookmarkCategory } from '@/types'
 import { useConfigValue } from '@/contexts'
 import { TIME_RANGES, CONFIG_PATHS } from '@/config'
 import { fetchBookmarksData, minutesSince } from '@/utils'
+import { HomeModule } from '@/components/HomeModule'
 
 export function QuickBookmarks() {
   const navigate = useNavigate()
@@ -11,7 +12,6 @@ export function QuickBookmarks() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [enabled] = useConfigValue(CONFIG_PATHS.QUICK_BOOKMARKS_ENABLED, true)
-  const [collapsed, setCollapsed] = useState(false)
 
   // Load bookmarks data
   const loadData = useCallback(async () => {
@@ -76,76 +76,44 @@ export function QuickBookmarks() {
     navigate(`/id/${nodeId}`)
   }
 
-  const handleReload = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    loadData()
-  }
-
-  const toggleCollapse = () => {
-    setCollapsed((prev) => !prev)
-  }
-
   // Hide if disabled
   if (!enabled) {
     return null
   }
 
   return (
-    <div className="quick-bookmarks home-module">
-      <div className="module-header" onClick={toggleCollapse}>
-        <span className="module-title">{collapsed ? '▸' : '▾'} quick.bookmarks</span>
-        <button className="module-reload" onClick={handleReload} title="Reload">
-          ↻
-        </button>
-      </div>
-
-      {!collapsed && (
-        <div className="module-content">
-          {loading && (
-            <div className="module-loading">
-              <div className="sp-circle" />
-            </div>
-          )}
-
-          {!loading && error && (
-            <p className="module-error">
-              {error}{' '}
-              <button className="module-retry" onClick={handleReload}>
-                Retry
-              </button>
-            </p>
-          )}
-
-          {!loading && !error && recentBookmarks.length === 0 && (
-            <p className="module-empty">No new replies in the last month</p>
-          )}
-
-          {recentBookmarks.length > 0 && (
-            <div className="quick-bookmarks-list">
-              {recentBookmarks.map((bookmark) => (
-                <div key={bookmark.id} className="bookmark">
-                  <a
-                    href={`/id/${bookmark.node}`}
-                    className="book-name node-link"
-                    onClick={(e) => handleBookmarkClick(e, bookmark.node)}
-                    dangerouslySetInnerHTML={{ __html: bookmark.nameHtml }}
-                  />
-                  {(bookmark.unread > 0 || bookmark.hasDescendants) && (
-                    <span className="book-unread">
-                      {bookmark.unread > 0 && (
-                        <span className="book-unread-count">{bookmark.unread}</span>
-                      )}
-                      {bookmark.hasDescendants && (
-                        <span className="book-unread-descendants" title="New in thread" />
-                      )}
-                    </span>
+    <HomeModule
+      title="quick.bookmarks"
+      loading={loading}
+      error={error}
+      empty={recentBookmarks.length === 0}
+      emptyMessage="No new replies in the last month"
+      onReload={loadData}
+    >
+      {recentBookmarks.length > 0 && (
+        <div className="quick-bookmarks-list">
+          {recentBookmarks.map((bookmark) => (
+            <div key={bookmark.id} className="bookmark">
+              <a
+                href={`/id/${bookmark.node}`}
+                className="book-name node-link"
+                onClick={(e) => handleBookmarkClick(e, bookmark.node)}
+                dangerouslySetInnerHTML={{ __html: bookmark.nameHtml }}
+              />
+              {(bookmark.unread > 0 || bookmark.hasDescendants) && (
+                <span className="book-unread">
+                  {bookmark.unread > 0 && (
+                    <span className="book-unread-count">{bookmark.unread}</span>
                   )}
-                </div>
-              ))}
+                  {bookmark.hasDescendants && (
+                    <span className="book-unread-descendants" title="New in thread" />
+                  )}
+                </span>
+              )}
             </div>
-          )}
+          ))}
         </div>
       )}
-    </div>
+    </HomeModule>
   )
 }

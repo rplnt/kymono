@@ -15,7 +15,13 @@ interface LatestRepliesProps {
   lastLoadedAt: string | null
 }
 
-function ReplyGroupView({ group, onNavigate }: { group: ReplyGroup; onNavigate: (id: string) => void }) {
+function ReplyGroupView({
+  group,
+  onNavigate,
+}: {
+  group: ReplyGroup
+  onNavigate: (id: string) => void
+}) {
   const shown = group.replies.slice(0, MAX_PER_GROUP)
   const extra = group.replies.length - MAX_PER_GROUP
 
@@ -31,7 +37,8 @@ function ReplyGroupView({ group, onNavigate }: { group: ReplyGroup; onNavigate: 
         className="reply-group-parent"
         onClick={(e) => handleClick(e, group.parentId)}
       >
-        <span className="lr-in">In</span>{group.parentName}
+        <span className="lr-in">In</span>
+        {group.parentName}
       </a>
       {shown.map((reply) => (
         <div key={reply.id} className="lr-entry">
@@ -41,7 +48,9 @@ function ReplyGroupView({ group, onNavigate }: { group: ReplyGroup; onNavigate: 
             alt={reply.login}
             title={reply.login}
             className="lr-avatar"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+            onError={(e) => {
+              ;(e.target as HTMLImageElement).style.display = 'none'
+            }}
           />
           <a
             href={`#/id/${reply.id}`}
@@ -117,15 +126,14 @@ export function LatestReplies({ replies, lastLoadedAt }: LatestRepliesProps) {
 
         {oldGroups.length > 0 && (
           <>
-            <button
-              className="lr-show-older"
-              onClick={() => setShowOlder((prev) => !prev)}
-            >
-              {showOlder ? 'hide' : 'show'} older ({oldGroups.reduce((n, g) => n + g.replies.length, 0)})
+            <button className="lr-show-older" onClick={() => setShowOlder((prev) => !prev)}>
+              {showOlder ? 'hide' : 'show'} older (
+              {oldGroups.reduce((n, g) => n + g.replies.length, 0)})
             </button>
-            {showOlder && oldGroups.map((group) => (
-              <ReplyGroupView key={group.parentId} group={group} onNavigate={handleNavigate} />
-            ))}
+            {showOlder &&
+              oldGroups.map((group) => (
+                <ReplyGroupView key={group.parentId} group={group} onNavigate={handleNavigate} />
+              ))}
           </>
         )}
       </div>

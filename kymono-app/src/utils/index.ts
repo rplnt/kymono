@@ -1,4 +1,11 @@
-export { parseVisitDate, dateDiffMins, minutesSince } from './date'
+export {
+  parseVisitDate,
+  dateDiffMins,
+  minutesSince,
+  formatDate,
+  formatRelativeDate,
+  formatRelativeString,
+} from './date'
 export {
   fetchConfig,
   fetchMpnData,

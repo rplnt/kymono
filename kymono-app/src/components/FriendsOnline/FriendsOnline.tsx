@@ -30,7 +30,9 @@ export function FriendsOnline({ friends }: FriendsOnlineProps) {
               src={friend.imageUrl}
               alt={friend.login}
               className="friend-icon"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+              onError={(e) => {
+                ;(e.target as HTMLImageElement).style.display = 'none'
+              }}
             />
             <div className="friend-info">
               <div className="friend-line-1">
@@ -44,7 +46,9 @@ export function FriendsOnline({ friends }: FriendsOnlineProps) {
                 >
                   {friend.login}
                 </a>
-                <span className="friend-idle">{formatIdle(friend.idleMinutes, friend.idleSeconds)}</span>
+                <span className="friend-idle">
+                  {formatIdle(friend.idleMinutes, friend.idleSeconds)}
+                </span>
               </div>
               <div className="friend-line-2">
                 <a

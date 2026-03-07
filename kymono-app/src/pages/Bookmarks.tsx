@@ -1,13 +1,8 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { BookmarkCategory, Bookmark, SearchIndex } from '@/types'
 import { TIME_RANGES, CONFIG_PATHS } from '@/config'
-import {
-  fetchBookmarksData,
-  buildSearchIndex,
-  searchIndex,
-  minutesSince,
-} from '@/utils'
+import { fetchBookmarksData, buildSearchIndex, searchIndex, minutesSince } from '@/utils'
 import { useConfigValue } from '@/contexts'
 import { useTitle } from '@/utils/useTitle'
 
@@ -24,19 +19,19 @@ function loadFilters(): BookmarkFilters {
     if (stored) {
       const parsed = JSON.parse(stored)
       return {
-        showNewOnly: typeof parsed.showNewOnly === 'boolean' ? parsed.showNewOnly : true,
+        showNewOnly: typeof parsed.showNewOnly === 'boolean' ? parsed.showNewOnly : false,
         timeRangeIndex:
           typeof parsed.timeRangeIndex === 'number' &&
           parsed.timeRangeIndex >= 0 &&
           parsed.timeRangeIndex < TIME_RANGES.length
             ? parsed.timeRangeIndex
-            : 0,
+            : TIME_RANGES.length - 1,
       }
     }
   } catch {
     // Invalid JSON, use defaults
   }
-  return { showNewOnly: true, timeRangeIndex: 0 }
+  return { showNewOnly: false, timeRangeIndex: TIME_RANGES.length - 1 }
 }
 
 function saveFilters(filters: BookmarkFilters): void {
@@ -46,7 +41,6 @@ function saveFilters(filters: BookmarkFilters): void {
 export function Bookmarks() {
   useTitle('Bookmarks')
   const navigate = useNavigate()
-  const [focusFilter] = useConfigValue(CONFIG_PATHS.FOCUS_FILTER, false)
   const [includeDescendants] = useConfigValue(CONFIG_PATHS.INCLUDE_DESCENDANTS, true)
   const [categories, setCategories] = useState<BookmarkCategory[]>([])
   const [loading, setLoading] = useState(true)
@@ -56,8 +50,6 @@ export function Bookmarks() {
   const [timeRangeIndex, setTimeRangeIndex] = useState(() => loadFilters().timeRangeIndex)
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
   const [index, setIndex] = useState<SearchIndex | null>(null)
-
-  const filterInputRef = useRef<HTMLInputElement>(null)
 
   // Load bookmarks data
   const loadData = useCallback(async () => {
@@ -86,13 +78,6 @@ export function Bookmarks() {
   useEffect(() => {
     loadData()
   }, [loadData])
-
-  // Auto-focus filter if setting enabled
-  useEffect(() => {
-    if (!loading && focusFilter) {
-      filterInputRef.current?.focus()
-    }
-  }, [loading, focusFilter])
 
   const currentTimeRange = TIME_RANGES[timeRangeIndex]
 
@@ -215,7 +200,6 @@ export function Bookmarks() {
   return (
     <div>
       <input
-        ref={filterInputRef}
         type="search"
         className="book-filter"
         placeholder="Filter Bookmarks"

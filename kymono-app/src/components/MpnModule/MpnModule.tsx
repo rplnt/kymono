@@ -4,6 +4,7 @@ import type { MpnNode } from '@/types'
 import { useConfigValue } from '@/contexts'
 import { config, CONFIG_PATHS } from '@/config'
 import { fetchMpnData, truncate } from '@/utils'
+import { HomeModule } from '@/components/HomeModule'
 
 // Max number of single-user nodes to display
 const MAX_SINGLE_COUNT_NODES = 10
@@ -14,7 +15,6 @@ export function MpnModule() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [enabled] = useConfigValue(CONFIG_PATHS.MPN_ENABLED, true)
-  const [collapsed, setCollapsed] = useState(false)
 
   // Load MPN data
   const loadData = useCallback(async () => {
@@ -85,65 +85,36 @@ export function MpnModule() {
     navigate(`/id/${nodeId}`)
   }
 
-  const handleReload = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    loadData()
-  }
-
   if (!enabled) {
     return null
   }
 
   return (
-    <div className="mpn-module home-module">
-      <div className="module-header" onClick={() => setCollapsed((prev) => !prev)}>
-        <span className="module-title">{collapsed ? '▸' : '▾'} most.populated.nodes</span>
-        <button className="module-reload" onClick={handleReload} title="Reload">
-          ↻
-        </button>
-      </div>
-
-      {!collapsed && (
-        <div className="module-content">
-          {loading && (
-            <div className="module-loading">
-              <div className="sp-circle" />
-            </div>
-          )}
-
-          {!loading && error && (
-            <p className="module-error">
-              {error}{' '}
-              <button className="module-retry" onClick={handleReload}>
-                Retry
-              </button>
-            </p>
-          )}
-
-          {!loading && !error && filteredNodes.length === 0 && (
-            <p className="module-empty">No data available</p>
-          )}
-
-          {filteredNodes.length > 0 && (
-            <div id="mpn">
-              {filteredNodes.map((node) => (
-                <span key={node.id} className="mpn-entry" style={{ fontSize: getFontSize(node.count) }}>
-                  {'('}
-                  <a
-                    href={`/id/${node.id}`}
-                    className="node-link mpn-link"
-                    title={`${node.name} (${node.count})`}
-                    onClick={(e) => handleNodeClick(e, node.id)}
-                  >
-                    {truncate(node.name, 20).replace(/ /g, '\u00a0')}
-                  </a>
-                  {') '}
-                </span>
-              ))}
-            </div>
-          )}
+    <HomeModule
+      title="most.populated.nodes"
+      loading={loading}
+      error={error}
+      empty={filteredNodes.length === 0}
+      onReload={loadData}
+    >
+      {filteredNodes.length > 0 && (
+        <div id="mpn">
+          {filteredNodes.map((node) => (
+            <span key={node.id} className="mpn-entry" style={{ fontSize: getFontSize(node.count) }}>
+              {'('}
+              <a
+                href={`/id/${node.id}`}
+                className="node-link mpn-link"
+                title={`${node.name} (${node.count})`}
+                onClick={(e) => handleNodeClick(e, node.id)}
+              >
+                {truncate(node.name, 20).replace(/ /g, '\u00a0')}
+              </a>
+              {') '}
+            </span>
+          ))}
         </div>
       )}
-    </div>
+    </HomeModule>
   )
 }

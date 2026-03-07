@@ -18,16 +18,18 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
   const { currentNode } = useCurrentNode()
   const navigate = useNavigate()
   const location = useLocation()
-  const isHome = location.pathname === '/' || location.pathname === '/home' || location.pathname === '/bookmarks' || location.pathname === '/k'
+  const isHome =
+    location.pathname === '/' ||
+    location.pathname === '/home' ||
+    location.pathname === '/bookmarks' ||
+    location.pathname === '/k'
   const isNode = location.pathname.startsWith('/id/')
   const [friends, setFriends] = useState<OnlineFriend[]>([])
   const [replies, setReplies] = useState<LatestReply[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const lastFetchedAt = useRef(0)
-  const [lastLoadedAt] = useState<string | null>(
-    () => localStorage.getItem(LAST_LOADED_KEY)
-  )
+  const [lastLoadedAt] = useState<string | null>(() => localStorage.getItem(LAST_LOADED_KEY))
 
   const loadSidebar = useCallback(async () => {
     const now = Date.now()
@@ -102,9 +104,7 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
             <div className="sidebar-loading">loading...</div>
           )}
 
-          {isHome && !loading && error && (
-            <div className="sidebar-error">{error}</div>
-          )}
+          {isHome && !loading && error && <div className="sidebar-error">{error}</div>}
 
           {isHome && <LatestReplies replies={replies} lastLoadedAt={lastLoadedAt} />}
           {isHome && <FriendsOnline friends={friends} />}

@@ -2,57 +2,35 @@ import { useState, useEffect, useCallback, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { KItem } from '@/types'
 import { useConfigValue } from '@/contexts'
-import { fetchKData } from '@/utils'
+import { fetchKData, formatDate, formatRelativeDate } from '@/utils'
 import { useTitle } from '@/utils/useTitle'
 import { CONFIG_PATHS } from '@/config'
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('sk-SK', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function formatRelativeDate(date: Date): string {
-  const now = Date.now()
-  const diff = now - date.getTime()
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
-  const weeks = Math.floor(days / 7)
-  const months = Math.floor(days / 30)
-  const years = Math.floor(days / 365)
-
-  if (minutes < 1) return 'now'
-  if (minutes < 60) return `${minutes}m`
-  if (hours < 24) return `${hours}h`
-  if (days < 7) return `${days}d`
-  if (weeks < 5) return `${weeks}w`
-  if (months < 12) return `${months}mo`
-  return `${years}y`
-}
-
 interface KItemCardProps {
   item: KItem
-  prevItemId?: string
-  nextItemId?: string
   collapsed: boolean
-  useRelativeTime: boolean
+  fullTimestamps: boolean
   showToolbar: boolean
   onToggleCollapsed: (id: string) => void
   onNavigate: (path: string) => void
   onContentClick: (e: React.MouseEvent) => void
 }
 
+const scrollToSibling = (itemId: string, direction: 'prev' | 'next') => {
+  const el = document.getElementById(`k-item-${itemId}`)
+  const sibling = direction === 'prev' ? el?.previousElementSibling : el?.nextElementSibling
+  if (sibling) {
+    const menuHeight =
+      parseInt(getComputedStyle(document.documentElement).getPropertyValue('--menu-height')) || 56
+    const top = sibling.getBoundingClientRect().top + window.scrollY - menuHeight - 8
+    window.scrollTo({ top, behavior: 'smooth' })
+  }
+}
+
 const KItemCard = memo(function KItemCard({
   item,
-  prevItemId,
-  nextItemId,
   collapsed,
-  useRelativeTime,
+  fullTimestamps,
   showToolbar,
   onToggleCollapsed,
   onNavigate,
@@ -94,16 +72,17 @@ const KItemCard = memo(function KItemCard({
               {item.owner}
             </a>
             <span className="comment-date">
-              {useRelativeTime ? formatRelativeDate(item.createdAt) : formatDate(item.createdAt)}
+              {fullTimestamps ? formatDate(item.createdAt) : formatRelativeDate(item.createdAt)}
               {item.updatedAt && (
                 <span className="comment-date-edit">
-                  {' '}({useRelativeTime ? formatRelativeDate(item.updatedAt) : formatDate(item.updatedAt)})
+                  {' '}
+                  (
+                  {fullTimestamps ? formatDate(item.updatedAt) : formatRelativeDate(item.updatedAt)}
+                  )
                 </span>
               )}
             </span>
-            {item.karma > 0 && (
-              <span className="comment-karma">{item.karma}K</span>
-            )}
+            {item.karma > 0 && <span className="comment-karma">{item.karma}K</span>}
           </div>
           <div className="comment-meta-line">
             <a
@@ -145,20 +124,7 @@ const KItemCard = memo(function KItemCard({
       )}
       {showToolbar && (
         <div className="comment-toolbar">
-          <button
-            className="toolbar-btn"
-            disabled={!prevItemId}
-            onClick={() => {
-              if (prevItemId) {
-                const menuHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--menu-height')) || 56
-                const el = document.getElementById(`k-item-${prevItemId}`)
-                if (el) {
-                  const top = el.getBoundingClientRect().top + window.scrollY - menuHeight - 8
-                  window.scrollTo({ top, behavior: 'smooth' })
-                }
-              }
-            }}
-          >
+          <button className="toolbar-btn" onClick={() => scrollToSibling(item.id, 'prev')}>
             prev
           </button>
           <span className="toolbar-sep">|</span>
@@ -167,7 +133,10 @@ const KItemCard = memo(function KItemCard({
             onClick={() => {
               const el = document.getElementById(`k-item-${item.id}`)
               if (el) {
-                const menuHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--menu-height')) || 56
+                const menuHeight =
+                  parseInt(
+                    getComputedStyle(document.documentElement).getPropertyValue('--menu-height')
+                  ) || 56
                 const top = el.getBoundingClientRect().top + window.scrollY - menuHeight - 8
                 window.scrollTo({ top, behavior: 'smooth' })
               }
@@ -176,20 +145,7 @@ const KItemCard = memo(function KItemCard({
             up
           </button>
           <span className="toolbar-sep">|</span>
-          <button
-            className="toolbar-btn"
-            disabled={!nextItemId}
-            onClick={() => {
-              if (nextItemId) {
-                const menuHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--menu-height')) || 56
-                const el = document.getElementById(`k-item-${nextItemId}`)
-                if (el) {
-                  const top = el.getBoundingClientRect().top + window.scrollY - menuHeight - 8
-                  window.scrollTo({ top, behavior: 'smooth' })
-                }
-              }
-            }}
-          >
+          <button className="toolbar-btn" onClick={() => scrollToSibling(item.id, 'next')}>
             next
           </button>
         </div>
@@ -206,7 +162,7 @@ export function K() {
   const [error, setError] = useState<string | null>(null)
   const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set())
   const [showCommentToolbar] = useConfigValue(CONFIG_PATHS.COMMENT_TOOLBAR, true)
-  const [useRelativeTime] = useConfigValue(CONFIG_PATHS.RELATIVE_TIME, true)
+  const [fullTimestamps] = useConfigValue(CONFIG_PATHS.FULL_TIMESTAMPS, true)
   const [progressiveDisplay] = useConfigValue(CONFIG_PATHS.K_PROGRESSIVE_DISPLAY, false)
   const [autoLoadOnScroll] = useConfigValue(CONFIG_PATHS.K_AUTO_LOAD_SCROLL, false)
   const [visibleCount, setVisibleCount] = useState(4)
@@ -258,22 +214,28 @@ export function K() {
     })
   }, [])
 
-  const handleNavigate = useCallback((path: string) => {
-    navigate(path)
-  }, [navigate])
+  const handleNavigate = useCallback(
+    (path: string) => {
+      navigate(path)
+    },
+    [navigate]
+  )
 
-  const handleContentClick = useCallback((e: React.MouseEvent) => {
-    const target = e.target as HTMLElement
-    const anchor = target.closest('a')
-    if (!anchor) return
-    const href = anchor.getAttribute('href')
-    if (!href) return
-    const match = href.match(/^\/id\/(\d+)/)
-    if (match) {
-      e.preventDefault()
-      navigate(`/id/${match[1]}`)
-    }
-  }, [navigate])
+  const handleContentClick = useCallback(
+    (e: React.MouseEvent) => {
+      const target = e.target as HTMLElement
+      const anchor = target.closest('a')
+      if (!anchor) return
+      const href = anchor.getAttribute('href')
+      if (!href) return
+      const match = href.match(/^\/id\/(\d+)/)
+      if (match) {
+        e.preventDefault()
+        navigate(`/id/${match[1]}`)
+      }
+    },
+    [navigate]
+  )
 
   if (loading) {
     return (
@@ -308,14 +270,12 @@ export function K() {
 
   return (
     <div className="k-view">
-      {displayItems.map((item, idx) => (
+      {displayItems.map((item) => (
         <KItemCard
           key={item.id}
           item={item}
-          prevItemId={idx > 0 ? displayItems[idx - 1].id : undefined}
-          nextItemId={idx + 1 < displayItems.length ? displayItems[idx + 1].id : undefined}
           collapsed={collapsedItems.has(item.id)}
-          useRelativeTime={useRelativeTime}
+          fullTimestamps={fullTimestamps}
           showToolbar={showCommentToolbar}
           onToggleCollapsed={toggleCollapsed}
           onNavigate={handleNavigate}
@@ -323,10 +283,7 @@ export function K() {
         />
       ))}
       {progressiveDisplay && remaining > 0 && (
-        <button
-          className="btn btn-show-more"
-          onClick={() => setVisibleCount((prev) => prev + 1)}
-        >
+        <button className="btn btn-show-more" onClick={() => setVisibleCount((prev) => prev + 1)}>
           display next ({remaining} remaining)
         </button>
       )}

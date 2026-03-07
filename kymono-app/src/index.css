@@ -34,7 +34,7 @@
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.75;
 
-  /* Spacing - 4px base unit */
+  /* Spacing - fixed px, does not scale with font size */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -69,6 +69,26 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* Reset form elements to prevent parent page CSS from leaking in */
+#root input,
+#root select,
+#root textarea,
+#root button {
+  font-family: var(--font-family);
+  font-size: inherit;
+  line-height: inherit;
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0;
+}
+
+#root input,
+#root select,
+#root textarea {
+  color: inherit;
 }
 
 html {
@@ -246,7 +266,7 @@ a {
 /* Spacer below fixed menu */
 .pad {
   display: block;
-  height: calc(var(--menu-height) + var(--space-4));
+  height: calc(var(--menu-height) + var(--space-2));
   visibility: hidden;
 }
 
@@ -264,7 +284,7 @@ a {
    Main App Container
    ============================================================ */
 #app {
-  padding: var(--content-padding);
+  padding: 0 var(--content-padding) var(--content-padding);
   max-width: var(--content-max-width);
   margin: 0 auto;
 }
@@ -280,7 +300,7 @@ a {
   margin-top: var(--space-4);
   background: var(--color-bg-surface);
   border-left: 3px solid var(--color-phosphor);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -814,7 +834,7 @@ a {
 }
 
 .module-title {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -903,13 +923,16 @@ a {
 }
 
 .module-loading {
-  position: absolute;
-  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 1;
+  padding: var(--space-4) 0;
+}
+
+.module-loading .sp-circle {
+  width: 24px;
+  height: 24px;
+  margin: 0;
 }
 
 /* ============================================================
@@ -1194,7 +1217,7 @@ a {
 }
 
 .friend-location {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   text-decoration: none;
   font-size: var(--font-size-xs);
 }
@@ -1381,7 +1404,6 @@ a {
    ============================================================ */
 .node-view {
   max-width: 100%;
-  margin-top: calc(-1 * var(--space-4));
 }
 
 /* Node header - two rows */
@@ -1513,7 +1535,6 @@ a {
   height: auto;
 }
 
-
 /* Reply Form */
 .reply-form {
   display: flex;
@@ -1521,6 +1542,7 @@ a {
   gap: var(--space-2);
   padding: var(--space-3);
   border-top: 1px solid var(--color-phosphor-dim);
+  overflow: hidden;
 }
 
 .reply-title {
@@ -1611,6 +1633,7 @@ a {
   border-radius: 2px;
   cursor: pointer;
   flex-shrink: 0;
+  background: var(--color-bg-surface);
   object-fit: cover;
   object-position: top left;
 }
@@ -1619,20 +1642,23 @@ a {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
   font-size: var(--font-size-sm);
 }
 
 .comment-meta-line {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--space-1);
   align-items: baseline;
+  white-space: nowrap;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
 }
 
 .comment-author {
   color: var(--color-text-primary);
   text-decoration: none;
-  font-weight: 600;
   cursor: pointer;
   margin-right: var(--space-2);
 }
@@ -1644,7 +1670,12 @@ a {
 .comment-title {
   color: var(--color-text-primary);
   text-decoration: none;
+  font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
 }
 
 .comment-title:hover {
@@ -1666,6 +1697,18 @@ a {
   margin-top: var(--space-1);
   word-wrap: break-word;
   overflow-wrap: break-word;
+}
+
+.responsive-youtube iframe[src*='youtube.com'],
+.responsive-youtube iframe[src*='youtube-nocookie.com'] {
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+}
+
+.responsive-images .comment-content img {
+  max-width: 100%;
+  height: auto;
 }
 
 .comment-content a {
@@ -1797,7 +1840,6 @@ a {
    ============================================================ */
 .k-view {
   max-width: 100%;
-  margin-top: calc(-1 * var(--space-4));
 }
 
 .k-parent-ref {
@@ -1830,6 +1872,10 @@ a {
 
 .fs-title-line {
   font-size: var(--font-size-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
 }
 
 .fs-in {
@@ -1847,19 +1893,64 @@ a {
   color: var(--color-phosphor);
 }
 
-.fs-content {
-  padding-left: 42px;
-  color: var(--color-phosphor);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-normal);
-  margin-top: 2px;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+.fs-truncated {
+  color: var(--color-text-muted);
+  margin-left: 0.3em;
 }
 
 .fs-content-empty {
   color: var(--color-text-muted);
   font-style: italic;
+}
+
+/* Disable hover effects on touch-only devices to prevent sticky highlights while scrolling */
+@media (hover: none) {
+  .bookmark:hover,
+  .comment-header:hover,
+  .node-child-item:hover,
+  .setting-row:hover,
+  .module-header:hover,
+  .dropdown-item:hover,
+  .cat-header:hover,
+  .book-cat .cat-header:hover {
+    background: unset;
+  }
+
+  .btn-filter:hover,
+  .btn-show-more:hover,
+  .module-reload:hover,
+  .module-retry:hover,
+  .btn-retry:hover,
+  .reply-submit:hover:not(:disabled),
+  .toolbar-btn:hover:not(:disabled),
+  .setting-order-btn:hover:not(:disabled),
+  .lr-more:hover,
+  .lr-show-older:hover {
+    background: unset;
+    color: unset;
+  }
+
+  .node-link:hover,
+  .mpn-link:hover,
+  .comment-author:hover,
+  .comment-title:hover,
+  .comment-content a:hover,
+  .node-content a:hover,
+  .node-external-link:hover,
+  .node-meta-link:hover,
+  .node-children-link:hover,
+  .node-child-name:hover,
+  .node-child-author:hover,
+  .k-parent-link:hover,
+  .fs-parent:hover,
+  .friend-name:hover,
+  .friend-location:hover,
+  .side-panel-link:hover,
+  .side-panel-node .node-ancestor-link:hover,
+  .side-panel-node .node-timestamp-clickable:hover,
+  .reply-group-parent:hover,
+  .lr-text:hover,
+  .node-header:hover {
+    color: unset;
+  }
 }

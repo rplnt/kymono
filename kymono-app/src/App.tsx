@@ -47,10 +47,13 @@ function IndexRedirect() {
 
   const defaultScreen = getValue<string>(CONFIG_PATHS.DEFAULT_SCREEN, 'H')
   const route =
-    defaultScreen === 'B' ? '/bookmarks' :
-    defaultScreen === 'K' ? '/k' :
-    defaultScreen === 'M' ? '/mail' :
-    '/home'
+    defaultScreen === 'B'
+      ? '/bookmarks'
+      : defaultScreen === 'K'
+        ? '/k'
+        : defaultScreen === 'M'
+          ? '/mail'
+          : '/home'
 
   return <Navigate to={route} replace />
 }
@@ -58,24 +61,24 @@ function IndexRedirect() {
 function App() {
   return (
     <ErrorBoundary>
-    <ConfigProvider>
-      <HashRouter>
-        <NodeProvider>
-          <Routes>
-            <Route path="/" element={<Layout />}>
-              <Route index element={<IndexRedirect />} />
-              <Route path="home" element={<Home />} />
-              <Route path="bookmarks" element={<Bookmarks />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="k" element={<K />} />
-              <Route path="mail" element={<Mail />} />
-              <Route path="id/:nodeId" element={<Node />} />
-              <Route path="*" element={<Navigate to="/home" replace />} />
-            </Route>
-          </Routes>
-        </NodeProvider>
-      </HashRouter>
-    </ConfigProvider>
+      <ConfigProvider>
+        <HashRouter>
+          <NodeProvider>
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<IndexRedirect />} />
+                <Route path="home" element={<Home />} />
+                <Route path="bookmarks" element={<Bookmarks />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="k" element={<K />} />
+                <Route path="mail" element={<Mail />} />
+                <Route path="id/:nodeId" element={<Node />} />
+                <Route path="*" element={<Navigate to="/home" replace />} />
+              </Route>
+            </Routes>
+          </NodeProvider>
+        </HashRouter>
+      </ConfigProvider>
     </ErrorBoundary>
   )
 }

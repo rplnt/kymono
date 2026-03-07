@@ -13,7 +13,6 @@ export interface KymonoConfig {
     quickBookmarksOrder?: number
   }
   bookmarks?: {
-    focusFilter?: boolean
     includeDescendants?: boolean
   }
 }
