@@ -4,8 +4,9 @@ import { useConfig } from '@/contexts'
 import { useTitle } from '@/utils/useTitle'
 import { QuickBookmarks } from '@/components/QuickBookmarks'
 import { MpnModule } from '@/components/MpnModule'
+import { FriendsSubmissions } from '@/components/FriendsSubmissions'
 
-type ModuleId = 'quickBookmarks' | 'mpn'
+type ModuleId = 'quickBookmarks' | 'mpn' | 'friendsSubmissions'
 
 interface ModuleConfig {
   id: ModuleId
@@ -26,6 +27,12 @@ const MODULES: ModuleConfig[] = [
     component: MpnModule,
     orderPath: CONFIG_PATHS.MPN_ORDER,
     defaultOrder: 1,
+  },
+  {
+    id: 'friendsSubmissions',
+    component: FriendsSubmissions,
+    orderPath: CONFIG_PATHS.FRIENDS_SUBMISSIONS_ORDER,
+    defaultOrder: 2,
   },
 ]
 

@@ -42,8 +42,8 @@ export function Menu({ onToggleSidePanel, onCloseSidePanel }: MenuProps) {
         </NavLink>
       </div>
       <div className="menu-item">
-        <NavLink to="/friends" className={navLinkClass} title="Friends" onClick={onCloseSidePanel}>
-          F
+        <NavLink to="/mail" className={navLinkClass} title="Mail" onClick={onCloseSidePanel}>
+          M
         </NavLink>
       </div>
     </nav>

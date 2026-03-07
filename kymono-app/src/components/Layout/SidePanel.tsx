@@ -18,7 +18,7 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
   const { currentNode } = useCurrentNode()
   const navigate = useNavigate()
   const location = useLocation()
-  const isHome = location.pathname === '/' || location.pathname === '/home' || location.pathname === '/bookmarks'
+  const isHome = location.pathname === '/' || location.pathname === '/home' || location.pathname === '/bookmarks' || location.pathname === '/k'
   const isNode = location.pathname.startsWith('/id/')
   const [friends, setFriends] = useState<OnlineFriend[]>([])
   const [replies, setReplies] = useState<LatestReply[]>([])
@@ -182,17 +182,25 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
                 <div className="node-ancestors">
                   <div className="node-ancestors-label">coordinates</div>
                   <div className="node-ancestors-list">
-                    {currentNode.ancestors.map((ancestor) => (
-                      <a
-                        key={ancestor.id}
-                        href={`#/id/${ancestor.id}`}
-                        className="node-ancestor-link"
-                        title={ancestor.id}
-                        onClick={(e) => handleAncestorClick(e, ancestor.id)}
-                      >
-                        <span className="node-ancestor-name">{ancestor.name}</span>
-                      </a>
-                    ))}
+                    {(() => {
+                      const count = currentNode.ancestors.length
+                      // Scale indent so the deepest item fits within ~200px panel width
+                      // Max usable width ~180px, minus ~15px for └ prefix
+                      const maxIndent = 165
+                      const step = count > 1 ? Math.min(12, maxIndent / (count - 1)) : 0
+                      return currentNode.ancestors.map((ancestor, i) => (
+                        <a
+                          key={ancestor.id}
+                          href={`#/id/${ancestor.id}`}
+                          className="node-ancestor-link"
+                          style={{ marginLeft: `${Math.round(i * step)}px` }}
+                          title={ancestor.id}
+                          onClick={(e) => handleAncestorClick(e, ancestor.id)}
+                        >
+                          <span className="node-ancestor-name">{ancestor.name}</span>
+                        </a>
+                      ))
+                    })()}
                   </div>
                 </div>
               )}
@@ -203,6 +211,11 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
                   <span className="node-karma-value">{currentNode.karma}</span>
                   <span className="node-karma-icon">K</span>
                 </div>
+              )}
+
+              {/* Visits */}
+              {currentNode.views > 0 && (
+                <div className="node-visits">{currentNode.views.toLocaleString()} visits</div>
               )}
             </div>
           )}

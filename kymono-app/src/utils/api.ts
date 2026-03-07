@@ -1,4 +1,4 @@
-import type { BookmarkCategory, Bookmark, MpnNode, OnlineFriend, LatestReply, SidebarData, ConfigJson, NodeData, NodeAncestor, NodeComment, NodeResponse } from '@/types'
+import type { BookmarkCategory, Bookmark, MpnNode, OnlineFriend, LatestReply, SidebarData, ConfigJson, NodeData, NodeAncestor, NodeComment, NodeResponse, KItem, FriendSubmission } from '@/types'
 import { config } from '@/config'
 import { parseVisitDate } from './date'
 
@@ -195,11 +195,29 @@ interface RawChild {
   [key: string]: unknown
 }
 
+interface RawKItem {
+  node_id: string
+  node_name: string
+  node_content: string
+  node_parent: string
+  parent_name: string
+  node_creator: string
+  creator: string
+  template_id: string
+  node_created: string
+  node_updated: string | null
+  k: string | number
+  node_children_count: string | number
+  nl2br: string | number
+  [key: string]: unknown
+}
+
 interface RawNodeResponse {
   node: RawNode
   canWrite: boolean
   listing_amount: number
   offset: number
+  node_views: number | string
   children: RawChild[]
 }
 
@@ -262,7 +280,7 @@ function parseBookmarksJson(categories: RawBookmarkCategory[]): BookmarkCategory
 /**
  * Parse node JSON data into NodeData
  */
-function parseNodeJson(raw: RawNode, canWrite: boolean): NodeData {
+function parseNodeJson(raw: RawNode, canWrite: boolean, views: number = 0): NodeData {
   const ancestors: NodeAncestor[] = (raw.ancestors || []).map((a) => ({
     id: a.link,
     name: stripHtml(a.name || ''),
@@ -285,6 +303,7 @@ function parseNodeJson(raw: RawNode, canWrite: boolean): NodeData {
     ancestors,
     canWrite,
     childrenCount: typeof raw.node_children_count === 'string' ? parseInt(raw.node_children_count, 10) : (raw.node_children_count || 0),
+    views,
   }
 }
 
@@ -428,9 +447,98 @@ export async function fetchNodeData(
   }
 
   return {
-    node: parseNodeJson(data.node, data.canWrite ?? false),
+    node: parseNodeJson(data.node, data.canWrite ?? false, typeof data.node_views === 'string' ? parseInt(data.node_views, 10) : (data.node_views || 0)),
     children: (data.children || []).map(parseChildJson),
     listingAmount: data.listing_amount,
     offset: data.offset,
   }
+}
+
+/**
+ * Parse K item JSON data into KItem
+ */
+function parseKItem(raw: RawKItem): KItem {
+  return {
+    id: raw.node_id,
+    name: stripHtml(raw.node_name || ''),
+    content: applyNl2br(raw.node_content || '', raw.nl2br),
+    parentId: raw.node_parent,
+    parentName: stripHtml(raw.parent_name || ''),
+    creatorId: raw.node_creator,
+    owner: raw.creator || '',
+    templateId: raw.template_id,
+    createdAt: new Date(raw.node_created),
+    updatedAt: raw.node_updated ? new Date(raw.node_updated) : null,
+    karma: typeof raw.k === 'string' ? parseInt(raw.k, 10) : raw.k,
+    childrenCount: typeof raw.node_children_count === 'string' ? parseInt(raw.node_children_count, 10) : (raw.node_children_count || 0),
+    imageUrl: getImageUrl(raw.node_creator),
+  }
+}
+
+/**
+ * Fetch and parse K (karma) data from server
+ */
+export async function fetchKData(): Promise<KItem[]> {
+  const url = `${config.apiBase}${config.base}${config.templates.k}`
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch K data: ${response.status}`)
+  }
+  const html = await response.text()
+  const data = extractJson<RawKItem[]>(html, 'kymono.k')
+  if (!data) {
+    throw new Error('Failed to parse K data')
+  }
+  return data.map(parseKItem)
+}
+
+interface RawFriendSubmission {
+  node_id: string
+  node_name: string
+  node_parent: string
+  parent_name: string
+  node_creator: string
+  login: string
+  node_content: string
+  node_created: string
+  k: string | number
+}
+
+/**
+ * Fetch and parse friends' submissions data from server
+ */
+export async function fetchFriendsSubmissions(): Promise<FriendSubmission[]> {
+  const url = `${config.apiBase}${config.base}${config.templates.friendsSubmissions}`
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch friends submissions: ${response.status}`)
+  }
+  const html = await response.text()
+
+  // Handle trailing commas in JSON array from template
+  const regex = /<script[^>]*id="kymono\.friendsSubmissions"[^>]*>([\s\S]*?)<\/script>/i
+  const match = html.match(regex)
+  if (!match) {
+    throw new Error('Failed to parse friends submissions data')
+  }
+  const cleaned = match[1].replace(/,\s*]/g, ']')
+  let data: RawFriendSubmission[]
+  try {
+    data = JSON.parse(cleaned)
+  } catch {
+    throw new Error('Failed to parse friends submissions JSON')
+  }
+
+  return data.map((r) => ({
+    id: r.node_id,
+    name: stripHtml(r.node_name || ''),
+    parentId: r.node_parent,
+    parentName: stripHtml(r.parent_name || ''),
+    creatorId: r.node_creator,
+    login: r.login,
+    imageUrl: getImageUrl(r.node_creator),
+    content: stripHtml(r.node_content || ''),
+    createdAt: r.node_created,
+    karma: typeof r.k === 'string' ? parseInt(r.k, 10) : r.k,
+  }))
 }

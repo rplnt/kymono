@@ -20,7 +20,13 @@ const settingsConfig: ConfigJson = {
           name: 'defaultScreen',
           description: 'Screen to show when KyMoNo is started',
           type: 'enum',
-          value: ['H', 'B', 'K', 'F'],
+          value: ['H', 'B', 'K', 'M'],
+        },
+        {
+          name: 'relativeTime',
+          description: 'Show relative times (e.g., 2h ago)',
+          type: 'boolean',
+          value: true,
         },
       ],
     },
@@ -41,10 +47,16 @@ const settingsConfig: ConfigJson = {
           value: true,
         },
         {
+          name: 'friendsSubmissionsEnabled',
+          description: "Enable Friends' Submissions module",
+          type: 'boolean',
+          value: true,
+        },
+        {
           name: 'moduleOrder',
           description: 'Module display order',
           type: 'moduleOrder',
-          value: ['quickBookmarks', 'mpn'],
+          value: ['quickBookmarks', 'mpn', 'friendsSubmissions'],
         },
       ],
     },
@@ -67,6 +79,24 @@ const settingsConfig: ConfigJson = {
       ],
     },
     {
+      title: 'K',
+      name: 'k',
+      settings: [
+        {
+          name: 'progressiveDisplay',
+          description: 'Progressive load (display items in batches)',
+          type: 'boolean',
+          value: false,
+        },
+        {
+          name: 'autoLoadOnScroll',
+          description: 'Auto-load next item on scroll to bottom',
+          type: 'boolean',
+          value: false,
+        },
+      ],
+    },
+    {
       title: 'Node',
       name: 'node',
       settings: [
@@ -77,10 +107,16 @@ const settingsConfig: ConfigJson = {
           value: true,
         },
         {
-          name: 'relativeTime',
-          description: 'Show relative times in comments (e.g., 2h ago)',
+          name: 'progressiveComments',
+          description: 'Progressive load (display comment groups in batches)',
           type: 'boolean',
-          value: true,
+          value: false,
+        },
+        {
+          name: 'autoLoadCommentsOnScroll',
+          description: 'Auto-load next group on scroll to bottom',
+          type: 'boolean',
+          value: false,
         },
       ],
     },
@@ -90,11 +126,13 @@ const settingsConfig: ConfigJson = {
 const MODULE_LABELS: Record<string, string> = {
   quickBookmarks: 'Quick Bookmarks',
   mpn: 'Most Populated Nodes',
+  friendsSubmissions: "Friends' Submissions",
 }
 
 const MODULE_ORDER_PATHS: Record<string, string> = {
   quickBookmarks: CONFIG_PATHS.QUICK_BOOKMARKS_ORDER,
   mpn: CONFIG_PATHS.MPN_ORDER,
+  friendsSubmissions: CONFIG_PATHS.FRIENDS_SUBMISSIONS_ORDER,
 }
 
 type SettingValue = string | number | boolean | string[]

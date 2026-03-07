@@ -68,6 +68,19 @@ export interface SidebarData {
   replies: LatestReply[]
 }
 
+export interface FriendSubmission {
+  id: string
+  name: string
+  parentId: string
+  parentName: string
+  creatorId: string
+  login: string
+  imageUrl: string
+  content: string
+  createdAt: string
+  karma: number
+}
+
 // Search index types
 export interface SearchIndex {
   prefixIndex: Record<string, string[]>
@@ -103,6 +116,7 @@ export interface NodeData {
   ancestors: NodeAncestor[]
   canWrite: boolean
   childrenCount: number
+  views: number
 }
 
 // Node comment/child types
@@ -124,6 +138,23 @@ export interface NodeComment {
   isOrphan: boolean
   contentChanged: boolean
   isHardlink: boolean
+}
+
+// K (karma) item type
+export interface KItem {
+  id: string
+  name: string
+  content: string
+  parentId: string
+  parentName: string
+  creatorId: string
+  owner: string
+  templateId: string
+  createdAt: Date
+  updatedAt: Date | null
+  karma: number
+  childrenCount: number
+  imageUrl: string
 }
 
 // Combined node + children response

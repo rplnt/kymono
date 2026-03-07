@@ -19,6 +19,8 @@ export const config = {
     mpn: '9300200',
     sidebar: '9301169',
     node: '9300812',
+    k: '9301229',
+    friendsSubmissions: '9301246',
   },
   mpnBlacklist: [
     4830026, 3777728, 5898094, 2176597, 3660841, 7465941, 1522695, 1569351, 7607525, 788016,
@@ -45,5 +47,11 @@ export const CONFIG_PATHS = {
   FOCUS_FILTER: 'bookmarks.focusFilter',
   INCLUDE_DESCENDANTS: 'bookmarks.includeDescendants',
   COMMENT_TOOLBAR: 'node.commentToolbar',
-  RELATIVE_TIME: 'node.relativeTime',
+  RELATIVE_TIME: 'global.relativeTime',
+  K_PROGRESSIVE_DISPLAY: 'k.progressiveDisplay',
+  K_AUTO_LOAD_SCROLL: 'k.autoLoadOnScroll',
+  NODE_PROGRESSIVE_COMMENTS: 'node.progressiveComments',
+  NODE_AUTO_LOAD_COMMENTS_SCROLL: 'node.autoLoadCommentsOnScroll',
+  FRIENDS_SUBMISSIONS_ENABLED: 'home.friendsSubmissionsEnabled',
+  FRIENDS_SUBMISSIONS_ORDER: 'home.friendsSubmissionsOrder',
 } as const

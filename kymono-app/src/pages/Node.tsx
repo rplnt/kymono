@@ -65,6 +65,9 @@ export function Node() {
   const [replyContent, setReplyContent] = useState('')
   const [showCommentToolbar] = useConfigValue(CONFIG_PATHS.COMMENT_TOOLBAR, true)
   const [useRelativeTime] = useConfigValue(CONFIG_PATHS.RELATIVE_TIME, true)
+  const [progressiveComments] = useConfigValue(CONFIG_PATHS.NODE_PROGRESSIVE_COMMENTS, false)
+  const [autoLoadCommentsOnScroll] = useConfigValue(CONFIG_PATHS.NODE_AUTO_LOAD_COMMENTS_SCROLL, false)
+  const [visibleBatches, setVisibleBatches] = useState(1)
 
   useTitle(node?.name)
 
@@ -107,6 +110,23 @@ export function Node() {
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  // Reset visible batches when comments change
+  useEffect(() => {
+    setVisibleBatches(1)
+  }, [comments])
+
+  // Auto-load comments on scroll
+  useEffect(() => {
+    if (!progressiveComments || !autoLoadCommentsOnScroll) return
+    const onScroll = () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
+        setVisibleBatches((prev) => prev + 1)
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [progressiveComments, autoLoadCommentsOnScroll])
 
   // Clear current node when leaving
   useEffect(() => {
@@ -229,11 +249,15 @@ export function Node() {
       {/* Node content */}
       {!contentCollapsed && (
         <div className="node-content-box">
-          <div
-            className="node-content"
-            dangerouslySetInnerHTML={{ __html: node.content }}
-            onClick={handleContentClick}
-          />
+          {node.templateId === '14' ? (
+            <pre className="node-content node-content-mono">{node.content}</pre>
+          ) : (
+            <div
+              className="node-content"
+              dangerouslySetInnerHTML={{ __html: node.content }}
+              onClick={handleContentClick}
+            />
+          )}
         </div>
       )}
 
@@ -246,6 +270,7 @@ export function Node() {
             placeholder="Title"
             value={replyTitle}
             onChange={(e) => setReplyTitle(e.target.value)}
+            disabled
           />
           <textarea
             className="reply-content"
@@ -253,19 +278,75 @@ export function Node() {
             value={replyContent}
             onChange={(e) => setReplyContent(e.target.value)}
             rows={4}
+            disabled
           />
           <div className="reply-actions">
-            <button className="reply-submit">Add</button>
+            <button className="reply-submit" disabled>Add</button>
           </div>
         </div>
       )}
 
       {/* Comments section */}
       <div className="node-comments">
-        {comments.length > 0 ? (
+        {comments.length > 0 && (node.templateId === '2' || node.templateId === '14') ? (
+          comments.map((child) => (
+            <div key={child.id} className="node-child-item">
+              <a
+                href={`#/id/${child.id}`}
+                className="node-child-name"
+                onClick={(e) => {
+                  e.preventDefault()
+                  navigate(`/id/${child.id}`)
+                }}
+              >
+                {child.name || `node ${child.id}`}
+              </a>
+              {child.childrenCount > 0 && (
+                <span className="node-child-children">{child.childrenCount}</span>
+              )}
+              {child.karma > 0 && (
+                <span className="node-child-karma">{child.karma}K</span>
+              )}
+              <a
+                href={`#/id/${child.creatorId}`}
+                className="node-child-author"
+                onClick={(e) => {
+                  e.preventDefault()
+                  navigate(`/id/${child.creatorId}`)
+                }}
+              >
+                {child.owner}
+              </a>
+            </div>
+          ))
+        ) : comments.length > 0 ? (
           (() => {
             const minDepth = Math.min(...comments.map((c) => c.depth))
-            return comments.map((comment) => {
+
+            // Find top-level comment indices (level === 0)
+            const topLevelIndices: number[] = []
+            comments.forEach((c, i) => {
+              if (c.depth === minDepth) topLevelIndices.push(i)
+            })
+
+            // Determine which comments to display
+            let displayComments = comments
+            let remainingBatches = 0
+            let nextBatchSize = 0
+            if (progressiveComments && topLevelIndices.length > 0) {
+              const cutoffBatch = Math.min(visibleBatches, topLevelIndices.length)
+              remainingBatches = topLevelIndices.length - cutoffBatch
+              if (cutoffBatch < topLevelIndices.length) {
+                displayComments = comments.slice(0, topLevelIndices[cutoffBatch])
+                const nextEnd = cutoffBatch + 1 < topLevelIndices.length
+                  ? topLevelIndices[cutoffBatch + 1]
+                  : comments.length
+                nextBatchSize = nextEnd - topLevelIndices[cutoffBatch]
+              }
+            }
+
+            return (<>
+            {displayComments.map((comment) => {
               // Depths are in increments of 8, normalize to levels
               const level = Math.floor((comment.depth - minDepth) / 8)
               return (
@@ -346,46 +427,71 @@ export function Node() {
                 </div>
               )}
               {showCommentToolbar && (
+                (() => {
+                  const idx = displayComments.findIndex((c) => c.id === comment.id)
+                  const findSibling = (dir: 'prev' | 'next') => {
+                    if (dir === 'next') {
+                      for (let i = idx + 1; i < displayComments.length; i++) {
+                        if (displayComments[i].depth === comment.depth && displayComments[i].parentId === comment.parentId) return displayComments[i].id
+                        if (displayComments[i].depth < comment.depth) break
+                      }
+                    } else {
+                      for (let i = idx - 1; i >= 0; i--) {
+                        if (displayComments[i].depth === comment.depth && displayComments[i].parentId === comment.parentId) return displayComments[i].id
+                        if (displayComments[i].depth < comment.depth) break
+                      }
+                    }
+                    return null
+                  }
+                  const prevId = findSibling('prev')
+                  const nextId = findSibling('next')
+                  const scrollTo = (elId: string) => {
+                    const menuHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--menu-height')) || 56
+                    const el = document.getElementById(`comment-${elId}`)
+                    if (el) {
+                      const top = el.getBoundingClientRect().top + window.scrollY - menuHeight - 8
+                      window.scrollTo({ top, behavior: 'smooth' })
+                    }
+                  }
+                  return (
                 <div className="comment-toolbar">
                   <button
                     className="toolbar-btn"
-                    onClick={() => {
-                      const el = document.getElementById(`comment-${comment.id}`)
-                      if (el) {
-                        const menuHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--menu-height')) || 56
-                        const top = el.getBoundingClientRect().top + window.scrollY - menuHeight - 8
-                        window.scrollTo({ top, behavior: 'smooth' })
-                      }
-                    }}
+                    disabled={!prevId}
+                    onClick={() => prevId && scrollTo(prevId)}
+                  >
+                    prev
+                  </button>
+                  <span className="toolbar-sep">|</span>
+                  <button
+                    className="toolbar-btn"
+                    onClick={() => scrollTo(comment.id)}
                   >
                     up
                   </button>
                   <span className="toolbar-sep">|</span>
                   <button
                     className="toolbar-btn"
-                    onClick={() => {
-                      const menuHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--menu-height')) || 56
-                      // Find next sibling (same depth, same parent)
-                      const idx = comments.findIndex((c) => c.id === comment.id)
-                      for (let i = idx + 1; i < comments.length; i++) {
-                        if (comments[i].depth === comment.depth && comments[i].parentId === comment.parentId) {
-                          const el = document.getElementById(`comment-${comments[i].id}`)
-                          if (el) {
-                            const top = el.getBoundingClientRect().top + window.scrollY - menuHeight - 8
-                            window.scrollTo({ top, behavior: 'smooth' })
-                          }
-                          break
-                        }
-                        if (comments[i].depth < comment.depth) break
-                      }
-                    }}
+                    disabled={!nextId}
+                    onClick={() => nextId && scrollTo(nextId)}
                   >
                     next
                   </button>
                 </div>
+                  )
+                })()
               )}
             </div>
-            )})
+            )})}
+            {progressiveComments && remainingBatches > 0 && (
+              <button
+                className="btn btn-show-more"
+                onClick={() => setVisibleBatches((prev) => prev + 1)}
+              >
+                display next {nextBatchSize} ({remainingBatches} remaining)
+              </button>
+            )}
+            </>)
           })()
         ) : null}
       </div>

@@ -1,11 +1,11 @@
 import { useTitle } from '@/utils/useTitle'
 
-export function Friends() {
-  useTitle('Friends')
+export function Mail() {
+  useTitle('Mail')
   return (
     <div className="empty-state">
-      <div className="empty-state-icon">&#9829;</div>
-      <p className="empty-state-text">Friends module not yet implemented</p>
+      <div className="empty-state-icon">&#9993;</div>
+      <p className="empty-state-text">mail nie sa</p>
     </div>
   )
 }
