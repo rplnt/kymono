@@ -170,6 +170,7 @@ interface RawNode {
   node_created: string
   node_updated: string | null
   k: string | number
+  node_children_count: string | number
   ancestors: RawNodeAncestor[]
   // Additional fields we don't map but exist
   [key: string]: unknown
@@ -283,6 +284,7 @@ function parseNodeJson(raw: RawNode, canWrite: boolean): NodeData {
     imageUrl: getImageUrl(raw.node_id),
     ancestors,
     canWrite,
+    childrenCount: typeof raw.node_children_count === 'string' ? parseInt(raw.node_children_count, 10) : (raw.node_children_count || 0),
   }
 }
 

@@ -75,6 +75,7 @@ export interface NodeData {
   imageUrl: string
   ancestors: NodeAncestor[]
   canWrite: boolean
+  childrenCount: number
 }
 
 // Node comment/child types

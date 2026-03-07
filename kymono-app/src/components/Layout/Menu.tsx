@@ -13,12 +13,12 @@ export function Menu({ onToggleSidePanel, onCloseSidePanel }: MenuProps) {
     <nav id="main-menu" role="navigation" aria-label="Main navigation">
       <div className="menu-item">
         <button
-          className="btn btn-menu"
+          className="btn btn-menu btn-sidebar"
           onClick={onToggleSidePanel}
           title="Menu"
           aria-label="Toggle side panel"
         >
-          &#9776;
+          <span className="hamburger-icon">☰</span>
         </button>
       </div>
       <div className="menu-item">

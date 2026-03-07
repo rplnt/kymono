@@ -45,4 +45,5 @@ export const CONFIG_PATHS = {
   INCLUDE_DESCENDANTS: 'bookmarks.includeDescendants',
   DEFAULT_TIMESPAN: 'bookmarks.defaultTimespan',
   COMMENT_TOOLBAR: 'node.commentToolbar',
+  RELATIVE_TIME: 'node.relativeTime',
 } as const

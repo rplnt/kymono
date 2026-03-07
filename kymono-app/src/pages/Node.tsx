@@ -60,10 +60,10 @@ export function Node() {
   const [comments, setComments] = useState<NodeComment[]>([])
   const [contentCollapsed, setContentCollapsed] = useState(false)
   const [collapsedComments, setCollapsedComments] = useState<Set<string>>(new Set())
-  const [showReplyForm, setShowReplyForm] = useState(false)
   const [replyTitle, setReplyTitle] = useState('')
   const [replyContent, setReplyContent] = useState('')
   const showCommentToolbar = getConfigValue(CONFIG_PATHS.COMMENT_TOOLBAR, true)
+  const useRelativeTime = getConfigValue(CONFIG_PATHS.RELATIVE_TIME, true)
 
   const toggleCommentCollapsed = (commentId: string) => {
     setCollapsedComments((prev) => {
@@ -156,53 +156,68 @@ export function Node() {
 
   const externalUrl = `${config.externalBase}/id/${node.id}`
 
+  const scrollToComments = () => {
+    const commentsEl = document.querySelector('.node-comments')
+    if (commentsEl) {
+      const menuHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--menu-height')) || 56
+      const top = commentsEl.getBoundingClientRect().top + window.scrollY - menuHeight - 8
+      window.scrollTo({ top, behavior: 'smooth' })
+    }
+  }
+
   return (
     <div className="node-view">
-      {/* Who in Where */}
-      <div className="node-meta-bar">
-        <a
-          className="node-meta-link"
-          onClick={(e) => {
-            e.preventDefault()
-            navigate(`/id/${node.creatorId}`)
-          }}
-        >
-          {node.owner}
-        </a>
-        {node.parentId && (
-          <>
-            <span className="node-meta-sep">in</span>
+      {/* Node header */}
+      <div
+        className={`node-header${contentCollapsed ? ' collapsed' : ''}`}
+        onClick={() => setContentCollapsed((prev) => !prev)}
+      >
+        <div className="node-header-row">
+          <h1 className="node-title" dangerouslySetInnerHTML={{ __html: node.nameHtml }} />
+          {node.karma >= 1 && (
+            <span className="node-karma">{node.karma} K</span>
+          )}
+          <a
+            href={externalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="node-external-link"
+            title="Open on kyberia.sk"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+          </a>
+        </div>
+        <div className="node-header-row">
+          <span className="node-meta">
+            <span className="node-meta-label">by</span>
             <a
               className="node-meta-link"
               onClick={(e) => {
+                e.stopPropagation()
                 e.preventDefault()
-                navigate(`/id/${node.parentId}`)
+                navigate(`/id/${node.creatorId}`)
               }}
             >
-              {node.parentName}
+              {node.owner}
             </a>
-          </>
-        )}
-      </div>
-
-      <div className="node-header" onClick={() => setContentCollapsed((prev) => !prev)}>
-        <span className="node-title">
-          {contentCollapsed ? '▸' : '▾'} <span dangerouslySetInnerHTML={{ __html: node.nameHtml }} />
-        </span>
-        <a
-          href={externalUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="node-external-link"
-          title="Open on kyberia.sk"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-            <polyline points="15 3 21 3 21 9" />
-            <line x1="10" y1="14" x2="21" y2="3" />
-          </svg>
-        </a>
+          </span>
+          {node.childrenCount > 0 && (
+            <button
+              className="node-children-link"
+              onClick={(e) => {
+                e.stopPropagation()
+                scrollToComments()
+              }}
+            >
+              {node.childrenCount} children
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Node content */}
@@ -216,32 +231,19 @@ export function Node() {
         </div>
       )}
 
-      {/* Node actions toolbar */}
-      <div className="node-actions">
-        {node.canWrite && (
-          <button
-            className="node-action-btn"
-            onClick={() => setShowReplyForm(!showReplyForm)}
-          >
-            reply
-          </button>
-        )}
-        <button className="node-action-btn">K</button>
-      </div>
-
-      {/* Reply form */}
-      {showReplyForm && (
+      {/* Reply form - always visible when user can write */}
+      {node.canWrite && (
         <div className="reply-form">
           <input
             type="text"
             className="reply-title"
-            placeholder="Title (optional)"
+            placeholder="Title"
             value={replyTitle}
             onChange={(e) => setReplyTitle(e.target.value)}
           />
           <textarea
             className="reply-content"
-            placeholder="Write your comment..."
+            placeholder="Content"
             value={replyContent}
             onChange={(e) => setReplyContent(e.target.value)}
             rows={4}
@@ -299,11 +301,11 @@ export function Node() {
                     >
                       {comment.owner}
                     </a>
-                    <span className="comment-date" title={formatDate(comment.createdAt)}>
-                      {formatRelativeDate(comment.createdAt)}
+                    <span className="comment-date">
+                      {useRelativeTime ? formatRelativeDate(comment.createdAt) : formatDate(comment.createdAt)}
                       {comment.updatedAt && (
-                        <span className="edited-marker" title={formatDate(comment.updatedAt)}>
-                          *{formatRelativeDate(comment.updatedAt)}
+                        <span className="comment-date-edit">
+                          {' '}({useRelativeTime ? formatRelativeDate(comment.updatedAt) : formatDate(comment.updatedAt)})
                         </span>
                       )}
                     </span>

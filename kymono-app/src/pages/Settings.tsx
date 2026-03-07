@@ -82,6 +82,12 @@ const settingsConfig: ConfigJson = {
           type: 'boolean',
           value: true,
         },
+        {
+          name: 'relativeTime',
+          description: 'Show relative times in comments (e.g., 2h ago)',
+          type: 'boolean',
+          value: true,
+        },
       ],
     },
   ],

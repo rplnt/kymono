@@ -163,6 +163,7 @@ body::before {
   color: var(--color-text-secondary);
   letter-spacing: 0.05em;
   position: relative;
+  line-height: 1;
 }
 
 .btn-menu::after {
@@ -193,6 +194,17 @@ body::before {
 
 .btn-menu.active::after {
   transform: scaleX(0);
+}
+
+.btn-menu.btn-sidebar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hamburger-icon {
+  display: block;
+  transform: translateY(-2px);
 }
 
 .btn-menu.btn-mail {
@@ -1103,13 +1115,14 @@ body::before {
   margin-top: calc(-1 * var(--space-4));
 }
 
+/* Node header - two rows */
 .node-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-2) var(--space-3);
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
   background: var(--color-bg-surface);
-  border-left: 3px solid var(--color-phosphor);
+  border-bottom: 1px solid var(--color-phosphor-dim);
   cursor: pointer;
   user-select: none;
   transition: background var(--transition-fast);
@@ -1117,24 +1130,41 @@ body::before {
 
 .node-header:hover {
   background: var(--color-bg-elevated);
-  border-color: var(--color-phosphor-bright);
+}
+
+.node-header.collapsed {
+  border-bottom-style: dashed;
+}
+
+.node-header-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
 }
 
 .node-title {
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  letter-spacing: 0.05em;
-  color: var(--color-text-primary);
-  word-wrap: break-word;
   flex: 1;
   min-width: 0;
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--color-text-primary);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  margin: 0;
+}
+
+.node-karma {
+  flex-shrink: 0;
+  color: var(--color-error);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
 }
 
 .node-external-link {
   flex-shrink: 0;
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
   text-decoration: none;
-  font-size: var(--font-size-lg);
   line-height: 1;
   padding: var(--space-1);
   transition: color var(--transition-fast);
@@ -1144,49 +1174,47 @@ body::before {
   color: var(--color-text-primary);
 }
 
-.node-parent {
+.node-meta {
+  flex: 1;
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  margin-bottom: var(--space-4);
 }
 
-/* Node Meta Bar (who in where) */
-.node-meta-bar {
-  font-size: var(--font-size-xs);
+.node-meta-label {
   color: var(--color-text-muted);
-  padding: var(--space-1) var(--space-2);
+  margin-right: var(--space-1);
 }
 
 .node-meta-link {
   color: var(--color-text-secondary);
   cursor: pointer;
   text-decoration: none;
+  transition: color var(--transition-fast);
 }
 
 .node-meta-link:hover {
   color: var(--color-phosphor);
 }
 
-.node-meta-sep {
-  margin: 0 var(--space-1);
+.node-children-link {
+  flex-shrink: 0;
+  background: none;
+  border: none;
   color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--transition-fast);
 }
 
+.node-children-link:hover {
+  color: var(--color-phosphor);
+}
+
+/* Node content */
 .node-content-box {
-  padding-top: var(--space-3);
-  padding-left: var(--space-3);
-  position: relative;
-}
-
-.node-content-box::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 3px;
-  height: 100px;
-  background: linear-gradient(to bottom, var(--color-phosphor), transparent);
-  pointer-events: none;
+  padding: var(--space-4) var(--space-3);
 }
 
 .node-content {
@@ -1210,29 +1238,6 @@ body::before {
   height: auto;
 }
 
-/* Node Actions Toolbar */
-.node-actions {
-  display: flex;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  border-left: 2px solid var(--color-phosphor-dim);
-  background: var(--color-bg-surface);
-}
-
-.node-action-btn {
-  background: none;
-  border: 1px solid var(--color-phosphor-dim);
-  color: var(--color-text-primary);
-  padding: var(--space-1) var(--space-3);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.node-action-btn:hover {
-  border-color: var(--color-phosphor);
-  color: var(--color-phosphor);
-}
 
 /* Reply Form */
 .reply-form {
@@ -1240,13 +1245,12 @@ body::before {
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
-  border-left: 2px solid var(--color-phosphor-dim);
-  background: var(--color-bg-base);
+  border-top: 1px solid var(--color-phosphor-dim);
 }
 
 .reply-title {
   background: var(--color-bg-surface);
-  border: 1px solid var(--color-phosphor-dim);
+  border: 1px solid var(--color-bg-surface);
   color: var(--color-text-primary);
   padding: var(--space-2);
   font-size: var(--font-size-sm);
@@ -1254,12 +1258,12 @@ body::before {
 
 .reply-title:focus {
   outline: none;
-  border-color: var(--color-phosphor);
+  border-color: var(--color-text-muted);
 }
 
 .reply-content {
   background: var(--color-bg-surface);
-  border: 1px solid var(--color-phosphor-dim);
+  border: 1px solid var(--color-bg-surface);
   color: var(--color-text-primary);
   padding: var(--space-2);
   font-size: var(--font-size-sm);
@@ -1270,7 +1274,7 @@ body::before {
 
 .reply-content:focus {
   outline: none;
-  border-color: var(--color-phosphor);
+  border-color: var(--color-text-muted);
 }
 
 .reply-actions {
@@ -1279,17 +1283,19 @@ body::before {
 }
 
 .reply-submit {
-  background: var(--color-phosphor-dim);
-  border: none;
-  color: var(--color-bg-base);
+  background: none;
+  border: 1px solid var(--color-text-muted);
+  color: var(--color-text-secondary);
   padding: var(--space-1) var(--space-4);
+  font-family: var(--font-family);
   font-size: var(--font-size-sm);
   cursor: pointer;
-  transition: background var(--transition-fast);
+  transition: all var(--transition-fast);
 }
 
 .reply-submit:hover {
-  background: var(--color-phosphor);
+  border-color: var(--color-phosphor);
+  color: var(--color-phosphor);
 }
 
 /* Node Comments */
@@ -1361,11 +1367,6 @@ body::before {
 
 .comment-date {
   color: var(--color-text-secondary);
-}
-
-.comment-date .edited-marker {
-  color: var(--color-phosphor);
-  margin-left: 2px;
 }
 
 .comment-karma {
