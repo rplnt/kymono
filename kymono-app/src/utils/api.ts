@@ -526,6 +526,9 @@ export async function fetchNodeData(nodeId: string, templateId?: string): Promis
   const data = extractJson<RawNodeResponse>(html, 'kymono.node')
 
   if (!data) {
+    if (html.includes("you don't have permissions for viewing this data node")) {
+      throw new Error("You don't have permissions for viewing this data node")
+    }
     throw new Error('Failed to parse node data')
   }
 

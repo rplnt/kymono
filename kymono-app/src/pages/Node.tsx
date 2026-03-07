@@ -97,7 +97,6 @@ export function Node() {
 
     setNode(null)
     setComments([])
-    setContentCollapsed(false)
     setCollapsedComments(new Set())
     setLoading(true)
     setError(null)
@@ -106,9 +105,10 @@ export function Node() {
       setNode(response.node)
       setComments(response.children)
       setCurrentNode(response.node)
+      setContentCollapsed(response.node.templateId === '21')
     } catch (err) {
       console.error('Failed to load node:', err)
-      setError('Failed to load node')
+      setError(err instanceof Error ? err.message : 'Failed to load node')
     } finally {
       setLoading(false)
     }
@@ -200,78 +200,189 @@ export function Node() {
 
   return (
     <div className="node-view">
-      {/* Node header */}
-      <div
-        className={`node-header${contentCollapsed ? ' collapsed' : ''}`}
-        onClick={() => setContentCollapsed((prev) => !prev)}
-      >
-        <div className="node-header-row">
-          <h1 className="node-title" dangerouslySetInnerHTML={{ __html: node.nameHtml }} />
-          {node.karma >= 1 && <span className="node-karma">{node.karma} K</span>}
+      {node.parentId && (
+        <div className="node-parent-ref">
+          <span className="node-parent-in">in </span>
           <a
-            href={externalUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="node-external-link"
-            title="Open on kyberia.sk"
-            onClick={(e) => e.stopPropagation()}
+            href={`#/id/${node.parentId}`}
+            className="node-parent-link"
+            onClick={(e) => {
+              e.preventDefault()
+              navigate(`/id/${node.parentId}`)
+            }}
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
+            {node.parentName || `node ${node.parentId}`}
           </a>
         </div>
-        <div className="node-header-row">
-          <span className="node-meta">
-            <span className="node-meta-label">by</span>
+      )}
+      {node.templateId === '4' ? (
+        /* Submission: render like a comment */
+        <div className="comment node-as-comment">
+          <div className="comment-header" onClick={() => setContentCollapsed((prev) => !prev)}>
+            {node.creatorImageUrl ? (
+              <img
+                src={node.creatorImageUrl}
+                alt=""
+                className="comment-avatar"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  navigate(`/id/${node.creatorId}`)
+                }}
+              />
+            ) : (
+              <div
+                className="comment-avatar comment-avatar-placeholder"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  navigate(`/id/${node.creatorId}`)
+                }}
+              />
+            )}
+            <div className="comment-meta">
+              <div className="comment-meta-line">
+                <a
+                  href={`#/id/${node.creatorId}`}
+                  className="comment-author"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    navigate(`/id/${node.creatorId}`)
+                  }}
+                >
+                  {node.owner}
+                </a>
+                <Timestamp
+                  createdAt={node.createdAt}
+                  updatedAt={node.updatedAt}
+                  fullTimestamps={fullTimestamps}
+                />
+                {node.karma >= 1 && <span className="comment-karma">{node.karma}K</span>}
+              </div>
+              <div className="comment-meta-line">
+                <span className="comment-title">{node.name || `node ${node.id}`}</span>
+                {node.childrenCount > 0 && (
+                  <button
+                    className="node-children-link"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      scrollToComments()
+                    }}
+                  >
+                    {node.childrenCount} children
+                  </button>
+                )}
+              </div>
+            </div>
             <a
-              href={`#/id/${node.creatorId}`}
-              className="node-meta-link"
-              onClick={(e) => {
-                e.stopPropagation()
-                e.preventDefault()
-                navigate(`/id/${node.creatorId}`)
-              }}
+              href={externalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="node-external-link"
+              title="Open on kyberia.sk"
+              onClick={(e) => e.stopPropagation()}
             >
-              {node.owner}
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
             </a>
-          </span>
-          {node.childrenCount > 0 && (
-            <button
-              className="node-children-link"
-              onClick={(e) => {
-                e.stopPropagation()
-                scrollToComments()
-              }}
-            >
-              {node.childrenCount} children
-            </button>
+          </div>
+          {!contentCollapsed && (
+            <div className="comment-body">
+              <div
+                className="comment-content"
+                dangerouslySetInnerHTML={{ __html: node.content }}
+                onClick={handleContentClick}
+              />
+            </div>
           )}
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Node header */}
+          <div
+            className={`node-header${contentCollapsed ? ' collapsed' : ''}`}
+            onClick={() => setContentCollapsed((prev) => !prev)}
+          >
+            <div className="node-header-row">
+              <h1 className="node-title" dangerouslySetInnerHTML={{ __html: node.nameHtml }} />
+              {node.karma >= 1 && node.templateId !== '2' && node.templateId !== '3' && (
+                <span className="node-karma">{node.karma} K</span>
+              )}
+              <a
+                href={externalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="node-external-link"
+                title="Open on kyberia.sk"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+              </a>
+            </div>
+            <div className="node-header-row">
+              <span className="node-meta">
+                <span className="node-meta-label">by</span>
+                <a
+                  href={`#/id/${node.creatorId}`}
+                  className="node-meta-link"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    e.preventDefault()
+                    navigate(`/id/${node.creatorId}`)
+                  }}
+                >
+                  {node.owner}
+                </a>
+              </span>
+              {node.childrenCount > 0 && (
+                <button
+                  className="node-children-link"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    scrollToComments()
+                  }}
+                >
+                  {node.childrenCount} children
+                </button>
+              )}
+            </div>
+          </div>
 
-      {/* Node content */}
-      {!contentCollapsed && (
-        <div className="node-content-box">
-          {node.templateId === '14' ? (
-            <pre className="node-content node-content-mono">{node.content}</pre>
-          ) : (
-            <div
-              className="node-content"
-              dangerouslySetInnerHTML={{ __html: node.content }}
-              onClick={handleContentClick}
-            />
+          {/* Node content */}
+          {!contentCollapsed && (
+            <div className="node-content-box">
+              {node.templateId === '14' ? (
+                <pre className="node-content node-content-mono">{node.content}</pre>
+              ) : (
+                <div
+                  className="node-content"
+                  dangerouslySetInnerHTML={{ __html: node.content }}
+                  onClick={handleContentClick}
+                />
+              )}
+            </div>
           )}
-        </div>
+        </>
       )}
 
       {/* Reply form - always visible when user can write */}

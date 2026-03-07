@@ -31,3 +31,4 @@ Thumbs.db
 # Local
 notes/
 mock-server/html/
+templates/examples/
