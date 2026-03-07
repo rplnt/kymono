@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useCurrentNode } from '@/contexts'
 import { FriendsOnline } from '@/components/FriendsOnline'
@@ -6,7 +6,6 @@ import { LatestReplies } from '@/components/LatestReplies'
 import { fetchSidebarData } from '@/utils'
 import type { OnlineFriend, LatestReply } from '@/types'
 
-const COOLDOWN_MS = 60_000
 const LAST_LOADED_KEY = 'kymono.sidebar.lastLoaded'
 
 interface SidePanelProps {
@@ -28,20 +27,15 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
   const [replies, setReplies] = useState<LatestReply[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const lastFetchedAt = useRef(0)
   const [lastLoadedAt] = useState<string | null>(() => localStorage.getItem(LAST_LOADED_KEY))
 
-  const loadSidebar = useCallback(async () => {
-    const now = Date.now()
-    if (now - lastFetchedAt.current < COOLDOWN_MS) return
-
+  const loadSidebar = useCallback(async (force = false) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchSidebarData()
+      const data = await fetchSidebarData(force)
       setFriends(data.friends)
       setReplies(data.replies)
-      lastFetchedAt.current = Date.now()
       const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19)
       localStorage.setItem(LAST_LOADED_KEY, timestamp)
     } catch (err) {
@@ -183,17 +177,20 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
                   <div className="node-ancestors-label">coordinates</div>
                   <div className="node-ancestors-list">
                     {(() => {
-                      const count = currentNode.ancestors.length
-                      // Scale indent so the deepest item fits within ~200px panel width
-                      // Max usable width ~180px, minus ~15px for └ prefix
-                      const maxIndent = 165
-                      const step = count > 1 ? Math.min(12, maxIndent / (count - 1)) : 0
+                      // Decreasing indent per level: each step smaller than previous
+                      const getIndent = (index: number) => {
+                        let indent = 0
+                        for (let j = 0; j < index; j++) {
+                          indent += Math.max(Math.round(7 * Math.pow(0.93, j)), 2)
+                        }
+                        return indent
+                      }
                       return currentNode.ancestors.map((ancestor, i) => (
                         <a
                           key={ancestor.id}
                           href={`#/id/${ancestor.id}`}
                           className="node-ancestor-link"
-                          style={{ marginLeft: `${Math.round(i * step)}px` }}
+                          style={{ marginLeft: `${getIndent(i)}px` }}
                           title={ancestor.id}
                           onClick={(e) => handleAncestorClick(e, ancestor.id)}
                         >

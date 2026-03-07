@@ -69,6 +69,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Reset form elements to prevent parent page CSS from leaking in */
@@ -127,22 +128,6 @@ body {
   font-size: var(--font-size-base);
   line-height: var(--line-height-normal);
   min-height: 100vh;
-}
-
-/* Subtle CRT scanline effect */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.03) 2px,
-    rgba(0, 0, 0, 0.03) 4px
-  );
-  pointer-events: none;
-  z-index: 9999;
 }
 
 a {
@@ -266,18 +251,8 @@ a {
 /* Spacer below fixed menu */
 .pad {
   display: block;
-  height: calc(var(--menu-height) + var(--space-2));
+  height: calc(var(--menu-height) + var(--space-1));
   visibility: hidden;
-}
-
-.pull-indicator {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-phosphor);
-  font-size: var(--font-size-sm);
-  text-align: center;
-  overflow: hidden;
 }
 
 /* ============================================================
@@ -606,8 +581,8 @@ a {
 }
 
 .setting-checkbox {
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   accent-color: var(--color-phosphor);
   cursor: pointer;
 }
@@ -750,7 +725,6 @@ a {
   font-size: 4rem;
   color: var(--color-phosphor-dim);
   margin-bottom: var(--space-4);
-  animation: pulse 2s ease-in-out infinite;
 }
 
 .empty-state-text {
@@ -770,16 +744,6 @@ a {
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
   }
 }
 
@@ -1019,10 +983,6 @@ a {
   font-size: var(--font-size-sm);
   color: var(--color-text-primary);
   margin-bottom: var(--space-4);
-  max-height: 3em;
-  overflow: hidden;
-  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
 }
 
 .side-panel-node .node-meta {
@@ -1436,7 +1396,7 @@ a {
 .node-title {
   flex: 1;
   min-width: 0;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: 500;
   line-height: 1.4;
   color: var(--color-text-primary);
@@ -1510,6 +1470,7 @@ a {
 
 .node-content {
   color: var(--color-phosphor);
+  font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -1648,19 +1609,16 @@ a {
 
 .comment-meta-line {
   display: flex;
-  gap: var(--space-1);
+  gap: var(--space-2);
   align-items: baseline;
   white-space: nowrap;
   overflow: hidden;
-  mask-image: linear-gradient(to right, black 85%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
 }
 
 .comment-author {
   color: var(--color-text-primary);
   text-decoration: none;
   cursor: pointer;
-  margin-right: var(--space-2);
 }
 
 .comment-author:hover {
@@ -1684,6 +1642,15 @@ a {
 
 .comment-date {
   color: var(--color-text-secondary);
+}
+
+.comment-date-clickable {
+  cursor: pointer;
+}
+
+.comment-date-edited {
+  color: var(--color-text-muted);
+  margin-left: 1px;
 }
 
 .comment-karma {
@@ -1903,54 +1870,24 @@ a {
   font-style: italic;
 }
 
-/* Disable hover effects on touch-only devices to prevent sticky highlights while scrolling */
+/* Prevent color changes on click for headers/titles */
+.comment-header:active,
+.comment-title:active,
+.comment-author:active,
+.node-header:active,
+.node-title:active,
+.module-header:active,
+.module-title:active,
+.cat-header:active,
+.book-cat .cat-header:active {
+  color: inherit;
+  background-color: inherit;
+}
+
+/* Disable all hover effects on touch-only devices */
 @media (hover: none) {
-  .bookmark:hover,
-  .comment-header:hover,
-  .node-child-item:hover,
-  .setting-row:hover,
-  .module-header:hover,
-  .dropdown-item:hover,
-  .cat-header:hover,
-  .book-cat .cat-header:hover {
-    background: unset;
-  }
-
-  .btn-filter:hover,
-  .btn-show-more:hover,
-  .module-reload:hover,
-  .module-retry:hover,
-  .btn-retry:hover,
-  .reply-submit:hover:not(:disabled),
-  .toolbar-btn:hover:not(:disabled),
-  .setting-order-btn:hover:not(:disabled),
-  .lr-more:hover,
-  .lr-show-older:hover {
-    background: unset;
-    color: unset;
-  }
-
-  .node-link:hover,
-  .mpn-link:hover,
-  .comment-author:hover,
-  .comment-title:hover,
-  .comment-content a:hover,
-  .node-content a:hover,
-  .node-external-link:hover,
-  .node-meta-link:hover,
-  .node-children-link:hover,
-  .node-child-name:hover,
-  .node-child-author:hover,
-  .k-parent-link:hover,
-  .fs-parent:hover,
-  .friend-name:hover,
-  .friend-location:hover,
-  .side-panel-link:hover,
-  .side-panel-node .node-ancestor-link:hover,
-  .side-panel-node .node-timestamp-clickable:hover,
-  .reply-group-parent:hover,
-  .lr-text:hover,
-  .node-header:hover {
-    color: unset;
+  #root *:hover {
+    background-color: inherit !important;
+    color: inherit !important;
   }
 }

@@ -6,19 +6,50 @@ import { fetchNodeData, formatDate, formatRelativeDate } from '@/utils'
 import { useTitle } from '@/utils/useTitle'
 import { config, CONFIG_PATHS } from '@/config'
 
-function getCommentIndent(level: number): number {
-  // 24px (avatar width) per level, halving every 4 levels
-  let indent = 0
-  let remaining = level
-  let increment = 24
+// Cycles: relative → full created → full edited → relative (if edited)
+//         relative → full created → relative (if not edited)
+function Timestamp({
+  createdAt,
+  updatedAt,
+  fullTimestamps,
+}: {
+  createdAt: Date
+  updatedAt: Date | null
+  fullTimestamps: boolean
+}) {
+  // 0 = default (uses fullTimestamps setting), 1 = full created, 2 = full edited
+  const [mode, setMode] = useState(0)
 
-  while (remaining > 0) {
-    const levelsAtThisIncrement = Math.min(remaining, 4)
-    indent += levelsAtThisIncrement * increment
-    remaining -= levelsAtThisIncrement
-    increment = Math.max(Math.floor(increment / 2), 3)
+  const cycle = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (mode === 0) {
+      setMode(fullTimestamps ? (updatedAt ? 2 : 0) : 1)
+    } else if (mode === 1) {
+      setMode(updatedAt ? 2 : 0)
+    } else {
+      setMode(0)
+    }
   }
 
+  const showFull = mode === 1 || mode === 2 || (mode === 0 && fullTimestamps)
+  const showEdited = mode === 2
+  const date = showEdited && updatedAt ? updatedAt : createdAt
+
+  return (
+    <span className="comment-date comment-date-clickable" onClick={cycle}>
+      {showFull ? formatDate(date) : formatRelativeDate(createdAt)}
+      {showFull && updatedAt && <span className="comment-date-edited">*</span>}
+    </span>
+  )
+}
+
+function getCommentIndent(level: number): number {
+  // Logarithmic indent: each level adds less than the previous
+  // e.g. 24, 20, 16, 13, 11, 9, 8, 7, 6, 5, 4, 4, 3, 3, 3...
+  let indent = 0
+  for (let i = 0; i < level; i++) {
+    indent += Math.max(Math.round(24 * Math.pow(0.82, i)), 3)
+  }
   return indent
 }
 
@@ -66,6 +97,8 @@ export function Node() {
 
     setNode(null)
     setComments([])
+    setContentCollapsed(false)
+    setCollapsedComments(new Set())
     setLoading(true)
     setError(null)
     try {
@@ -374,21 +407,11 @@ export function Node() {
                                 >
                                   {comment.owner}
                                 </a>
-                                <span className="comment-date">
-                                  {fullTimestamps
-                                    ? formatDate(comment.createdAt)
-                                    : formatRelativeDate(comment.createdAt)}
-                                  {comment.updatedAt && (
-                                    <span className="comment-date-edit">
-                                      {' '}
-                                      (
-                                      {fullTimestamps
-                                        ? formatDate(comment.updatedAt)
-                                        : formatRelativeDate(comment.updatedAt)}
-                                      )
-                                    </span>
-                                  )}
-                                </span>
+                                <Timestamp
+                                  createdAt={comment.createdAt}
+                                  updatedAt={comment.updatedAt}
+                                  fullTimestamps={fullTimestamps}
+                                />
                                 {comment.karma > 0 && (
                                   <span className="comment-karma">{comment.karma}K</span>
                                 )}

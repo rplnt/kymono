@@ -17,11 +17,11 @@ export function FriendsSubmissions() {
   const [fullTimestamps] = useConfigValue(CONFIG_PATHS.FULL_TIMESTAMPS, true)
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE)
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (force = false) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchFriendsSubmissions()
+      const data = await fetchFriendsSubmissions(force)
       setItems(data)
       setVisibleCount(ITEMS_PER_PAGE)
     } catch (err) {
@@ -53,7 +53,7 @@ export function FriendsSubmissions() {
       error={error}
       empty={items.length === 0}
       emptyMessage="No submissions from friends"
-      onReload={loadData}
+      onReload={() => loadData(true)}
     >
       {visible.map((item) => (
         <div key={item.id} className="friend-submission">

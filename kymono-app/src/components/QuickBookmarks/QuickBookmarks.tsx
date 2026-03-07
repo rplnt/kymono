@@ -13,12 +13,11 @@ export function QuickBookmarks() {
   const [error, setError] = useState<string | null>(null)
   const [enabled] = useConfigValue(CONFIG_PATHS.QUICK_BOOKMARKS_ENABLED, true)
 
-  // Load bookmarks data
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (force = false) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchBookmarksData()
+      const data = await fetchBookmarksData(force)
       setCategories(data)
     } catch (err) {
       console.error('Failed to load bookmarks:', err)
@@ -88,7 +87,7 @@ export function QuickBookmarks() {
       error={error}
       empty={recentBookmarks.length === 0}
       emptyMessage="No new replies in the last month"
-      onReload={loadData}
+      onReload={() => loadData(true)}
     >
       {recentBookmarks.length > 0 && (
         <div className="quick-bookmarks-list">

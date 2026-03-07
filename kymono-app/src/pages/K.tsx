@@ -16,6 +16,40 @@ interface KItemCardProps {
   onContentClick: (e: React.MouseEvent) => void
 }
 
+function Timestamp({
+  createdAt,
+  updatedAt,
+  fullTimestamps,
+}: {
+  createdAt: Date
+  updatedAt: Date | null
+  fullTimestamps: boolean
+}) {
+  const [mode, setMode] = useState(0)
+
+  const cycle = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (mode === 0) {
+      setMode(fullTimestamps ? (updatedAt ? 2 : 0) : 1)
+    } else if (mode === 1) {
+      setMode(updatedAt ? 2 : 0)
+    } else {
+      setMode(0)
+    }
+  }
+
+  const showFull = mode === 1 || mode === 2 || (mode === 0 && fullTimestamps)
+  const showEdited = mode === 2
+  const date = showEdited && updatedAt ? updatedAt : createdAt
+
+  return (
+    <span className="comment-date comment-date-clickable" onClick={cycle}>
+      {showFull ? formatDate(date) : formatRelativeDate(createdAt)}
+      {showFull && updatedAt && <span className="comment-date-edited">*</span>}
+    </span>
+  )
+}
+
 const scrollToSibling = (itemId: string, direction: 'prev' | 'next') => {
   const el = document.getElementById(`k-item-${itemId}`)
   const sibling = direction === 'prev' ? el?.previousElementSibling : el?.nextElementSibling
@@ -71,17 +105,11 @@ const KItemCard = memo(function KItemCard({
             >
               {item.owner}
             </a>
-            <span className="comment-date">
-              {fullTimestamps ? formatDate(item.createdAt) : formatRelativeDate(item.createdAt)}
-              {item.updatedAt && (
-                <span className="comment-date-edit">
-                  {' '}
-                  (
-                  {fullTimestamps ? formatDate(item.updatedAt) : formatRelativeDate(item.updatedAt)}
-                  )
-                </span>
-              )}
-            </span>
+            <Timestamp
+              createdAt={item.createdAt}
+              updatedAt={item.updatedAt}
+              fullTimestamps={fullTimestamps}
+            />
             {item.karma > 0 && <span className="comment-karma">{item.karma}K</span>}
           </div>
           <div className="comment-meta-line">
@@ -167,11 +195,11 @@ export function K() {
   const [autoLoadOnScroll] = useConfigValue(CONFIG_PATHS.K_AUTO_LOAD_SCROLL, false)
   const [visibleCount, setVisibleCount] = useState(4)
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (force = false) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchKData()
+      const data = await fetchKData(force)
       setItems(data)
     } catch (err) {
       console.error('Failed to load K data:', err)
@@ -249,7 +277,7 @@ export function K() {
     return (
       <div className="error-container">
         <p className="error-message">{error}</p>
-        <button className="btn btn-retry" onClick={loadData}>
+        <button className="btn btn-retry" onClick={() => loadData(true)}>
           Retry
         </button>
       </div>

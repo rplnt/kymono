@@ -51,12 +51,11 @@ export function Bookmarks() {
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
   const [index, setIndex] = useState<SearchIndex | null>(null)
 
-  // Load bookmarks data
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (force = false) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchBookmarksData()
+      const data = await fetchBookmarksData(force)
       setCategories(data)
 
       // Build search index
@@ -190,7 +189,7 @@ export function Bookmarks() {
     return (
       <div className="error-container">
         <p className="error-message">{error}</p>
-        <button className="btn btn-retry" onClick={loadData}>
+        <button className="btn btn-retry" onClick={() => loadData(true)}>
           Retry
         </button>
       </div>

@@ -16,12 +16,11 @@ export function MpnModule() {
   const [error, setError] = useState<string | null>(null)
   const [enabled] = useConfigValue(CONFIG_PATHS.MPN_ENABLED, true)
 
-  // Load MPN data
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (force = false) => {
     setLoading(true)
     setError(null)
     try {
-      const allNodes = await fetchMpnData()
+      const allNodes = await fetchMpnData(force)
       setNodes(allNodes)
     } catch (err) {
       console.error('Failed to load MPN data:', err)
@@ -95,7 +94,7 @@ export function MpnModule() {
       loading={loading}
       error={error}
       empty={filteredNodes.length === 0}
-      onReload={loadData}
+      onReload={() => loadData(true)}
     >
       {filteredNodes.length > 0 && (
         <div id="mpn">

@@ -132,6 +132,32 @@ function applyNl2br(content: string, nl2br: unknown): string {
 }
 
 /**
+ * Simple in-memory cache for API responses.
+ * Each key stores the data and the timestamp it was fetched.
+ * Calls within CACHE_TTL_MS return cached data; force=true bypasses.
+ */
+const CACHE_TTL_MS = 60_000
+
+interface CacheEntry<T> {
+  data: T
+  fetchedAt: number
+}
+
+const cache = new Map<string, CacheEntry<unknown>>()
+
+function getCached<T>(key: string): T | null {
+  const entry = cache.get(key)
+  if (entry && Date.now() - entry.fetchedAt < CACHE_TTL_MS) {
+    return entry.data as T
+  }
+  return null
+}
+
+function setCache<T>(key: string, data: T): void {
+  cache.set(key, { data, fetchedAt: Date.now() })
+}
+
+/**
  * Extract JSON data from HTML response
  * Looks for content inside a <script type="application/json" id="..."> tag
  */
@@ -336,7 +362,13 @@ function parseNodeJson(
 /**
  * Parse child/comment JSON data into NodeComment
  */
-function parseChildJson(raw: RawChild): NodeComment {
+function parseChildJson(raw: RawChild, lastVisit?: Date): NodeComment {
+  const createdAt = new Date(raw.node_created)
+  const updatedAt = raw.node_updated ? new Date(raw.node_updated) : null
+  const isOrphan = raw.orphan === 1
+  const isNew = lastVisit ? createdAt > lastVisit && !isOrphan : false
+  const contentChanged = lastVisit && updatedAt ? updatedAt > lastVisit : false
+
   return {
     id: raw.node_id,
     parentId: raw.node_parent,
@@ -346,17 +378,17 @@ function parseChildJson(raw: RawChild): NodeComment {
     name: stripHtml(raw.node_name || ''),
     content: applyNl2br(raw.node_content || '', raw.nl2br),
     templateId: raw.template_id,
-    createdAt: new Date(raw.node_created),
-    updatedAt: raw.node_updated ? new Date(raw.node_updated) : null,
+    createdAt,
+    updatedAt,
     karma: typeof raw.k === 'string' ? parseInt(raw.k, 10) : raw.k,
     childrenCount:
       typeof raw.node_children_count === 'string'
         ? parseInt(raw.node_children_count, 10)
         : raw.node_children_count || 0,
     imageUrl: getImageUrl(raw.node_creator),
-    isNew: false, // TODO: Calculate from last_visit if needed
-    isOrphan: raw.orphan === 1,
-    contentChanged: false, // TODO: Calculate from last_visit if needed
+    isNew,
+    isOrphan,
+    contentChanged,
     isHardlink: raw.node_status === 'linked',
   }
 }
@@ -364,7 +396,12 @@ function parseChildJson(raw: RawChild): NodeComment {
 /**
  * Fetch and parse MPN data from server
  */
-export async function fetchMpnData(): Promise<MpnNode[]> {
+export async function fetchMpnData(force = false): Promise<MpnNode[]> {
+  const cacheKey = 'mpn'
+  if (!force) {
+    const cached = getCached<MpnNode[]>(cacheKey)
+    if (cached) return cached
+  }
   const url = `${config.apiBase}${config.base}${config.templates.mpn}`
   const response = await fetch(url)
   if (!response.ok) {
@@ -375,7 +412,9 @@ export async function fetchMpnData(): Promise<MpnNode[]> {
   if (!data) {
     throw new Error('Failed to parse MPN data')
   }
-  return parseMpnJson(data)
+  const result = parseMpnJson(data)
+  setCache(cacheKey, result)
+  return result
 }
 
 interface RawReply {
@@ -393,7 +432,12 @@ interface RawReply {
 /**
  * Fetch and parse sidebar data (friends + latest replies) from server
  */
-export async function fetchSidebarData(): Promise<SidebarData> {
+export async function fetchSidebarData(force = false): Promise<SidebarData> {
+  const cacheKey = 'sidebar'
+  if (!force) {
+    const cached = getCached<SidebarData>(cacheKey)
+    if (cached) return cached
+  }
   const url = `${config.apiBase}${config.base}${config.templates.sidebar}`
   const response = await fetch(url)
   if (!response.ok) {
@@ -424,13 +468,20 @@ export async function fetchSidebarData(): Promise<SidebarData> {
       }))
     : []
 
-  return { friends, replies }
+  const result = { friends, replies }
+  setCache(cacheKey, result)
+  return result
 }
 
 /**
  * Fetch and parse bookmarks data from server
  */
-export async function fetchBookmarksData(): Promise<BookmarkCategory[]> {
+export async function fetchBookmarksData(force = false): Promise<BookmarkCategory[]> {
+  const cacheKey = 'bookmarks'
+  if (!force) {
+    const cached = getCached<BookmarkCategory[]>(cacheKey)
+    if (cached) return cached
+  }
   const url = `${config.apiBase}${config.base}${config.templates.bookmarks}`
   const response = await fetch(url)
   if (!response.ok) {
@@ -441,7 +492,9 @@ export async function fetchBookmarksData(): Promise<BookmarkCategory[]> {
   if (!data) {
     throw new Error('Failed to parse bookmarks data')
   }
-  return parseBookmarksJson(data)
+  const result = parseBookmarksJson(data)
+  setCache(cacheKey, result)
+  return result
 }
 
 /**
@@ -484,7 +537,10 @@ export async function fetchNodeData(nodeId: string, templateId?: string): Promis
       data.nodeImageUrl,
       data.creatorImageUrl
     ),
-    children: (data.children || []).map(parseChildJson),
+    children: (() => {
+      const lastVisit = data.node.last_visit ? new Date(data.node.last_visit as string) : undefined
+      return (data.children || []).map((c) => parseChildJson(c, lastVisit))
+    })(),
     listingAmount: data.listing_amount,
     offset: data.offset,
   }
@@ -517,7 +573,12 @@ function parseKItem(raw: RawKItem): KItem {
 /**
  * Fetch and parse K (karma) data from server
  */
-export async function fetchKData(): Promise<KItem[]> {
+export async function fetchKData(force = false): Promise<KItem[]> {
+  const cacheKey = 'k'
+  if (!force) {
+    const cached = getCached<KItem[]>(cacheKey)
+    if (cached) return cached
+  }
   const url = `${config.apiBase}${config.base}${config.templates.k}`
   const response = await fetch(url)
   if (!response.ok) {
@@ -528,7 +589,9 @@ export async function fetchKData(): Promise<KItem[]> {
   if (!data) {
     throw new Error('Failed to parse K data')
   }
-  return data.map(parseKItem)
+  const result = data.map(parseKItem)
+  setCache(cacheKey, result)
+  return result
 }
 
 interface RawFriendSubmission {
@@ -547,7 +610,12 @@ interface RawFriendSubmission {
 /**
  * Fetch and parse friends' submissions data from server
  */
-export async function fetchFriendsSubmissions(): Promise<FriendSubmission[]> {
+export async function fetchFriendsSubmissions(force = false): Promise<FriendSubmission[]> {
+  const cacheKey = 'friendsSubmissions'
+  if (!force) {
+    const cached = getCached<FriendSubmission[]>(cacheKey)
+    if (cached) return cached
+  }
   const url = `${config.apiBase}${config.base}${config.templates.friendsSubmissions}`
   const response = await fetch(url)
   if (!response.ok) {
@@ -569,7 +637,7 @@ export async function fetchFriendsSubmissions(): Promise<FriendSubmission[]> {
     throw new Error('Failed to parse friends submissions JSON')
   }
 
-  return data.map((r) => ({
+  const result = data.map((r) => ({
     id: r.node_id,
     name: stripHtml(r.node_name || ''),
     parentId: r.node_parent,
@@ -581,4 +649,6 @@ export async function fetchFriendsSubmissions(): Promise<FriendSubmission[]> {
     createdAt: r.node_created,
     karma: typeof r.k === 'string' ? parseInt(r.k, 10) : r.k,
   }))
+  setCache(cacheKey, result)
+  return result
 }

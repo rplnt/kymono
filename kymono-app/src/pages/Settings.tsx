@@ -24,7 +24,7 @@ const settingsConfig: ConfigJson = {
         },
         {
           name: 'fullTimestamps',
-          description: 'Full timestamps (instead of relative e.g., 2h ago)',
+          description: 'Timestamps',
           type: 'boolean',
           value: true,
         },
