@@ -1,7 +1,6 @@
 import path from 'path'
 import { fileURLToPath } from 'url'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
-import CopyWebpackPlugin from 'copy-webpack-plugin'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -46,11 +45,6 @@ export default {
       template: './public/index.html',
       inject: 'body'
     }),
-    new CopyWebpackPlugin({
-      patterns: [
-        { from: 'src/index.css', to: 'index.css' }
-      ]
-    })
   ],
   devServer: {
     static: './dist',
