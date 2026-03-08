@@ -257,6 +257,7 @@ interface RawNodeResponse {
   nodeImageUrl?: string
   creatorImageUrl?: string
   canWrite: boolean
+  anticsrf?: string
   listing_amount: number
   offset: number
   node_views: number | string
@@ -546,6 +547,7 @@ export async function fetchNodeData(nodeId: string, templateId?: string): Promis
     })(),
     listingAmount: data.listing_amount,
     offset: data.offset,
+    anticsrf: data.anticsrf,
   }
 }
 
@@ -595,6 +597,30 @@ export async function fetchKData(force = false): Promise<KItem[]> {
   const result = data.map(parseKItem)
   setCache(cacheKey, result)
   return result
+}
+
+/**
+ * Submit a comment (template 4) under a parent node
+ */
+export async function submitComment(
+  parentNodeId: string,
+  title: string,
+  content: string,
+  anticsrf: string
+): Promise<void> {
+  const url = `${config.apiBase}/id/${parentNodeId}`
+  const formData = new FormData()
+  formData.append('node_name', title)
+  formData.append('node_content', content)
+  formData.append('template_id', '4')
+  formData.append('node_parent', parentNodeId)
+  formData.append('event', 'add')
+  formData.append('anticsrf', anticsrf)
+
+  const response = await fetch(url, { method: 'POST', body: formData, redirect: 'manual' })
+  if (response.status !== 302 && !response.ok) {
+    throw new Error(`Failed to submit comment: ${response.status}`)
+  }
 }
 
 interface RawFriendSubmission {

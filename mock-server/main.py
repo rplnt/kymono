@@ -4,7 +4,7 @@ from pathlib import Path
 import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 app = FastAPI()
 
@@ -32,6 +32,24 @@ def configure_proxy(host: str, phpsessid: str) -> None:
     PROXY_MODE = True
     PROXY_HOST = host.rstrip("/")
     PROXY_PHPSESSID = phpsessid
+
+
+async def proxy_post(path: str, body: bytes, content_type: str) -> Response:
+    """Forward POST request to the proxy target."""
+    url = f"{PROXY_HOST}{path}"
+    cookies = {"PHPSESSID": PROXY_PHPSESSID}
+    headers = {"content-type": content_type}
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            url, content=body, headers=headers, cookies=cookies, follow_redirects=True
+        )
+        print(f"PROXY POST: {path} -> {response.status_code} ({len(response.content)} bytes)")
+        return Response(
+            content=response.content,
+            status_code=response.status_code,
+            headers={"content-type": response.headers.get("content-type", "text/html")},
+        )
 
 
 async def proxy_request(path: str) -> Response:
@@ -75,6 +93,30 @@ async def get_node_template(node_id: str, template_id: str, request: Request) ->
         raise HTTPException(status_code=404, detail=f"Node {node_id} template {template_id} not found")
 
     return HTMLResponse(content=file_path.read_text(encoding="utf-8"))
+
+
+@app.post("/id/{node_id}/{template_id}")
+async def post_node_with_template(node_id: str, template_id: str, request: Request) -> Response:
+    """Handle POST to node with template ID."""
+    if PROXY_MODE:
+        body = await request.body()
+        content_type = request.headers.get("content-type", "")
+        return await proxy_post(f"/id/{node_id}/{template_id}", body, content_type)
+
+    print(f"MOCK POST: /id/{node_id}/{template_id}")
+    return JSONResponse({"status": "ok"})
+
+
+@app.post("/id/{node_id}")
+async def post_node(node_id: str, request: Request) -> Response:
+    """Handle POST to node (comment submission)."""
+    if PROXY_MODE:
+        body = await request.body()
+        content_type = request.headers.get("content-type", "")
+        return await proxy_post(f"/id/{node_id}", body, content_type)
+
+    print(f"MOCK POST: /id/{node_id}")
+    return JSONResponse({"status": "ok"})
 
 
 @app.get("/")

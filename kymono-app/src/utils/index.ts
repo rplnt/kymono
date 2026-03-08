@@ -14,6 +14,7 @@ export {
   fetchNodeData,
   fetchKData,
   fetchFriendsSubmissions,
+  submitComment,
 } from './api'
 export { buildSearchIndex, searchIndex, truncate } from './search'
 export { hasConfig, initConfig } from './configStorage'

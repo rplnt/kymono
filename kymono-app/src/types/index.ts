@@ -164,4 +164,5 @@ export interface NodeResponse {
   children: NodeComment[]
   listingAmount: number
   offset: number
+  anticsrf?: string
 }

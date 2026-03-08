@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, memo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { NodeData, NodeComment } from '@/types'
 import { useCurrentNode, useConfigValue } from '@/contexts'
-import { fetchNodeData, formatDate, formatRelativeDate } from '@/utils'
+import { fetchNodeData, submitComment, formatDate, formatRelativeDate } from '@/utils'
 import { useTitle } from '@/utils/useTitle'
 import { config, CONFIG_PATHS } from '@/config'
 
@@ -53,6 +53,22 @@ function getCommentIndent(level: number): number {
   return indent
 }
 
+const CommentContent = memo(function CommentContent({
+  html,
+  onClick,
+}: {
+  html: string
+  onClick: (e: React.MouseEvent) => void
+}) {
+  return (
+    <div
+      className="comment-content"
+      dangerouslySetInnerHTML={{ __html: html }}
+      onClick={onClick}
+    />
+  )
+})
+
 export function Node() {
   const { nodeId } = useParams<{ nodeId: string }>()
   const navigate = useNavigate()
@@ -65,6 +81,15 @@ export function Node() {
   const [collapsedComments, setCollapsedComments] = useState<Set<string>>(new Set())
   const [replyTitle, setReplyTitle] = useState('')
   const [replyContent, setReplyContent] = useState('')
+  const [anticsrf, setAnticsrf] = useState<string | undefined>()
+  const [replyError, setReplyError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const submittingRef = useRef(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const cursorPosRef = useRef<number | null>(null)
+  const [insertModal, setInsertModal] = useState<'link' | 'image' | null>(null)
+  const [modalUrl, setModalUrl] = useState('')
+  const [modalTitle, setModalTitle] = useState('')
   const [showCommentToolbar] = useConfigValue(CONFIG_PATHS.COMMENT_TOOLBAR, true)
   const [fullTimestamps] = useConfigValue(CONFIG_PATHS.FULL_TIMESTAMPS, true)
   const [progressiveComments] = useConfigValue(CONFIG_PATHS.NODE_PROGRESSIVE_COMMENTS, false)
@@ -100,12 +125,16 @@ export function Node() {
     setCollapsedComments(new Set())
     setLoading(true)
     setError(null)
+    setReplyTitle('')
+    setReplyContent('')
+    setReplyError(null)
     try {
       const response = await fetchNodeData(nodeId)
       setNode(response.node)
       setComments(response.children)
       setCurrentNode(response.node)
       setContentCollapsed(response.node.templateId === '21')
+      setAnticsrf(response.anticsrf)
     } catch (err) {
       console.error('Failed to load node:', err)
       setError(err instanceof Error ? err.message : 'Failed to load node')
@@ -135,6 +164,52 @@ export function Node() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [progressiveComments, autoLoadCommentsOnScroll, comments.length])
 
+  const handleSubmit = async () => {
+    if (submittingRef.current) return
+    if (!replyContent.trim()) return
+    if (!anticsrf) {
+      setReplyError('Missing CSRF token. Try reloading.')
+      return
+    }
+    if (!nodeId) return
+
+    submittingRef.current = true
+    setSubmitting(true)
+    setReplyError(null)
+    try {
+      await submitComment(nodeId, replyTitle, replyContent, anticsrf)
+      setReplyTitle('')
+      setReplyContent('')
+      await loadData()
+    } catch (err) {
+      setReplyError(err instanceof Error ? err.message : 'Failed to submit comment')
+    } finally {
+      setSubmitting(false)
+      submittingRef.current = false
+    }
+  }
+
+  const openInsertModal = (type: 'link' | 'image') => {
+    cursorPosRef.current = textareaRef.current?.selectionStart ?? null
+    setModalUrl('')
+    setModalTitle('')
+    setInsertModal(type)
+  }
+
+  const handleInsert = () => {
+    if (!modalUrl.trim()) return
+    const html =
+      insertModal === 'image'
+        ? `<img src="${modalUrl.trim()}">`
+        : `<a href="${modalUrl.trim()}">${modalTitle.trim() || modalUrl.trim()}</a>`
+
+    const pos = cursorPosRef.current ?? replyContent.length
+    const before = replyContent.slice(0, pos)
+    const after = replyContent.slice(pos)
+    setReplyContent(before + html + after)
+    setInsertModal(null)
+  }
+
   // Clear current node when leaving
   useEffect(() => {
     return () => {
@@ -143,7 +218,7 @@ export function Node() {
   }, [setCurrentNode])
 
   // Handle clicks on local links in content
-  const handleContentClick = (e: React.MouseEvent) => {
+  const handleContentClick = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement
     const anchor = target.closest('a')
     if (!anchor) return
@@ -157,7 +232,7 @@ export function Node() {
       e.preventDefault()
       navigate(`/id/${match[1]}`)
     }
-  }
+  }, [navigate])
 
   if (loading) {
     return (
@@ -394,21 +469,95 @@ export function Node() {
             placeholder="Title"
             value={replyTitle}
             onChange={(e) => setReplyTitle(e.target.value)}
-            disabled
+            disabled={submitting}
           />
           <textarea
+            ref={textareaRef}
             className="reply-content"
             placeholder="Content"
             value={replyContent}
             onChange={(e) => setReplyContent(e.target.value)}
             rows={4}
-            disabled
+            disabled={submitting}
           />
+          {replyError && <p className="reply-error">{replyError}</p>}
           <div className="reply-actions">
-            <button className="reply-submit" disabled>
-              Add
+            <button
+              className="reply-submit"
+              disabled={submitting || !replyContent.trim()}
+              onClick={handleSubmit}
+            >
+              {submitting ? 'Submitting...' : 'Add'}
             </button>
+            <div className="reply-toolbar">
+              <button
+                className="reply-toolbar-btn"
+                title="Insert link"
+                disabled={submitting}
+                onClick={() => openInsertModal('link')}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
+              </button>
+              <button
+                className="reply-toolbar-btn"
+                title="Insert image"
+                disabled={submitting}
+                onClick={() => openInsertModal('image')}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+              </button>
+            </div>
           </div>
+          {insertModal && (
+            <div className="insert-modal-backdrop" onClick={() => setInsertModal(null)}>
+              <div className="insert-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="insert-modal-title">
+                  Insert {insertModal}
+                </div>
+                <input
+                  type="text"
+                  className="insert-modal-input"
+                  placeholder="URL"
+                  value={modalUrl}
+                  onChange={(e) => setModalUrl(e.target.value)}
+                  autoFocus
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleInsert() }}
+                />
+                {insertModal === 'link' && (
+                  <input
+                    type="text"
+                    className="insert-modal-input"
+                    placeholder="Title (optional)"
+                    value={modalTitle}
+                    onChange={(e) => setModalTitle(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleInsert() }}
+                  />
+                )}
+                <div className="insert-modal-actions">
+                  <button
+                    className="reply-submit"
+                    disabled={!modalUrl.trim()}
+                    onClick={handleInsert}
+                  >
+                    Insert
+                  </button>
+                  <button
+                    className="reply-submit"
+                    onClick={() => setInsertModal(null)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -551,11 +700,7 @@ export function Node() {
                           </div>
                           {!collapsedComments.has(comment.id) && (
                             <div className="comment-body">
-                              <div
-                                className="comment-content"
-                                dangerouslySetInnerHTML={{ __html: comment.content }}
-                                onClick={handleContentClick}
-                              />
+                              <CommentContent html={comment.content} onClick={handleContentClick} />
                             </div>
                           )}
                           {showCommentToolbar &&

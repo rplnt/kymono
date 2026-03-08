@@ -143,7 +143,8 @@ a {
 
 /* Selection styling - subtle, no color override */
 ::selection {
-  background: var(--color-bg-surface);
+  background: var(--color-phosphor-dim);
+  color: var(--color-text-primary);
 }
 
 /* ============================================================
@@ -220,12 +221,14 @@ a {
   transform: scaleX(1);
 }
 
-.btn-menu.active {
+.btn-menu.active,
+.btn-menu.active:hover {
   color: var(--color-bg);
   background: var(--color-phosphor);
 }
 
-.btn-menu.active::after {
+.btn-menu.active::after,
+.btn-menu.active:hover::after {
   transform: scaleX(0);
 }
 
@@ -237,7 +240,7 @@ a {
 
 .hamburger-icon {
   display: block;
-  transform: translateY(-2px);
+  transform: scale(1.6) translateY(-2px);
 }
 
 .btn-menu.btn-mail {
@@ -1392,6 +1395,10 @@ a {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   margin-bottom: var(--space-1);
+  white-space: nowrap;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, black calc(100% - 2em), transparent);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 2em), transparent);
 }
 
 .node-parent-in {
@@ -1563,7 +1570,37 @@ a {
 
 .reply-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reply-toolbar {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.reply-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--color-text-muted);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  aspect-ratio: 1;
+  padding: var(--space-2);
+  box-sizing: border-box;
+}
+
+.reply-toolbar-btn:hover:not(:disabled) {
+  border-color: var(--color-phosphor);
+  color: var(--color-phosphor);
+}
+
+.reply-toolbar-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .reply-submit {
@@ -1587,6 +1624,56 @@ a {
 .reply-submit:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.reply-error {
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+}
+
+.insert-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.insert-modal {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-text-muted);
+  padding: var(--space-4);
+  min-width: 300px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.insert-modal-title {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.insert-modal-input {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-bg-surface);
+  color: var(--color-text-primary);
+  padding: var(--space-2);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+}
+
+.insert-modal-input:focus {
+  outline: none;
+  border-color: var(--color-text-muted);
+}
+
+.insert-modal-actions {
+  display: flex;
+  gap: var(--space-2);
 }
 
 /* Node Comments */
@@ -1753,7 +1840,6 @@ a {
 
 .comment-new {
   color: var(--color-phosphor-bright);
-  background: var(--color-phosphor-glow);
 }
 
 .comment.comment-orphan .comment-header {
