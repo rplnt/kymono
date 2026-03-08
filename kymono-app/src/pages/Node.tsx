@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, memo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { NodeData, NodeComment } from '@/types'
 import { useCurrentNode, useConfigValue, useFriends } from '@/contexts'
-import { fetchNodeData, submitComment, formatDate, formatRelativeDate } from '@/utils'
+import { fetchNodeData, submitComment, giveKarma, formatDate, formatRelativeDate } from '@/utils'
 import { useTitle } from '@/utils/useTitle'
 import { config, CONFIG_PATHS } from '@/config'
 import { ExternalLinkIcon } from '@/components/ExternalLinkIcon'
@@ -91,12 +91,19 @@ export function Node() {
   const [modalWidth, setModalWidth] = useState('')
   const [showCommentToolbar] = useConfigValue(CONFIG_PATHS.COMMENT_TOOLBAR, true)
   const [fullTimestamps] = useConfigValue(CONFIG_PATHS.FULL_TIMESTAMPS, true)
-  const [progressiveComments] = useConfigValue(CONFIG_PATHS.NODE_PROGRESSIVE_COMMENTS, false)
+  const [progressiveComments] = useConfigValue(CONFIG_PATHS.NODE_PROGRESSIVE_COMMENTS, true)
   const [autoLoadCommentsOnScroll] = useConfigValue(
     CONFIG_PATHS.NODE_AUTO_LOAD_COMMENTS_SCROLL,
-    false
+    true
   )
   const [visibleBatches, setVisibleBatches] = useState(1)
+  const [childFilter, setChildFilter] = useState('')
+  const [nodeKState, setNodeKState] = useState<
+    'idle' | 'sending' | 'ok' | 'error' | 'nehul' | 'neda-sa'
+  >('idle')
+  const [commentKStates, setCommentKStates] = useState<
+    Map<string, 'idle' | 'sending' | 'ok' | 'error' | 'nehul' | 'neda-sa'>
+  >(new Map())
 
   useTitle(node?.name)
 
@@ -127,6 +134,8 @@ export function Node() {
     setReplyTitle('')
     setReplyContent('')
     setReplyError(null)
+    setNodeKState('idle')
+    setCommentKStates(new Map())
     try {
       const response = await fetchNodeData(nodeId)
       setNode(response.node)
@@ -217,6 +226,29 @@ export function Node() {
       setCurrentNode(null)
     }
   }, [setCurrentNode])
+
+  const handleGiveNodeK = async () => {
+    if (nodeKState !== 'idle' || !node) return
+    setNodeKState('sending')
+    try {
+      const result = await giveKarma(node.id, anticsrf)
+      setNodeKState(result)
+    } catch {
+      setNodeKState('error')
+    }
+  }
+
+  const handleGiveCommentK = async (commentId: string) => {
+    const state = commentKStates.get(commentId) || 'idle'
+    if (state !== 'idle') return
+    setCommentKStates((prev) => new Map(prev).set(commentId, 'sending'))
+    try {
+      const result = await giveKarma(commentId, anticsrf)
+      setCommentKStates((prev) => new Map(prev).set(commentId, result))
+    } catch {
+      setCommentKStates((prev) => new Map(prev).set(commentId, 'error'))
+    }
+  }
 
   // Handle clicks on local links in content
   const handleContentClick = useCallback(
@@ -353,13 +385,34 @@ export function Node() {
             </a>
           </div>
           {!contentCollapsed && (
-            <div className="comment-body">
-              <div
-                className="comment-content"
-                dangerouslySetInnerHTML={{ __html: node.content }}
-                onClick={handleContentClick}
-              />
-            </div>
+            <>
+              <div className="comment-body">
+                <div
+                  className="comment-content"
+                  dangerouslySetInnerHTML={{ __html: node.content }}
+                  onClick={handleContentClick}
+                />
+              </div>
+              <div className="give-k-wrap">
+                {node.givenK || nodeKState === 'ok' ? (
+                  <span className="give-k-given">given</span>
+                ) : nodeKState === 'nehul' ? (
+                  <span className="give-k-err">nehul</span>
+                ) : nodeKState === 'neda-sa' ? (
+                  <span className="give-k-err">neda sa</span>
+                ) : nodeKState === 'error' ? (
+                  <span className="give-k-err">err</span>
+                ) : (
+                  <button
+                    className="give-k-btn"
+                    onClick={handleGiveNodeK}
+                    disabled={nodeKState === 'sending'}
+                  >
+                    give k
+                  </button>
+                )}
+              </div>
+            </>
           )}
         </div>
       ) : (
@@ -427,25 +480,48 @@ export function Node() {
 
           {/* Node content */}
           {!contentCollapsed && (
-            <div className="node-content-box">
-              {node.templateId === '14' ? (
-                <pre className="node-content node-content-mono">{node.content}</pre>
-              ) : (
-                <div
-                  className="node-content"
-                  dangerouslySetInnerHTML={{ __html: node.content }}
-                  onClick={handleContentClick}
-                />
-              )}
-            </div>
+            <>
+              <div className="node-content-box">
+                {node.templateId === '14' ? (
+                  <pre className="node-content node-content-mono">{node.content}</pre>
+                ) : (
+                  <div
+                    className="node-content"
+                    dangerouslySetInnerHTML={{ __html: node.content }}
+                    onClick={handleContentClick}
+                  />
+                )}
+              </div>
+              <div className="give-k-wrap">
+                {node.givenK || nodeKState === 'ok' ? (
+                  <span className="give-k-given">given</span>
+                ) : nodeKState === 'nehul' ? (
+                  <span className="give-k-err">nehul</span>
+                ) : nodeKState === 'neda-sa' ? (
+                  <span className="give-k-err">neda sa</span>
+                ) : nodeKState === 'error' ? (
+                  <span className="give-k-err">err</span>
+                ) : (
+                  <button
+                    className="give-k-btn"
+                    onClick={handleGiveNodeK}
+                    disabled={nodeKState === 'sending'}
+                  >
+                    give k
+                  </button>
+                )}
+              </div>
+            </>
           )}
         </>
       )}
 
-      {/* Reply form - always visible when user can write */}
-      {!node.canWrite && <p className="node-readonly">Read-only access</p>}
+      {/* Reply form - hidden for list templates (2, 14) */}
+      {node.templateId !== '2' && node.templateId !== '14' && !node.canWrite && (
+        <p className="node-readonly">Read-only access</p>
+      )}
 
-      {node.canWrite && (
+      {node.templateId !== '2' && node.templateId !== '14' && node.canWrite && (
         <div className="reply-form">
           <input
             type="text"
@@ -573,34 +649,51 @@ export function Node() {
       {/* Comments section */}
       <div className="node-comments">
         {comments.length > 0 && (node.templateId === '2' || node.templateId === '14')
-          ? comments.map((child) => (
-              <div key={child.id} className="node-child-item">
-                <a
-                  href={`#/id/${child.id}`}
-                  className="node-child-name"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    navigate(`/id/${child.id}`)
-                  }}
-                >
-                  {child.name || `node ${child.id}`}
-                </a>
-                {child.childrenCount > 0 && (
-                  <span className="node-child-children">{child.childrenCount}</span>
-                )}
-                {child.karma > 0 && <span className="node-child-karma">{child.karma}K</span>}
-                <a
-                  href={`#/id/${child.creatorId}`}
-                  className="node-child-author"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    navigate(`/id/${child.creatorId}`)
-                  }}
-                >
-                  {child.owner}
-                </a>
-              </div>
-            ))
+          ? (() => {
+              const sorted = [...comments].sort((a, b) => a.name.localeCompare(b.name))
+              const filtered = childFilter
+                ? sorted.filter((c) => c.name.toLowerCase().includes(childFilter.toLowerCase()))
+                : sorted
+              return (
+                <>
+                  <input
+                    type="text"
+                    className="child-filter"
+                    placeholder="Filter..."
+                    value={childFilter}
+                    onChange={(e) => setChildFilter(e.target.value)}
+                  />
+                  {filtered.map((child) => (
+                    <div key={child.id} className="node-child-item">
+                      <a
+                        href={`#/id/${child.id}`}
+                        className="node-child-name"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          navigate(`/id/${child.id}`)
+                        }}
+                      >
+                        {child.name || `node ${child.id}`}
+                      </a>
+                      {child.childrenCount > 0 && (
+                        <span className="node-child-children">{child.childrenCount}</span>
+                      )}
+                      {child.karma > 0 && <span className="node-child-karma">{child.karma}K</span>}
+                      <a
+                        href={`#/id/${child.creatorId}`}
+                        className="node-child-author"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          navigate(`/id/${child.creatorId}`)
+                        }}
+                      >
+                        {child.owner}
+                      </a>
+                    </div>
+                  ))}
+                </>
+              )
+            })()
           : comments.length > 0
             ? (() => {
                 const minDepth = Math.min(...comments.map((c) => c.depth))
@@ -712,74 +805,103 @@ export function Node() {
                               <CommentContent html={comment.content} onClick={handleContentClick} />
                             </div>
                           )}
-                          {showCommentToolbar &&
-                            (() => {
-                              const idx = displayComments.findIndex((c) => c.id === comment.id)
-                              const findSibling = (dir: 'prev' | 'next') => {
-                                if (dir === 'next') {
-                                  for (let i = idx + 1; i < displayComments.length; i++) {
-                                    if (
-                                      displayComments[i].depth === comment.depth &&
-                                      displayComments[i].parentId === comment.parentId
-                                    )
-                                      return displayComments[i].id
-                                    if (displayComments[i].depth < comment.depth) break
-                                  }
-                                } else {
-                                  for (let i = idx - 1; i >= 0; i--) {
-                                    if (
-                                      displayComments[i].depth === comment.depth &&
-                                      displayComments[i].parentId === comment.parentId
-                                    )
-                                      return displayComments[i].id
-                                    if (displayComments[i].depth < comment.depth) break
-                                  }
-                                }
-                                return null
-                              }
-                              const prevId = findSibling('prev')
-                              const nextId = findSibling('next')
-                              const scrollTo = (elId: string) => {
-                                const menuHeight =
-                                  parseInt(
-                                    getComputedStyle(document.documentElement).getPropertyValue(
-                                      '--menu-height'
-                                    )
-                                  ) || 56
-                                const el = document.getElementById(`comment-${elId}`)
-                                if (el) {
-                                  const top =
-                                    el.getBoundingClientRect().top + window.scrollY - menuHeight - 8
-                                  window.scrollTo({ top, behavior: 'smooth' })
-                                }
-                              }
+                          {(() => {
+                            const kS = commentKStates.get(comment.id) || 'idle'
+                            const kBtn =
+                              comment.givenK || kS === 'ok' ? (
+                                <span className="give-k-given">given</span>
+                              ) : kS === 'nehul' ? (
+                                <span className="give-k-err">nehul</span>
+                              ) : kS === 'neda-sa' ? (
+                                <span className="give-k-err">neda sa</span>
+                              ) : kS === 'error' ? (
+                                <span className="give-k-err">err</span>
+                              ) : (
+                                <button
+                                  className="give-k-btn"
+                                  onClick={() => handleGiveCommentK(comment.id)}
+                                  disabled={kS === 'sending'}
+                                >
+                                  give k
+                                </button>
+                              )
+
+                            if (!showCommentToolbar) {
                               return (
                                 <div className="comment-toolbar">
-                                  <button
-                                    className="toolbar-btn"
-                                    disabled={!prevId}
-                                    onClick={() => prevId && scrollTo(prevId)}
-                                  >
-                                    prev
-                                  </button>
-                                  <span className="toolbar-sep">|</span>
-                                  <button
-                                    className="toolbar-btn"
-                                    onClick={() => scrollTo(comment.id)}
-                                  >
-                                    up
-                                  </button>
-                                  <span className="toolbar-sep">|</span>
-                                  <button
-                                    className="toolbar-btn"
-                                    disabled={!nextId}
-                                    onClick={() => nextId && scrollTo(nextId)}
-                                  >
-                                    next
-                                  </button>
+                                  <span className="toolbar-k-right">{kBtn}</span>
                                 </div>
                               )
-                            })()}
+                            }
+
+                            const idx = displayComments.findIndex((c) => c.id === comment.id)
+                            const findSibling = (dir: 'prev' | 'next') => {
+                              if (dir === 'next') {
+                                for (let i = idx + 1; i < displayComments.length; i++) {
+                                  if (
+                                    displayComments[i].depth === comment.depth &&
+                                    displayComments[i].parentId === comment.parentId
+                                  )
+                                    return displayComments[i].id
+                                  if (displayComments[i].depth < comment.depth) break
+                                }
+                              } else {
+                                for (let i = idx - 1; i >= 0; i--) {
+                                  if (
+                                    displayComments[i].depth === comment.depth &&
+                                    displayComments[i].parentId === comment.parentId
+                                  )
+                                    return displayComments[i].id
+                                  if (displayComments[i].depth < comment.depth) break
+                                }
+                              }
+                              return null
+                            }
+                            const prevId =
+                              findSibling('prev') || (idx > 0 ? displayComments[idx - 1].id : null)
+                            const nextId = findSibling('next')
+                            const scrollTo = (elId: string) => {
+                              const menuHeight =
+                                parseInt(
+                                  getComputedStyle(document.documentElement).getPropertyValue(
+                                    '--menu-height'
+                                  )
+                                ) || 56
+                              const el = document.getElementById(`comment-${elId}`)
+                              if (el) {
+                                const top =
+                                  el.getBoundingClientRect().top + window.scrollY - menuHeight - 8
+                                window.scrollTo({ top, behavior: 'smooth' })
+                              }
+                            }
+                            return (
+                              <div className="comment-toolbar">
+                                <button
+                                  className="toolbar-btn"
+                                  disabled={!prevId}
+                                  onClick={() => prevId && scrollTo(prevId)}
+                                >
+                                  prev
+                                </button>
+                                <span className="toolbar-sep">|</span>
+                                <button
+                                  className="toolbar-btn"
+                                  onClick={() => scrollTo(comment.id)}
+                                >
+                                  up
+                                </button>
+                                <span className="toolbar-sep">|</span>
+                                <button
+                                  className="toolbar-btn"
+                                  disabled={!nextId}
+                                  onClick={() => nextId && scrollTo(nextId)}
+                                >
+                                  next
+                                </button>
+                                <span className="toolbar-k-right">{kBtn}</span>
+                              </div>
+                            )
+                          })()}
                         </div>
                       )
                     })}

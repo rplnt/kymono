@@ -367,6 +367,7 @@ function parseNodeJson(
         ? parseInt(raw.node_children_count, 10)
         : raw.node_children_count || 0,
     views,
+    givenK: raw.given_k === 'yes',
   }
 }
 
@@ -401,6 +402,7 @@ function parseChildJson(raw: RawChild, lastVisit?: Date): NodeComment {
     isOrphan,
     contentChanged,
     isHardlink: raw.node_status === 'linked',
+    givenK: raw.given_k === 'yes', // not present on children, always false
   }
 }
 
@@ -581,6 +583,7 @@ function parseKItem(raw: RawKItem): KItem {
         ? parseInt(raw.node_children_count, 10)
         : raw.node_children_count || 0,
     creatorImageUrl: getImageUrl(raw.node_creator),
+    givenK: raw.given_k === 'yes', // not present on K list items, always false
   }
 }
 
@@ -608,6 +611,75 @@ export async function fetchKData(force = false): Promise<KItem[]> {
   return result
 }
 
+interface RawLastKItem {
+  node_id: string
+  node_name: string
+  node_content: string
+  node_parent: string
+  node_parent_name: string
+  node_creator: string
+  node_creator_name: string
+  count: string | number
+  [key: string]: unknown
+}
+
+function parseLastKItem(raw: RawLastKItem): KItem {
+  return {
+    id: raw.node_id,
+    name: stripHtml(raw.node_name || ''),
+    content: raw.node_content || '',
+    parentId: raw.node_parent,
+    parentName: stripHtml(raw.node_parent_name || ''),
+    creatorId: raw.node_creator,
+    owner: raw.node_creator_name || '',
+    templateId: '',
+    createdAt: null,
+    updatedAt: null,
+    karma: typeof raw.count === 'string' ? parseInt(raw.count, 10) : raw.count,
+    childrenCount: 0,
+    creatorImageUrl: getImageUrl(raw.node_creator),
+    givenK: raw.given_k === 'yes',
+  }
+}
+
+/**
+ * Fetch and parse Last K (recent karma) data from server
+ */
+export async function fetchLastKData(
+  interval: '1h' | '1d' | '1w' = '1h',
+  force = false
+): Promise<KItem[]> {
+  const cacheKey = `lastk-${interval}`
+  if (!force) {
+    const cached = getCached<KItem[]>(cacheKey)
+    if (cached) return cached
+  }
+  const doFetch = async () => {
+    const url = `${config.apiBase}${config.base}${config.templates.lastK}`
+    let response: Response
+    if (interval === '1h') {
+      response = await fetch(url)
+    } else {
+      const formData = new FormData()
+      formData.append('interval', interval === '1d' ? '24' : '168')
+      formData.append('template_event', 'Hour')
+      response = await fetch(url, { method: 'POST', body: formData })
+    }
+    if (!response.ok) {
+      throw new Error(`Failed to fetch Last K data: ${response.status}`)
+    }
+    const html = await response.text()
+    const data = extractJson<RawLastKItem[]>(html, 'kymono.lastk')
+    if (!data) {
+      throw new Error('Failed to parse Last K data')
+    }
+    const result = data.map(parseLastKItem)
+    setCache(cacheKey, result)
+    return result
+  }
+  return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
+}
+
 /**
  * Submit a comment (template 4) under a parent node
  */
@@ -627,9 +699,35 @@ export async function submitComment(
   formData.append('anticsrf', anticsrf)
 
   const response = await fetch(url, { method: 'POST', body: formData, redirect: 'manual' })
-  if (response.status !== 302 && !response.ok) {
+  if (response.type !== 'opaqueredirect' && !response.ok) {
     throw new Error(`Failed to submit comment: ${response.status}`)
   }
+}
+
+/**
+ * Give karma (K+) to a node
+ */
+export async function giveKarma(
+  nodeId: string,
+  anticsrf?: string
+): Promise<'ok' | 'nehul' | 'neda-sa'> {
+  const url = `${config.apiBase}/id/${nodeId}/`
+  const formData = new FormData()
+  formData.append('event', 'K')
+  if (anticsrf) {
+    formData.append('anticsrf', anticsrf)
+  }
+  const response = await fetch(url, { method: 'POST', body: formData, redirect: 'manual' })
+  if (response.type === 'opaqueredirect') return 'ok'
+  if (!response.ok) {
+    throw new Error(`Failed to give K: ${response.status}`)
+  }
+  // 200 — check body for known error messages
+  const text = await response.text()
+  if (text.includes('uz to nehul')) return 'nehul'
+  if (text.includes('musis byt prihlaseny') || text.includes("don't have permissions"))
+    return 'neda-sa'
+  return 'ok'
 }
 
 export function getFriendMapFromDom(): Record<string, boolean> {
@@ -671,19 +769,9 @@ export async function fetchFriendsSubmissions(force = false): Promise<FriendSubm
       throw new Error(`Failed to fetch friends submissions: ${response.status}`)
     }
     const html = await response.text()
-
-    // Handle trailing commas in JSON array from template
-    const regex = /<script[^>]*id="kymono\.friendsSubmissions"[^>]*>([\s\S]*?)<\/script>/i
-    const match = html.match(regex)
-    if (!match) {
+    const data = extractJson<RawFriendSubmission[]>(html, 'kymono.friendsSubmissions')
+    if (!data) {
       throw new Error('Failed to parse friends submissions data')
-    }
-    const cleaned = match[1].replace(/,\s*]/g, ']')
-    let data: RawFriendSubmission[]
-    try {
-      data = JSON.parse(cleaned)
-    } catch {
-      throw new Error('Failed to parse friends submissions JSON')
     }
 
     const result = data.map((r) => ({

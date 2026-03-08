@@ -39,8 +39,14 @@ export function HomeModule({
       </div>
 
       <div className="module-content">
-        {loading && (
+        {loading && empty && (
           <div className="module-loading">
+            <div className="sp-circle" />
+          </div>
+        )}
+
+        {loading && !empty && (
+          <div className="module-loading-overlay">
             <div className="sp-circle" />
           </div>
         )}

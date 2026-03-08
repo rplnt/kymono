@@ -13,9 +13,11 @@ export {
   fetchBookmarksData,
   fetchNodeData,
   fetchKData,
+  fetchLastKData,
   fetchFriendsSubmissions,
   fetchMailData,
   submitComment,
+  giveKarma,
 } from './api'
 export { startMailChecker } from './mailChecker'
 export { startRepliesChecker } from './repliesChecker'

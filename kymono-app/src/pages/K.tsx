@@ -2,18 +2,29 @@ import { useState, useEffect, useCallback, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { KItem } from '@/types'
 import { useConfigValue } from '@/contexts'
-import { fetchKData, formatDate, formatRelativeDate } from '@/utils'
+import { fetchKData, fetchLastKData, giveKarma, formatDate, formatRelativeDate } from '@/utils'
 import { useTitle } from '@/utils/useTitle'
 import { CONFIG_PATHS } from '@/config'
+
+type KTab = 'k' | '1h' | '1d' | '1w'
+
+const TABS: { id: KTab; label: string }[] = [
+  { id: 'k', label: 'K' },
+  { id: '1h', label: '1H' },
+  { id: '1d', label: '1D' },
+  { id: '1w', label: '1W' },
+]
 
 interface KItemCardProps {
   item: KItem
   collapsed: boolean
   fullTimestamps: boolean
   showToolbar: boolean
+  kState: 'idle' | 'sending' | 'ok' | 'error' | 'nehul' | 'neda-sa'
   onToggleCollapsed: (id: string) => void
   onNavigate: (path: string) => void
   onContentClick: (e: React.MouseEvent) => void
+  onGiveK: (id: string) => void
 }
 
 function Timestamp({
@@ -21,11 +32,13 @@ function Timestamp({
   updatedAt,
   fullTimestamps,
 }: {
-  createdAt: Date
+  createdAt: Date | null
   updatedAt: Date | null
   fullTimestamps: boolean
 }) {
   const [mode, setMode] = useState(0)
+
+  if (!createdAt) return null
 
   const cycle = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -66,9 +79,11 @@ const KItemCard = memo(function KItemCard({
   collapsed,
   fullTimestamps,
   showToolbar,
+  kState,
   onToggleCollapsed,
   onNavigate,
   onContentClick,
+  onGiveK,
 }: KItemCardProps) {
   return (
     <div id={`k-item-${item.id}`} className="comment">
@@ -150,34 +165,64 @@ const KItemCard = memo(function KItemCard({
           />
         </div>
       )}
-      {showToolbar && (
-        <div className="comment-toolbar">
-          <button className="toolbar-btn" onClick={() => scrollToSibling(item.id, 'prev')}>
-            prev
-          </button>
-          <span className="toolbar-sep">|</span>
-          <button
-            className="toolbar-btn"
-            onClick={() => {
-              const el = document.getElementById(`k-item-${item.id}`)
-              if (el) {
-                const menuHeight =
-                  parseInt(
-                    getComputedStyle(document.documentElement).getPropertyValue('--menu-height')
-                  ) || 56
-                const top = el.getBoundingClientRect().top + window.scrollY - menuHeight - 8
-                window.scrollTo({ top, behavior: 'smooth' })
-              }
-            }}
-          >
-            up
-          </button>
-          <span className="toolbar-sep">|</span>
-          <button className="toolbar-btn" onClick={() => scrollToSibling(item.id, 'next')}>
-            next
-          </button>
-        </div>
-      )}
+      {(() => {
+        const kBtn =
+          item.givenK || kState === 'ok' ? (
+            <span className="give-k-given">given</span>
+          ) : kState === 'nehul' ? (
+            <span className="give-k-err">nehul</span>
+          ) : kState === 'neda-sa' ? (
+            <span className="give-k-err">neda sa</span>
+          ) : kState === 'error' ? (
+            <span className="give-k-err">err</span>
+          ) : (
+            <button
+              className="give-k-btn"
+              onClick={() => onGiveK(item.id)}
+              disabled={kState === 'sending'}
+            >
+              give k
+            </button>
+          )
+
+        if (!showToolbar) {
+          return (
+            <div className="comment-toolbar">
+              <span className="toolbar-k-right">{kBtn}</span>
+            </div>
+          )
+        }
+
+        return (
+          <div className="comment-toolbar">
+            <button className="toolbar-btn" onClick={() => scrollToSibling(item.id, 'prev')}>
+              prev
+            </button>
+            <span className="toolbar-sep">|</span>
+            <button
+              className="toolbar-btn"
+              onClick={() => {
+                const el = document.getElementById(`k-item-${item.id}`)
+                if (el) {
+                  const menuHeight =
+                    parseInt(
+                      getComputedStyle(document.documentElement).getPropertyValue('--menu-height')
+                    ) || 56
+                  const top = el.getBoundingClientRect().top + window.scrollY - menuHeight - 8
+                  window.scrollTo({ top, behavior: 'smooth' })
+                }
+              }}
+            >
+              up
+            </button>
+            <span className="toolbar-sep">|</span>
+            <button className="toolbar-btn" onClick={() => scrollToSibling(item.id, 'next')}>
+              next
+            </button>
+            <span className="toolbar-k-right">{kBtn}</span>
+          </div>
+        )
+      })()}
     </div>
   )
 })
@@ -189,17 +234,26 @@ export function K() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set())
+  const [activeTab, setActiveTab] = useState<KTab>('k')
   const [showCommentToolbar] = useConfigValue(CONFIG_PATHS.COMMENT_TOOLBAR, true)
   const [fullTimestamps] = useConfigValue(CONFIG_PATHS.FULL_TIMESTAMPS, true)
-  const [progressiveDisplay] = useConfigValue(CONFIG_PATHS.K_PROGRESSIVE_DISPLAY, false)
-  const [autoLoadOnScroll] = useConfigValue(CONFIG_PATHS.K_AUTO_LOAD_SCROLL, false)
+  const [progressiveDisplay] = useConfigValue(CONFIG_PATHS.K_PROGRESSIVE_DISPLAY, true)
+  const [autoLoadOnScroll] = useConfigValue(CONFIG_PATHS.K_AUTO_LOAD_SCROLL, true)
   const [visibleCount, setVisibleCount] = useState(4)
+  const [kStates, setKStates] = useState<
+    Map<string, 'idle' | 'sending' | 'ok' | 'error' | 'nehul' | 'neda-sa'>
+  >(new Map())
 
-  const loadData = useCallback(async (force = false) => {
+  const loadData = useCallback(async (tab: KTab, force = false) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchKData(force)
+      let data: KItem[]
+      if (tab === 'k') {
+        data = await fetchKData(force)
+      } else {
+        data = await fetchLastKData(tab, force)
+      }
       setItems(data)
     } catch (err) {
       console.error('Failed to load K data:', err)
@@ -210,12 +264,13 @@ export function K() {
   }, [])
 
   useEffect(() => {
-    loadData()
-  }, [loadData])
+    loadData(activeTab)
+  }, [loadData, activeTab])
 
-  // Reset visible count when items change
+  // Reset visible count and K states when items change
   useEffect(() => {
     setVisibleCount(4)
+    setKStates(new Map())
   }, [items])
 
   // Auto-load on scroll
@@ -229,6 +284,11 @@ export function K() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [progressiveDisplay, autoLoadOnScroll])
+
+  const handleTabChange = (tab: KTab) => {
+    if (tab === activeTab) return
+    setActiveTab(tab)
+  }
 
   const toggleCollapsed = useCallback((id: string) => {
     setCollapsedItems((prev) => {
@@ -247,6 +307,21 @@ export function K() {
       navigate(path)
     },
     [navigate]
+  )
+
+  const handleGiveK = useCallback(
+    async (id: string) => {
+      const state = kStates.get(id) || 'idle'
+      if (state !== 'idle') return
+      setKStates((prev) => new Map(prev).set(id, 'sending'))
+      try {
+        const result = await giveKarma(id)
+        setKStates((prev) => new Map(prev).set(id, result))
+      } catch {
+        setKStates((prev) => new Map(prev).set(id, 'error'))
+      }
+    },
+    [kStates]
   )
 
   const handleContentClick = useCallback(
@@ -268,6 +343,17 @@ export function K() {
   if (loading) {
     return (
       <div>
+        <div className="k-tabs">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              className={`k-tab ${activeTab === tab.id ? 'k-tab-active' : ''}`}
+              onClick={() => handleTabChange(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
         <div className="sp-circle" />
       </div>
     )
@@ -276,8 +362,19 @@ export function K() {
   if (error) {
     return (
       <div className="error-container">
+        <div className="k-tabs">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              className={`k-tab ${activeTab === tab.id ? 'k-tab-active' : ''}`}
+              onClick={() => handleTabChange(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
         <p className="error-message">{error}</p>
-        <button className="btn btn-retry" onClick={() => loadData(true)}>
+        <button className="btn btn-retry" onClick={() => loadData(activeTab, true)}>
           Retry
         </button>
       </div>
@@ -286,9 +383,22 @@ export function K() {
 
   if (items.length === 0) {
     return (
-      <div className="empty-state">
-        <div className="empty-state-icon">&#9733;</div>
-        <p className="empty-state-text">No karma items</p>
+      <div>
+        <div className="k-tabs">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              className={`k-tab ${activeTab === tab.id ? 'k-tab-active' : ''}`}
+              onClick={() => handleTabChange(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="empty-state">
+          <div className="empty-state-icon">&#9733;</div>
+          <p className="empty-state-text">No karma items</p>
+        </div>
       </div>
     )
   }
@@ -298,6 +408,17 @@ export function K() {
 
   return (
     <div className="k-view">
+      <div className="k-tabs">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            className={`k-tab ${activeTab === tab.id ? 'k-tab-active' : ''}`}
+            onClick={() => handleTabChange(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
       {displayItems.map((item) => (
         <KItemCard
           key={item.id}
@@ -305,9 +426,11 @@ export function K() {
           collapsed={collapsedItems.has(item.id)}
           fullTimestamps={fullTimestamps}
           showToolbar={showCommentToolbar}
+          kState={kStates.get(item.id) || 'idle'}
           onToggleCollapsed={toggleCollapsed}
           onNavigate={handleNavigate}
           onContentClick={handleContentClick}
+          onGiveK={handleGiveK}
         />
       ))}
       {progressiveDisplay && remaining > 0 && (

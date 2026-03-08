@@ -21,7 +21,8 @@ export const config = {
     node: '9300812',
     k: '9301229',
     friendsSubmissions: '9301246',
-    mail: '9301250',
+    mail: '9301411',
+    lastK: '9301400',
   },
   mpnBlacklist: [
     4830026, 3777728, 5898094, 2176597, 3660841, 7465941, 1522695, 1569351, 7607525, 788016,
@@ -60,5 +61,7 @@ export const CONFIG_PATHS = {
   RESPONSIVE_IMAGES: 'global.responsiveImages',
   HOT_NODES_ENABLED: 'home.hotNodesEnabled',
   HOT_NODES_ORDER: 'home.hotNodesOrder',
+  FRESH_K_ENABLED: 'home.freshKEnabled',
+  FRESH_K_ORDER: 'home.freshKOrder',
   TWO_COLUMN_LAYOUT: 'home.twoColumnLayout',
 } as const

@@ -507,8 +507,8 @@ a {
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
-  mask-image: linear-gradient(to right, black 85%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  mask-image: linear-gradient(to right, black calc(100% - 2em), transparent);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 2em), transparent);
 }
 
 /* Bookmark unread indicators - label style */
@@ -935,6 +935,23 @@ a {
   margin: 0;
 }
 
+.module-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  opacity: 0.7;
+  z-index: 1;
+}
+
+.module-loading-overlay .sp-circle {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+}
+
 /* ============================================================
    Side Panel
    ============================================================ */
@@ -1111,8 +1128,8 @@ a {
   display: block;
   white-space: nowrap;
   overflow: hidden;
-  mask-image: linear-gradient(to right, black 80%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
+  mask-image: linear-gradient(to right, black calc(100% - 2em), transparent);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 2em), transparent);
 }
 
 .side-panel-node .node-timestamp-clickable {
@@ -1259,8 +1276,8 @@ a {
   font-size: var(--font-size-sm);
   white-space: nowrap;
   overflow: hidden;
-  mask-image: linear-gradient(to right, black 85%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  mask-image: linear-gradient(to right, black calc(100% - 2em), transparent);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 2em), transparent);
 }
 
 .lr-in {
@@ -1303,8 +1320,8 @@ a {
   font-size: var(--font-size-xs);
   white-space: nowrap;
   overflow: hidden;
-  mask-image: linear-gradient(to right, black 80%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
+  mask-image: linear-gradient(to right, black calc(100% - 2em), transparent);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 2em), transparent);
   flex: 1;
   min-width: 0;
 }
@@ -1755,6 +1772,7 @@ a {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex: 1;
   font-size: var(--font-size-sm);
 }
 
@@ -1791,8 +1809,9 @@ a {
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
-  mask-image: linear-gradient(to right, black 85%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  text-overflow: ellipsis;
+  max-width: max-content;
+  min-width: 0;
 }
 
 .comment-title:hover {
@@ -1865,7 +1884,7 @@ a {
 }
 
 .toolbar-btn:hover:not(:disabled) {
-  color: var(--color-phosphor);
+  color: var(--color-text-primary);
 }
 
 .toolbar-btn:disabled {
@@ -1899,6 +1918,23 @@ a {
 
 .comment-hardlink {
   color: var(--color-text-muted);
+}
+
+.child-filter {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  box-sizing: border-box;
+}
+
+.child-filter:focus {
+  outline: none;
+  border-color: var(--color-phosphor-dim);
 }
 
 /* Node child list (template 2 / nodeshell) */
@@ -1967,6 +2003,27 @@ a {
    ============================================================ */
 .k-view {
   max-width: 100%;
+}
+
+.k-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: var(--space-2);
+}
+
+.k-tab {
+  padding: var(--space-1) var(--space-4);
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+  font-weight: bold;
+}
+
+.k-tab-active {
+  color: var(--color-phosphor);
 }
 
 .k-parent-ref {
@@ -2039,8 +2096,8 @@ a {
   font-size: var(--font-size-sm);
   white-space: nowrap;
   overflow: hidden;
-  mask-image: linear-gradient(to right, black 85%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  mask-image: linear-gradient(to right, black calc(100% - 2em), transparent);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 2em), transparent);
   padding-left: 18px;
 }
 
@@ -2073,8 +2130,8 @@ a {
   padding-left: 18px;
   white-space: nowrap;
   overflow: hidden;
-  mask-image: linear-gradient(to right, black 80%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
+  mask-image: linear-gradient(to right, black calc(100% - 2em), transparent);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 2em), transparent);
 }
 
 .fs-truncated {
@@ -2221,6 +2278,52 @@ a {
   border-radius: 9px;
   padding: 0 5px;
   pointer-events: none;
+}
+
+/* ============================================================
+   Give K Button
+   ============================================================ */
+.give-k-wrap {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-1) 0;
+  min-height: var(--font-size-xs);
+  line-height: var(--font-size-xs);
+}
+
+.toolbar-k-right {
+  margin-left: auto;
+}
+
+.give-k-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  font-family: inherit;
+  padding: 0;
+  line-height: inherit;
+}
+
+.give-k-btn:hover {
+  color: var(--color-karma);
+  text-shadow: 0 0 6px var(--color-karma);
+}
+
+.give-k-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.give-k-given {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.give-k-err {
+  color: var(--color-error);
+  font-size: var(--font-size-xs);
 }
 
 /* Disable all hover effects on touch-only devices */

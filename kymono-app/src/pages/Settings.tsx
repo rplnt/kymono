@@ -80,6 +80,12 @@ const settingsConfig: ConfigJson = {
           name: 'hotNodesEnabled',
           description: 'Enable Hot Nodes module',
           type: 'boolean',
+          value: true,
+        },
+        {
+          name: 'freshKEnabled',
+          description: 'Enable Fresh K module (recent karma)',
+          type: 'boolean',
           value: false,
         },
         {
@@ -92,7 +98,14 @@ const settingsConfig: ConfigJson = {
           name: 'moduleOrder',
           description: 'Module display order',
           type: 'moduleOrder',
-          value: ['mpn', 'quickBookmarks', 'friendsSubmissions', 'hotNodes', 'latestSubmissions'],
+          value: [
+            'mpn',
+            'quickBookmarks',
+            'friendsSubmissions',
+            'hotNodes',
+            'latestSubmissions',
+            'freshK',
+          ],
         },
       ],
     },
@@ -153,6 +166,7 @@ const MODULE_LABELS: Record<string, string> = {
   friendsSubmissions: "Friends' Submissions",
   latestSubmissions: 'Latest Submissions',
   hotNodes: 'Hot Nodes',
+  freshK: 'Fresh K',
 }
 
 const MODULE_ORDER_PATHS: Record<string, string> = {
@@ -161,6 +175,7 @@ const MODULE_ORDER_PATHS: Record<string, string> = {
   friendsSubmissions: CONFIG_PATHS.FRIENDS_SUBMISSIONS_ORDER,
   latestSubmissions: CONFIG_PATHS.LATEST_SUBMISSIONS_ORDER,
   hotNodes: CONFIG_PATHS.HOT_NODES_ORDER,
+  freshK: CONFIG_PATHS.FRESH_K_ORDER,
 }
 
 type SettingValue = string | number | boolean | string[]

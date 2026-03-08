@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 
 interface MenuProps {
   onToggleSidePanel: () => void
@@ -11,6 +11,15 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `btn btn-menu${isActive ? ' active' : ''}`
 
 export function Menu({ onToggleSidePanel, onCloseSidePanel, mailCount, repliesCount }: MenuProps) {
+  const location = useLocation()
+
+  const handleClick = (to: string) => (e: React.MouseEvent) => {
+    onCloseSidePanel()
+    if (location.pathname === to) {
+      e.preventDefault()
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
   return (
     <nav id="main-menu" role="navigation" aria-label="Main navigation">
       <div className="menu-item menu-item-sidebar">
@@ -25,7 +34,7 @@ export function Menu({ onToggleSidePanel, onCloseSidePanel, mailCount, repliesCo
         {repliesCount > 0 && <span className="menu-badge">{repliesCount}</span>}
       </div>
       <div className="menu-item">
-        <NavLink to="/home" className={navLinkClass} title="Home" onClick={onCloseSidePanel}>
+        <NavLink to="/home" className={navLinkClass} title="Home" onClick={handleClick('/home')}>
           H
         </NavLink>
       </div>
@@ -34,18 +43,18 @@ export function Menu({ onToggleSidePanel, onCloseSidePanel, mailCount, repliesCo
           to="/bookmarks"
           className={navLinkClass}
           title="Bookmarks"
-          onClick={onCloseSidePanel}
+          onClick={handleClick('/bookmarks')}
         >
           B
         </NavLink>
       </div>
       <div className="menu-item">
-        <NavLink to="/k" className={navLinkClass} title="K" onClick={onCloseSidePanel}>
+        <NavLink to="/k" className={navLinkClass} title="K" onClick={handleClick('/k')}>
           K
         </NavLink>
       </div>
       <div className="menu-item menu-item-mail">
-        <NavLink to="/mail" className={navLinkClass} title="Mail" onClick={onCloseSidePanel}>
+        <NavLink to="/mail" className={navLinkClass} title="Mail" onClick={handleClick('/mail')}>
           M
         </NavLink>
         {mailCount > 0 && <span className="menu-badge">{mailCount}</span>}

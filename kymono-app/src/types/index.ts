@@ -130,6 +130,7 @@ export interface NodeData {
   canWrite: boolean
   childrenCount: number
   views: number
+  givenK: boolean
 }
 
 // Node comment/child types
@@ -151,6 +152,7 @@ export interface NodeComment {
   isOrphan: boolean
   contentChanged: boolean
   isHardlink: boolean
+  givenK: boolean
 }
 
 // K (karma) item type
@@ -163,11 +165,12 @@ export interface KItem {
   creatorId: string
   owner: string
   templateId: string
-  createdAt: Date
+  createdAt: Date | null
   updatedAt: Date | null
   karma: number
   childrenCount: number
   creatorImageUrl: string
+  givenK: boolean
 }
 
 // Combined node + children response

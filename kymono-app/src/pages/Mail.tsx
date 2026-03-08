@@ -119,7 +119,7 @@ export function Mail() {
               {!msg.read && <span className="comment-badge comment-new">NEW</span>}
               <span className="mail-date">{formatTimestamp(msg.timestamp)}</span>
             </div>
-            <div className="mail-body">{msg.text}</div>
+            <div className="mail-body" dangerouslySetInnerHTML={{ __html: msg.text }} />
           </div>
         ))}
       </div>

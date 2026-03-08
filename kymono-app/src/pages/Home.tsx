@@ -7,6 +7,7 @@ import { MpnModule } from '@/components/MpnModule'
 import { FriendsSubmissions } from '@/components/FriendsSubmissions'
 import { LatestSubmissions } from '@/components/LatestSubmissions'
 import { HotNodes } from '@/components/HotNodes'
+import { FreshK } from '@/components/FreshK'
 
 export type ModuleId =
   | 'quickBookmarks'
@@ -14,6 +15,7 @@ export type ModuleId =
   | 'friendsSubmissions'
   | 'latestSubmissions'
   | 'hotNodes'
+  | 'freshK'
 
 export interface ModuleConfig {
   id: ModuleId
@@ -28,6 +30,7 @@ export const MODULE_ROUTES: Record<ModuleId, string> = {
   friendsSubmissions: 'friends-submissions',
   latestSubmissions: 'latest-submissions',
   hotNodes: 'hot-nodes',
+  freshK: 'fresh-k',
 }
 
 export const MODULES: ModuleConfig[] = [
@@ -60,6 +63,12 @@ export const MODULES: ModuleConfig[] = [
     component: LatestSubmissions,
     orderPath: CONFIG_PATHS.LATEST_SUBMISSIONS_ORDER,
     defaultOrder: 4,
+  },
+  {
+    id: 'freshK',
+    component: FreshK,
+    orderPath: CONFIG_PATHS.FRESH_K_ORDER,
+    defaultOrder: 5,
   },
 ]
 
