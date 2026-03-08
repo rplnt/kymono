@@ -17,6 +17,24 @@ if (viewport) {
   document.head.appendChild(meta)
 }
 
+// PWA meta tags for iOS/Android home screen pinning
+const pwaMeta: Record<string, string> = {
+  'mobile-web-app-capable': 'yes',
+  'apple-mobile-web-app-capable': 'yes',
+  'apple-mobile-web-app-status-bar-style': 'black',
+  'apple-mobile-web-app-title': 'KyMoNo',
+  'application-name': 'KyMoNo',
+  'theme-color': '#111111',
+}
+for (const [name, content] of Object.entries(pwaMeta)) {
+  if (!document.querySelector(`meta[name="${name}"]`)) {
+    const meta = document.createElement('meta')
+    meta.name = name
+    meta.content = content
+    document.head.appendChild(meta)
+  }
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
