@@ -4,6 +4,7 @@ import { truncate } from '@/utils'
 
 interface FriendsOnlineProps {
   friends: OnlineFriend[]
+  onNavigate?: () => void
 }
 
 function formatIdle(minutes: number, seconds: number): string {
@@ -12,7 +13,7 @@ function formatIdle(minutes: number, seconds: number): string {
   return `${minutes}m`
 }
 
-export function FriendsOnline({ friends }: FriendsOnlineProps) {
+export function FriendsOnline({ friends, onNavigate: onNav }: FriendsOnlineProps) {
   const navigate = useNavigate()
 
   if (friends.length === 0) return null
@@ -27,7 +28,7 @@ export function FriendsOnline({ friends }: FriendsOnlineProps) {
         {friends.map((friend) => (
           <div key={friend.userId} className="friend-entry">
             <img
-              src={friend.imageUrl}
+              src={friend.creatorImageUrl}
               alt={friend.login}
               className="friend-icon"
               onError={(e) => {
@@ -42,6 +43,7 @@ export function FriendsOnline({ friends }: FriendsOnlineProps) {
                   onClick={(e) => {
                     e.preventDefault()
                     navigate(`/id/${friend.userId}`)
+                    onNav?.()
                   }}
                 >
                   {friend.login}
@@ -58,6 +60,7 @@ export function FriendsOnline({ friends }: FriendsOnlineProps) {
                   onClick={(e) => {
                     e.preventDefault()
                     navigate(`/id/${friend.locationId}`)
+                    onNav?.()
                   }}
                 >
                   {truncate(friend.location, 25)}

@@ -21,6 +21,7 @@ export const config = {
     node: '9300812',
     k: '9301229',
     friendsSubmissions: '9301246',
+    mail: '9301250',
   },
   mpnBlacklist: [
     4830026, 3777728, 5898094, 2176597, 3660841, 7465941, 1522695, 1569351, 7607525, 788016,
@@ -53,6 +54,11 @@ export const CONFIG_PATHS = {
   NODE_AUTO_LOAD_COMMENTS_SCROLL: 'node.autoLoadCommentsOnScroll',
   FRIENDS_SUBMISSIONS_ENABLED: 'home.friendsSubmissionsEnabled',
   FRIENDS_SUBMISSIONS_ORDER: 'home.friendsSubmissionsOrder',
+  LATEST_SUBMISSIONS_ENABLED: 'home.latestSubmissionsEnabled',
+  LATEST_SUBMISSIONS_ORDER: 'home.latestSubmissionsOrder',
   RESPONSIVE_YOUTUBE: 'global.responsiveYoutube',
   RESPONSIVE_IMAGES: 'global.responsiveImages',
+  HOT_NODES_ENABLED: 'home.hotNodesEnabled',
+  HOT_NODES_ORDER: 'home.hotNodesOrder',
+  TWO_COLUMN_LAYOUT: 'home.twoColumnLayout',
 } as const

@@ -2,8 +2,8 @@ import { Component } from 'react'
 import type { ReactNode, ErrorInfo } from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Layout } from '@/components/Layout'
-import { Home, Bookmarks, Settings, K, Mail, Node } from '@/pages'
-import { ConfigProvider, NodeProvider, useConfig } from '@/contexts'
+import { Home, Bookmarks, Settings, K, Mail, Node, Module } from '@/pages'
+import { ConfigProvider, NodeProvider, FriendsProvider, useConfig } from '@/contexts'
 import { config, CONFIG_PATHS } from '@/config'
 import { hasConfig, initConfig } from '@/utils'
 
@@ -64,18 +64,21 @@ function App() {
       <ConfigProvider>
         <HashRouter>
           <NodeProvider>
-            <Routes>
-              <Route path="/" element={<Layout />}>
-                <Route index element={<IndexRedirect />} />
-                <Route path="home" element={<Home />} />
-                <Route path="bookmarks" element={<Bookmarks />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="k" element={<K />} />
-                <Route path="mail" element={<Mail />} />
-                <Route path="id/:nodeId" element={<Node />} />
-                <Route path="*" element={<Navigate to="/home" replace />} />
-              </Route>
-            </Routes>
+            <FriendsProvider>
+              <Routes>
+                <Route path="/" element={<Layout />}>
+                  <Route index element={<IndexRedirect />} />
+                  <Route path="home" element={<Home />} />
+                  <Route path="bookmarks" element={<Bookmarks />} />
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="k" element={<K />} />
+                  <Route path="mail" element={<Mail />} />
+                  <Route path="module/:moduleId" element={<Module />} />
+                  <Route path="id/:nodeId" element={<Node />} />
+                  <Route path="*" element={<Navigate to="/home" replace />} />
+                </Route>
+              </Routes>
+            </FriendsProvider>
           </NodeProvider>
         </HashRouter>
       </ConfigProvider>

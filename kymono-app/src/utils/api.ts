@@ -12,6 +12,7 @@ import type {
   NodeResponse,
   KItem,
   FriendSubmission,
+  MailMessage,
 } from '@/types'
 import { config } from '@/config'
 import { parseVisitDate } from './date'
@@ -144,6 +145,7 @@ interface CacheEntry<T> {
 }
 
 const cache = new Map<string, CacheEntry<unknown>>()
+const inflight = new Map<string, Promise<unknown>>()
 
 function getCached<T>(key: string): T | null {
   const entry = cache.get(key)
@@ -155,6 +157,14 @@ function getCached<T>(key: string): T | null {
 
 function setCache<T>(key: string, data: T): void {
   cache.set(key, { data, fetchedAt: Date.now() })
+}
+
+function dedupedFetch<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const existing = inflight.get(key)
+  if (existing) return existing as Promise<T>
+  const promise = fn().finally(() => inflight.delete(key))
+  inflight.set(key, promise)
+  return promise
 }
 
 /**
@@ -348,7 +358,7 @@ function parseNodeJson(
     createdAt: new Date(raw.node_created),
     updatedAt: raw.node_updated ? new Date(raw.node_updated) : null,
     karma: typeof raw.k === 'string' ? parseInt(raw.k, 10) : raw.k,
-    imageUrl: nodeImageUrl || getImageUrl(raw.node_id),
+    nodeImageUrl: nodeImageUrl || getImageUrl(raw.node_id),
     creatorImageUrl: creatorImageUrl || getImageUrl(raw.node_creator),
     ancestors,
     canWrite,
@@ -386,7 +396,7 @@ function parseChildJson(raw: RawChild, lastVisit?: Date): NodeComment {
       typeof raw.node_children_count === 'string'
         ? parseInt(raw.node_children_count, 10)
         : raw.node_children_count || 0,
-    imageUrl: getImageUrl(raw.node_creator),
+    creatorImageUrl: getImageUrl(raw.node_creator),
     isNew,
     isOrphan,
     contentChanged,
@@ -427,7 +437,7 @@ interface RawReply {
   login: string
   node_content: string
   node_created: string
-  imageUrl?: string
+  creatorImageUrl?: string
 }
 
 /**
@@ -446,12 +456,11 @@ export async function fetchSidebarData(force = false): Promise<SidebarData> {
   }
   const html = await response.text()
 
-  const friendsRaw = extractJson<(Omit<OnlineFriend, 'imageUrl'> & { imageUrl?: string })[]>(
-    html,
-    'kymono.friends'
-  )
+  const friendsRaw = extractJson<
+    (Omit<OnlineFriend, 'creatorImageUrl'> & { creatorImageUrl?: string })[]
+  >(html, 'kymono.friends')
   const friends = friendsRaw
-    ? friendsRaw.map((f) => ({ ...f, imageUrl: f.imageUrl || getImageUrl(f.userId) }))
+    ? friendsRaw.map((f) => ({ ...f, creatorImageUrl: f.creatorImageUrl || getImageUrl(f.userId) }))
     : []
 
   const repliesRaw = extractJson<RawReply[]>(html, 'kymono.replies')
@@ -463,7 +472,7 @@ export async function fetchSidebarData(force = false): Promise<SidebarData> {
         parentName: stripHtml(r.parent_name || ''),
         creatorId: r.node_creator,
         login: r.login,
-        imageUrl: r.imageUrl || getImageUrl(r.node_creator),
+        creatorImageUrl: r.creatorImageUrl || getImageUrl(r.node_creator),
         content: stripHtml(r.node_content || ''),
         createdAt: r.node_created,
       }))
@@ -571,7 +580,7 @@ function parseKItem(raw: RawKItem): KItem {
       typeof raw.node_children_count === 'string'
         ? parseInt(raw.node_children_count, 10)
         : raw.node_children_count || 0,
-    imageUrl: getImageUrl(raw.node_creator),
+    creatorImageUrl: getImageUrl(raw.node_creator),
   }
 }
 
@@ -623,6 +632,16 @@ export async function submitComment(
   }
 }
 
+export function getFriendMapFromDom(): Record<string, boolean> {
+  const el = document.querySelector('script#kymono\\.friendList')
+  if (!el?.textContent) return {}
+  try {
+    return JSON.parse(el.textContent)
+  } catch {
+    return {}
+  }
+}
+
 interface RawFriendSubmission {
   node_id: string
   node_name: string
@@ -633,7 +652,7 @@ interface RawFriendSubmission {
   node_content: string
   node_created: string
   k: string | number
-  imageUrl?: string
+  creatorImageUrl?: string
 }
 
 /**
@@ -645,39 +664,89 @@ export async function fetchFriendsSubmissions(force = false): Promise<FriendSubm
     const cached = getCached<FriendSubmission[]>(cacheKey)
     if (cached) return cached
   }
-  const url = `${config.apiBase}${config.base}${config.templates.friendsSubmissions}`
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch friends submissions: ${response.status}`)
-  }
-  const html = await response.text()
+  const doFetch = async () => {
+    const url = `${config.apiBase}${config.base}${config.templates.friendsSubmissions}`
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch friends submissions: ${response.status}`)
+    }
+    const html = await response.text()
 
-  // Handle trailing commas in JSON array from template
-  const regex = /<script[^>]*id="kymono\.friendsSubmissions"[^>]*>([\s\S]*?)<\/script>/i
-  const match = html.match(regex)
-  if (!match) {
-    throw new Error('Failed to parse friends submissions data')
-  }
-  const cleaned = match[1].replace(/,\s*]/g, ']')
-  let data: RawFriendSubmission[]
-  try {
-    data = JSON.parse(cleaned)
-  } catch {
-    throw new Error('Failed to parse friends submissions JSON')
-  }
+    // Handle trailing commas in JSON array from template
+    const regex = /<script[^>]*id="kymono\.friendsSubmissions"[^>]*>([\s\S]*?)<\/script>/i
+    const match = html.match(regex)
+    if (!match) {
+      throw new Error('Failed to parse friends submissions data')
+    }
+    const cleaned = match[1].replace(/,\s*]/g, ']')
+    let data: RawFriendSubmission[]
+    try {
+      data = JSON.parse(cleaned)
+    } catch {
+      throw new Error('Failed to parse friends submissions JSON')
+    }
 
-  const result = data.map((r) => ({
-    id: r.node_id,
-    name: stripHtml(r.node_name || ''),
-    parentId: r.node_parent,
-    parentName: stripHtml(r.parent_name || ''),
-    creatorId: r.node_creator,
-    login: r.login,
-    imageUrl: r.imageUrl || getImageUrl(r.node_creator),
-    content: stripHtml(r.node_content || ''),
-    createdAt: r.node_created,
-    karma: typeof r.k === 'string' ? parseInt(r.k, 10) : r.k,
-  }))
-  setCache(cacheKey, result)
-  return result
+    const result = data.map((r) => ({
+      id: r.node_id,
+      name: stripHtml(r.node_name || ''),
+      parentId: r.node_parent,
+      parentName: stripHtml(r.parent_name || ''),
+      creatorId: r.node_creator,
+      login: r.login,
+      creatorImageUrl: r.creatorImageUrl || getImageUrl(r.node_creator),
+      content: stripHtml(r.node_content || ''),
+      createdAt: r.node_created,
+      karma: typeof r.k === 'string' ? parseInt(r.k, 10) : r.k,
+    }))
+    setCache(cacheKey, result)
+    return result
+  }
+  return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
+}
+
+interface RawMailMessage {
+  mail_id: string
+  mail_from: string
+  mail_from_name: string
+  mail_to: string
+  mail_to_name: string
+  mail_text: string
+  mail_timestamp: string
+  mail_read: string
+}
+
+/**
+ * Fetch and parse mail data from server
+ */
+export async function fetchMailData(force = false): Promise<MailMessage[]> {
+  const cacheKey = 'mail'
+  if (!force) {
+    const cached = getCached<MailMessage[]>(cacheKey)
+    if (cached) return cached
+  }
+  const doFetch = async () => {
+    const url = `${config.apiBase}${config.base}${config.templates.mail}`
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch mail data: ${response.status}`)
+    }
+    const html = await response.text()
+    const data = extractJson<RawMailMessage[]>(html, 'kymono.mail')
+    if (!data) {
+      throw new Error('Failed to parse mail data')
+    }
+    const result: MailMessage[] = data.map((m) => ({
+      id: m.mail_id,
+      fromId: m.mail_from,
+      fromName: m.mail_from_name,
+      toId: m.mail_to,
+      toName: m.mail_to_name,
+      text: m.mail_text,
+      timestamp: m.mail_timestamp,
+      read: m.mail_read === 'yes',
+    }))
+    setCache(cacheKey, result)
+    return result
+  }
+  return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
 }

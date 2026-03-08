@@ -13,6 +13,7 @@ interface ReplyGroup {
 interface LatestRepliesProps {
   replies: LatestReply[]
   lastLoadedAt: string | null
+  onNavigate?: () => void
 }
 
 function ReplyGroupView({
@@ -37,14 +38,14 @@ function ReplyGroupView({
         className="reply-group-parent"
         onClick={(e) => handleClick(e, group.parentId)}
       >
-        <span className="lr-in">In</span>
+        <span className="lr-in">in</span>
         {group.parentName}
       </a>
       {shown.map((reply) => (
         <div key={reply.id} className="lr-entry">
           <span className="lr-branch">{'\u2514'}</span>
           <img
-            src={reply.imageUrl}
+            src={reply.creatorImageUrl}
             alt={reply.login}
             title={reply.login}
             className="lr-avatar"
@@ -74,7 +75,7 @@ function ReplyGroupView({
   )
 }
 
-export function LatestReplies({ replies, lastLoadedAt }: LatestRepliesProps) {
+export function LatestReplies({ replies, lastLoadedAt, onNavigate }: LatestRepliesProps) {
   const navigate = useNavigate()
   const [showOlder, setShowOlder] = useState(false)
 
@@ -111,7 +112,10 @@ export function LatestReplies({ replies, lastLoadedAt }: LatestRepliesProps) {
 
   if (newGroups.length === 0 && oldGroups.length === 0) return null
 
-  const handleNavigate = (id: string) => navigate(`/id/${id}`)
+  const handleNavigate = (id: string) => {
+    navigate(`/id/${id}`)
+    onNavigate?.()
+  }
 
   return (
     <div className="latest-replies-section">

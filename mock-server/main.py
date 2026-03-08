@@ -1,10 +1,11 @@
 import argparse
+import random
 from pathlib import Path
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 
 app = FastAPI()
 
@@ -117,6 +118,17 @@ async def post_node(node_id: str, request: Request) -> Response:
 
     print(f"MOCK POST: /id/{node_id}")
     return JSONResponse({"status": "ok"})
+
+
+@app.get("/ajax/check_new_mail.php")
+async def check_new_mail(request: Request) -> Response:
+    """Return random new mail count (mock) or proxy to real server."""
+    if PROXY_MODE:
+        return await proxy_request("/ajax/check_new_mail.php")
+
+    count = random.randint(0, 5)
+    print(f"MOCK check_new_mail: {count}")
+    return PlainTextResponse(str(count))
 
 
 @app.get("/")

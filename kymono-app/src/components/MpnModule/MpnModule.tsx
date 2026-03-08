@@ -91,6 +91,7 @@ export function MpnModule() {
   return (
     <HomeModule
       title="most.populated.nodes"
+      slug="mpn"
       loading={loading}
       error={error}
       empty={filteredNodes.length === 0}

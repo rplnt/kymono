@@ -21,6 +21,9 @@
   --color-error-dim: rgba(221, 68, 68, 0.7);
   --color-karma: #f22;
 
+  --color-friend: #f0eed8;
+  --color-friend-glow: rgba(232, 200, 60, 0.5);
+
   /* Typography */
   --font-family: Verdana, sans-serif;
   --font-size-base: 1rem;
@@ -548,6 +551,10 @@ a {
   background: var(--color-bg-elevated);
 }
 
+.setting-row-toggle {
+  cursor: pointer;
+}
+
 .setting-description {
   flex: 1;
   color: var(--color-text-secondary);
@@ -781,6 +788,24 @@ a {
 /* ============================================================
    Home Modules
    ============================================================ */
+.home-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  overflow: hidden;
+}
+
+.home-grid > .home-module {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .home-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .home-module {
   margin-bottom: var(--space-2);
 }
@@ -788,39 +813,51 @@ a {
 .module-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-bg-surface);
-  border-left: 3px solid var(--color-phosphor);
-  cursor: pointer;
-  user-select: none;
-  transition: background var(--transition-fast);
+  gap: 8px;
+  padding: var(--space-1) 0;
 }
 
-.module-header:hover {
-  background: var(--color-bg-elevated);
+.module-header-stub {
+  width: 16px;
+  height: 1px;
+  background: var(--color-text-muted);
 }
 
 .module-title {
   font-size: var(--font-size-xs);
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--color-text-primary);
+  font-weight: 400;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.module-title-link,
+.module-title-link:visited {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.module-title-link:hover {
+  text-decoration: underline;
+}
+
+.module-header-line {
+  flex: 1;
+  height: 1px;
+  background: var(--color-text-muted);
 }
 
 .module-reload {
   background: none;
   border: none;
-  color: var(--color-text-secondary);
-  font-size: 1.4em;
+  color: var(--color-text-muted);
+  font-size: 1em;
   line-height: 1;
   cursor: pointer;
-  padding: 0 var(--space-2);
+  padding: 0;
 }
 
 .module-reload:hover {
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
 }
 
 .module-disabled,
@@ -856,23 +893,18 @@ a {
 }
 
 .btn-show-more {
-  display: block;
-  width: 100%;
-  padding: var(--space-2) var(--space-4);
-  margin: var(--space-3) 0;
-  background: transparent;
-  border: 1px dashed var(--color-phosphor-dim);
-  color: var(--color-phosphor);
-  font-family: var(--font-family);
-  font-size: var(--font-size-sm);
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-xs);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  padding: var(--space-1) 0;
+  padding-left: 18px;
 }
 
 .btn-show-more:hover {
-  background: var(--color-bg-elevated);
-  border-color: var(--color-phosphor);
-  border-style: solid;
+  color: var(--color-text-secondary);
 }
 
 .error-container {
@@ -1232,7 +1264,7 @@ a {
 }
 
 .lr-in {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   margin-right: 0.4em;
 }
 
@@ -1530,6 +1562,13 @@ a {
 }
 
 /* Reply Form */
+.node-readonly {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-style: italic;
+  padding: var(--space-2) var(--space-3);
+}
+
 .reply-form {
   display: flex;
   flex-direction: column;
@@ -1736,6 +1775,14 @@ a {
 .comment-author:hover {
   color: var(--color-text-secondary);
 }
+.comment-author.is-friend {
+  color: var(--color-friend);
+  text-shadow: 0 0 6px var(--color-friend-glow);
+}
+.comment-author.is-friend:hover {
+  color: var(--color-friend);
+  opacity: 0.8;
+}
 
 .comment-title {
   color: var(--color-text-primary);
@@ -1761,7 +1808,7 @@ a {
 }
 
 .comment-date-edited {
-  color: var(--color-text-muted);
+  color: var(--color-error-dim);
   margin-left: 1px;
 }
 
@@ -1946,8 +1993,46 @@ a {
 /* ============================================================
    Friends' Submissions (Home Module)
    ============================================================ */
-.friend-submission {
-  margin-bottom: var(--space-3);
+.fs-entry {
+  margin-bottom: var(--space-2);
+  padding: 0 14px;
+}
+
+.fs-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+}
+
+.fs-avatar {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  object-fit: cover;
+  object-position: top left;
+  cursor: pointer;
+}
+
+.fs-author {
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.fs-author:hover {
+  color: var(--color-text-secondary);
+}
+
+.fs-date {
+  color: var(--color-text-muted);
+}
+
+.fs-karma {
+  color: var(--color-karma);
+  font-weight: 600;
+  text-shadow: 0 0 6px var(--color-karma);
 }
 
 .fs-title-line {
@@ -1956,6 +2041,16 @@ a {
   overflow: hidden;
   mask-image: linear-gradient(to right, black 85%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  padding-left: 18px;
+}
+
+.fs-title {
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.fs-title:hover {
+  color: var(--color-text-secondary);
 }
 
 .fs-in {
@@ -1966,11 +2061,20 @@ a {
 .fs-parent {
   color: var(--color-text-secondary);
   text-decoration: none;
-  transition: color var(--transition-fast);
 }
 
 .fs-parent:hover {
   color: var(--color-phosphor);
+}
+
+.fs-content {
+  color: var(--color-phosphor);
+  font-size: var(--font-size-xs);
+  padding-left: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, black 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
 }
 
 .fs-truncated {
@@ -1989,12 +2093,134 @@ a {
 .comment-author:active,
 .node-header:active,
 .node-title:active,
-.module-header:active,
-.module-title:active,
 .cat-header:active,
 .book-cat .cat-header:active {
   color: inherit;
   background-color: inherit;
+}
+
+/* ============================================================
+   Mail
+   ============================================================ */
+.mail-view {
+  max-width: var(--content-max-width);
+}
+
+.mail-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-2);
+}
+
+#root .mail-reload {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1.5em;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.mail-reload:hover {
+  color: var(--color-phosphor);
+}
+
+.mail-header-link {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+}
+
+.mail-header-link:hover {
+  color: var(--color-text-secondary);
+}
+
+.mail-header-link svg {
+  vertical-align: -1px;
+}
+
+.mail-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.mail-entry {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-bg-surface);
+}
+
+.mail-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+}
+
+.mail-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  object-fit: cover;
+  object-position: top left;
+  cursor: pointer;
+}
+
+.mail-from,
+.mail-to {
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.mail-from:hover,
+.mail-to:hover {
+  color: var(--color-text-secondary);
+}
+
+.mail-arrow {
+  color: var(--color-text-muted);
+}
+
+.mail-date {
+  color: var(--color-text-muted);
+  margin-left: auto;
+}
+
+.mail-body {
+  font-size: var(--font-size-sm);
+  color: var(--color-phosphor);
+  padding-left: 36px;
+  margin-top: 2px;
+  line-height: var(--line-height-normal);
+}
+
+/* Menu badge */
+.menu-item-mail,
+.menu-item-sidebar {
+  position: relative;
+}
+
+.menu-badge {
+  position: absolute;
+  top: 4px;
+  right: 10px;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  border-radius: 9px;
+  padding: 0 5px;
+  pointer-events: none;
 }
 
 /* Disable all hover effects on touch-only devices */

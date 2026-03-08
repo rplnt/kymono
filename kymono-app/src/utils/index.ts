@@ -14,7 +14,10 @@ export {
   fetchNodeData,
   fetchKData,
   fetchFriendsSubmissions,
+  fetchMailData,
   submitComment,
 } from './api'
+export { startMailChecker } from './mailChecker'
+export { startRepliesChecker } from './repliesChecker'
 export { buildSearchIndex, searchIndex, truncate } from './search'
 export { hasConfig, initConfig } from './configStorage'

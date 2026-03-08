@@ -45,7 +45,7 @@ function Timestamp({
   return (
     <span className="comment-date comment-date-clickable" onClick={cycle}>
       {showFull ? formatDate(date) : formatRelativeDate(createdAt)}
-      {showFull && updatedAt && <span className="comment-date-edited">*</span>}
+      {updatedAt && <span className="comment-date-edited">*</span>}
     </span>
   )
 }
@@ -73,9 +73,9 @@ const KItemCard = memo(function KItemCard({
   return (
     <div id={`k-item-${item.id}`} className="comment">
       <div className="comment-header" onClick={() => onToggleCollapsed(item.id)}>
-        {item.imageUrl ? (
+        {item.creatorImageUrl ? (
           <img
-            src={item.imageUrl}
+            src={item.creatorImageUrl}
             alt=""
             className="comment-avatar"
             onClick={(e) => {

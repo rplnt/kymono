@@ -21,7 +21,8 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
     location.pathname === '/' ||
     location.pathname === '/home' ||
     location.pathname === '/bookmarks' ||
-    location.pathname === '/k'
+    location.pathname === '/k' ||
+    location.pathname === '/mail'
   const isNode = location.pathname.startsWith('/id/')
   const [friends, setFriends] = useState<OnlineFriend[]>([])
   const [replies, setReplies] = useState<LatestReply[]>([])
@@ -100,15 +101,17 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
 
           {isHome && !loading && error && <div className="sidebar-error">{error}</div>}
 
-          {isHome && <LatestReplies replies={replies} lastLoadedAt={lastLoadedAt} />}
-          {isHome && <FriendsOnline friends={friends} />}
+          {isHome && (
+            <LatestReplies replies={replies} lastLoadedAt={lastLoadedAt} onNavigate={onClose} />
+          )}
+          {isHome && <FriendsOnline friends={friends} onNavigate={onClose} />}
 
           {isNode && currentNode && (
             <div className="side-panel-node">
               {/* Node icon/image */}
-              {currentNode.imageUrl && (
+              {currentNode.nodeImageUrl && (
                 <div className="node-image">
-                  <img src={currentNode.imageUrl} alt={currentNode.name} />
+                  <img src={currentNode.nodeImageUrl} alt={currentNode.name} />
                 </div>
               )}
 

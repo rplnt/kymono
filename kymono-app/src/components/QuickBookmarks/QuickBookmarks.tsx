@@ -6,6 +6,8 @@ import { TIME_RANGES, CONFIG_PATHS } from '@/config'
 import { fetchBookmarksData, minutesSince } from '@/utils'
 import { HomeModule } from '@/components/HomeModule'
 
+const MAX_DISPLAY = 8
+
 export function QuickBookmarks() {
   const navigate = useNavigate()
   const [categories, setCategories] = useState<BookmarkCategory[]>([])
@@ -31,12 +33,13 @@ export function QuickBookmarks() {
     loadData()
   }, [loadData])
 
-  // Filter to bookmarks from last month with new replies, sorted by last visited, limit 10
+  // Filter to bookmarks from last month with new replies, sorted by last visited
   // Prioritize those with unread, then fill with descendants-only
   const recentBookmarks = useMemo(() => {
     const maxMinutes = TIME_RANGES[2].minutes // 1M = 30 days
     const withUnread: Bookmark[] = []
     const descendantsOnly: Bookmark[] = []
+    const lastVisited: Bookmark[] = []
 
     for (const cat of categories) {
       for (const bookmark of cat.bookmarks) {
@@ -49,21 +52,27 @@ export function QuickBookmarks() {
           withUnread.push(bookmark)
         } else if (bookmark.hasDescendants) {
           descendantsOnly.push(bookmark)
+        } else {
+          lastVisited.push(bookmark)
         }
       }
     }
 
-    // Sort both by last visited (most recent first)
+    // Sort all by last visited (most recent first)
     const sortByVisited = (a: Bookmark, b: Bookmark) => {
       return minutesSince(a.visitedAt) - minutesSince(b.visitedAt)
     }
     withUnread.sort(sortByVisited)
     descendantsOnly.sort(sortByVisited)
+    lastVisited.sort(sortByVisited)
 
-    // Prioritize unread, fill remaining slots with descendants-only
-    const result = withUnread.slice(0, 10)
-    if (result.length < 10) {
-      result.push(...descendantsOnly.slice(0, 10 - result.length))
+    // Prioritize unread, then descendants, fill rest with last visited
+    const result = withUnread.slice(0, MAX_DISPLAY)
+    if (result.length < MAX_DISPLAY) {
+      result.push(...descendantsOnly.slice(0, MAX_DISPLAY - result.length))
+    }
+    if (result.length < MAX_DISPLAY) {
+      result.push(...lastVisited.slice(0, MAX_DISPLAY - result.length))
     }
 
     return result
@@ -83,6 +92,7 @@ export function QuickBookmarks() {
   return (
     <HomeModule
       title="quick.bookmarks"
+      slug="quick-bookmarks"
       loading={loading}
       error={error}
       empty={recentBookmarks.length === 0}

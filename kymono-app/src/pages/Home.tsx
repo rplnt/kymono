@@ -5,17 +5,32 @@ import { useTitle } from '@/utils/useTitle'
 import { QuickBookmarks } from '@/components/QuickBookmarks'
 import { MpnModule } from '@/components/MpnModule'
 import { FriendsSubmissions } from '@/components/FriendsSubmissions'
+import { LatestSubmissions } from '@/components/LatestSubmissions'
+import { HotNodes } from '@/components/HotNodes'
 
-type ModuleId = 'quickBookmarks' | 'mpn' | 'friendsSubmissions'
+export type ModuleId =
+  | 'quickBookmarks'
+  | 'mpn'
+  | 'friendsSubmissions'
+  | 'latestSubmissions'
+  | 'hotNodes'
 
-interface ModuleConfig {
+export interface ModuleConfig {
   id: ModuleId
   component: React.ComponentType
   orderPath: string
   defaultOrder: number
 }
 
-const MODULES: ModuleConfig[] = [
+export const MODULE_ROUTES: Record<ModuleId, string> = {
+  mpn: 'mpn',
+  quickBookmarks: 'quick-bookmarks',
+  friendsSubmissions: 'friends-submissions',
+  latestSubmissions: 'latest-submissions',
+  hotNodes: 'hot-nodes',
+}
+
+export const MODULES: ModuleConfig[] = [
   {
     id: 'mpn',
     component: MpnModule,
@@ -34,6 +49,18 @@ const MODULES: ModuleConfig[] = [
     orderPath: CONFIG_PATHS.FRIENDS_SUBMISSIONS_ORDER,
     defaultOrder: 2,
   },
+  {
+    id: 'hotNodes',
+    component: HotNodes,
+    orderPath: CONFIG_PATHS.HOT_NODES_ORDER,
+    defaultOrder: 3,
+  },
+  {
+    id: 'latestSubmissions',
+    component: LatestSubmissions,
+    orderPath: CONFIG_PATHS.LATEST_SUBMISSIONS_ORDER,
+    defaultOrder: 4,
+  },
 ]
 
 export function Home() {
@@ -48,8 +75,10 @@ export function Home() {
     return modulesWithOrder.sort((a, b) => a.order - b.order)
   }, [getValue])
 
+  const twoColumn = getValue<boolean>(CONFIG_PATHS.TWO_COLUMN_LAYOUT, true)
+
   return (
-    <div>
+    <div className={twoColumn ? 'home-grid' : undefined}>
       {sortedModules.map(({ id, component: Component }) => (
         <Component key={id} />
       ))}

@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef, memo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { NodeData, NodeComment } from '@/types'
-import { useCurrentNode, useConfigValue } from '@/contexts'
+import { useCurrentNode, useConfigValue, useFriends } from '@/contexts'
 import { fetchNodeData, submitComment, formatDate, formatRelativeDate } from '@/utils'
 import { useTitle } from '@/utils/useTitle'
 import { config, CONFIG_PATHS } from '@/config'
+import { ExternalLinkIcon } from '@/components/ExternalLinkIcon'
 
 // Cycles: relative → full created → full edited → relative (if edited)
 //         relative → full created → relative (if not edited)
@@ -38,7 +39,7 @@ function Timestamp({
   return (
     <span className="comment-date comment-date-clickable" onClick={cycle}>
       {showFull ? formatDate(date) : formatRelativeDate(createdAt)}
-      {showFull && updatedAt && <span className="comment-date-edited">*</span>}
+      {updatedAt && <span className="comment-date-edited">*</span>}
     </span>
   )
 }
@@ -61,11 +62,7 @@ const CommentContent = memo(function CommentContent({
   onClick: (e: React.MouseEvent) => void
 }) {
   return (
-    <div
-      className="comment-content"
-      dangerouslySetInnerHTML={{ __html: html }}
-      onClick={onClick}
-    />
+    <div className="comment-content" dangerouslySetInnerHTML={{ __html: html }} onClick={onClick} />
   )
 })
 
@@ -73,6 +70,7 @@ export function Node() {
   const { nodeId } = useParams<{ nodeId: string }>()
   const navigate = useNavigate()
   const { setCurrentNode } = useCurrentNode()
+  const { isFriend } = useFriends()
   const [node, setNode] = useState<NodeData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -90,6 +88,7 @@ export function Node() {
   const [insertModal, setInsertModal] = useState<'link' | 'image' | null>(null)
   const [modalUrl, setModalUrl] = useState('')
   const [modalTitle, setModalTitle] = useState('')
+  const [modalWidth, setModalWidth] = useState('')
   const [showCommentToolbar] = useConfigValue(CONFIG_PATHS.COMMENT_TOOLBAR, true)
   const [fullTimestamps] = useConfigValue(CONFIG_PATHS.FULL_TIMESTAMPS, true)
   const [progressiveComments] = useConfigValue(CONFIG_PATHS.NODE_PROGRESSIVE_COMMENTS, false)
@@ -193,14 +192,16 @@ export function Node() {
     cursorPosRef.current = textareaRef.current?.selectionStart ?? null
     setModalUrl('')
     setModalTitle('')
+    setModalWidth('')
     setInsertModal(type)
   }
 
   const handleInsert = () => {
     if (!modalUrl.trim()) return
+    const widthAttr = modalWidth.trim() ? ` width="${modalWidth.trim()}"` : ''
     const html =
       insertModal === 'image'
-        ? `<img src="${modalUrl.trim()}">`
+        ? `<img src="${modalUrl.trim()}"${widthAttr}>`
         : `<a href="${modalUrl.trim()}">${modalTitle.trim() || modalUrl.trim()}</a>`
 
     const pos = cursorPosRef.current ?? replyContent.length
@@ -218,21 +219,24 @@ export function Node() {
   }, [setCurrentNode])
 
   // Handle clicks on local links in content
-  const handleContentClick = useCallback((e: React.MouseEvent) => {
-    const target = e.target as HTMLElement
-    const anchor = target.closest('a')
-    if (!anchor) return
+  const handleContentClick = useCallback(
+    (e: React.MouseEvent) => {
+      const target = e.target as HTMLElement
+      const anchor = target.closest('a')
+      if (!anchor) return
 
-    const href = anchor.getAttribute('href')
-    if (!href) return
+      const href = anchor.getAttribute('href')
+      if (!href) return
 
-    // Check for local /id/ links
-    const match = href.match(/^\/id\/(\d+)/)
-    if (match) {
-      e.preventDefault()
-      navigate(`/id/${match[1]}`)
-    }
-  }, [navigate])
+      // Check for local /id/ links
+      const match = href.match(/^\/id\/(\d+)/)
+      if (match) {
+        e.preventDefault()
+        navigate(`/id/${match[1]}`)
+      }
+    },
+    [navigate]
+  )
 
   if (loading) {
     return (
@@ -317,7 +321,7 @@ export function Node() {
               <div className="comment-meta-line">
                 <a
                   href={`#/id/${node.creatorId}`}
-                  className="comment-author"
+                  className={`comment-author${isFriend(node.creatorId) ? ' is-friend' : ''}`}
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
@@ -335,17 +339,6 @@ export function Node() {
               </div>
               <div className="comment-meta-line">
                 <span className="comment-title">{node.name || `node ${node.id}`}</span>
-                {node.childrenCount > 0 && (
-                  <button
-                    className="node-children-link"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      scrollToComments()
-                    }}
-                  >
-                    {node.childrenCount} children
-                  </button>
-                )}
               </div>
             </div>
             <a
@@ -356,18 +349,7 @@ export function Node() {
               title="Open on kyberia.sk"
               onClick={(e) => e.stopPropagation()}
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                <polyline points="15 3 21 3 21 9" />
-                <line x1="10" y1="14" x2="21" y2="3" />
-              </svg>
+              <ExternalLinkIcon />
             </a>
           </div>
           {!contentCollapsed && (
@@ -461,6 +443,8 @@ export function Node() {
       )}
 
       {/* Reply form - always visible when user can write */}
+      {!node.canWrite && <p className="node-readonly">Read-only access</p>}
+
       {node.canWrite && (
         <div className="reply-form">
           <input
@@ -496,7 +480,14 @@ export function Node() {
                 disabled={submitting}
                 onClick={() => openInsertModal('link')}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
                   <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
                 </svg>
@@ -507,7 +498,14 @@ export function Node() {
                 disabled={submitting}
                 onClick={() => openInsertModal('image')}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                   <circle cx="8.5" cy="8.5" r="1.5" />
                   <polyline points="21 15 16 10 5 21" />
@@ -518,9 +516,7 @@ export function Node() {
           {insertModal && (
             <div className="insert-modal-backdrop" onClick={() => setInsertModal(null)}>
               <div className="insert-modal" onClick={(e) => e.stopPropagation()}>
-                <div className="insert-modal-title">
-                  Insert {insertModal}
-                </div>
+                <div className="insert-modal-title">Insert {insertModal}</div>
                 <input
                   type="text"
                   className="insert-modal-input"
@@ -528,7 +524,9 @@ export function Node() {
                   value={modalUrl}
                   onChange={(e) => setModalUrl(e.target.value)}
                   autoFocus
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleInsert() }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleInsert()
+                  }}
                 />
                 {insertModal === 'link' && (
                   <input
@@ -537,7 +535,21 @@ export function Node() {
                     placeholder="Title (optional)"
                     value={modalTitle}
                     onChange={(e) => setModalTitle(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleInsert() }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleInsert()
+                    }}
+                  />
+                )}
+                {insertModal === 'image' && (
+                  <input
+                    type="text"
+                    className="insert-modal-input"
+                    placeholder="Width (optional, e.g. 300)"
+                    value={modalWidth}
+                    onChange={(e) => setModalWidth(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleInsert()
+                    }}
                   />
                 )}
                 <div className="insert-modal-actions">
@@ -548,10 +560,7 @@ export function Node() {
                   >
                     Insert
                   </button>
-                  <button
-                    className="reply-submit"
-                    onClick={() => setInsertModal(null)}
-                  >
+                  <button className="reply-submit" onClick={() => setInsertModal(null)}>
                     Cancel
                   </button>
                 </div>
@@ -635,9 +644,9 @@ export function Node() {
                             className="comment-header"
                             onClick={() => toggleCommentCollapsed(comment.id)}
                           >
-                            {comment.imageUrl ? (
+                            {comment.creatorImageUrl ? (
                               <img
-                                src={comment.imageUrl}
+                                src={comment.creatorImageUrl}
                                 alt=""
                                 className="comment-avatar"
                                 onClick={(e) => {
@@ -658,7 +667,7 @@ export function Node() {
                               <div className="comment-meta-line">
                                 <a
                                   href={`#/id/${comment.creatorId}`}
-                                  className="comment-author"
+                                  className={`comment-author${isFriend(comment.creatorId) ? ' is-friend' : ''}`}
                                   onClick={(e) => {
                                     e.preventDefault()
                                     e.stopPropagation()

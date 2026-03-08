@@ -44,7 +44,7 @@ export interface MpnNode {
 export interface OnlineFriend {
   userId: string
   login: string
-  imageUrl: string
+  creatorImageUrl: string
   locationId: string
   location: string
   idleMinutes: number
@@ -58,7 +58,7 @@ export interface LatestReply {
   parentName: string
   creatorId: string
   login: string
-  imageUrl: string
+  creatorImageUrl: string
   content: string
   createdAt: string
 }
@@ -75,10 +75,22 @@ export interface FriendSubmission {
   parentName: string
   creatorId: string
   login: string
-  imageUrl: string
+  creatorImageUrl: string
   content: string
   createdAt: string
   karma: number
+}
+
+// Mail types
+export interface MailMessage {
+  id: string
+  fromId: string
+  fromName: string
+  toId: string
+  toName: string
+  text: string
+  timestamp: string
+  read: boolean
 }
 
 // Search index types
@@ -112,7 +124,7 @@ export interface NodeData {
   createdAt: Date
   updatedAt: Date | null
   karma: number
-  imageUrl: string
+  nodeImageUrl: string
   creatorImageUrl: string
   ancestors: NodeAncestor[]
   canWrite: boolean
@@ -134,7 +146,7 @@ export interface NodeComment {
   updatedAt: Date | null
   karma: number
   childrenCount: number
-  imageUrl: string
+  creatorImageUrl: string
   isNew: boolean
   isOrphan: boolean
   contentChanged: boolean
@@ -155,7 +167,7 @@ export interface KItem {
   updatedAt: Date | null
   karma: number
   childrenCount: number
-  imageUrl: string
+  creatorImageUrl: string
 }
 
 // Combined node + children response

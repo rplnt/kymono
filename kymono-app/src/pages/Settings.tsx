@@ -24,7 +24,7 @@ const settingsConfig: ConfigJson = {
         },
         {
           name: 'fullTimestamps',
-          description: 'Timestamps',
+          description: 'Display full timestamps',
           type: 'boolean',
           value: true,
         },
@@ -71,10 +71,28 @@ const settingsConfig: ConfigJson = {
           value: true,
         },
         {
+          name: 'latestSubmissionsEnabled',
+          description: 'Enable Latest Submissions module',
+          type: 'boolean',
+          value: false,
+        },
+        {
+          name: 'hotNodesEnabled',
+          description: 'Enable Hot Nodes module',
+          type: 'boolean',
+          value: false,
+        },
+        {
+          name: 'twoColumnLayout',
+          description: 'Two-column layout on desktop',
+          type: 'boolean',
+          value: true,
+        },
+        {
           name: 'moduleOrder',
           description: 'Module display order',
           type: 'moduleOrder',
-          value: ['mpn', 'quickBookmarks', 'friendsSubmissions'],
+          value: ['mpn', 'quickBookmarks', 'friendsSubmissions', 'hotNodes', 'latestSubmissions'],
         },
       ],
     },
@@ -133,12 +151,16 @@ const MODULE_LABELS: Record<string, string> = {
   quickBookmarks: 'Quick Bookmarks',
   mpn: 'Most Populated Nodes',
   friendsSubmissions: "Friends' Submissions",
+  latestSubmissions: 'Latest Submissions',
+  hotNodes: 'Hot Nodes',
 }
 
 const MODULE_ORDER_PATHS: Record<string, string> = {
   quickBookmarks: CONFIG_PATHS.QUICK_BOOKMARKS_ORDER,
   mpn: CONFIG_PATHS.MPN_ORDER,
   friendsSubmissions: CONFIG_PATHS.FRIENDS_SUBMISSIONS_ORDER,
+  latestSubmissions: CONFIG_PATHS.LATEST_SUBMISSIONS_ORDER,
+  hotNodes: CONFIG_PATHS.HOT_NODES_ORDER,
 }
 
 type SettingValue = string | number | boolean | string[]
@@ -296,12 +318,23 @@ function SettingSection({ section }: SettingSectionProps) {
   return (
     <div className="setting-section">
       <div className="cat-header cat">{section.title}</div>
-      {section.settings.map((option) => (
-        <div key={option.name} className="setting-row">
-          <div className="setting-description">{option.description}</div>
-          <SettingControl category={section.name} option={option} />
-        </div>
-      ))}
+      {section.settings.map((option) => {
+        const inner = (
+          <>
+            <div className="setting-description">{option.description}</div>
+            <SettingControl category={section.name} option={option} />
+          </>
+        )
+        return option.type === 'boolean' ? (
+          <label key={option.name} className="setting-row setting-row-toggle">
+            {inner}
+          </label>
+        ) : (
+          <div key={option.name} className="setting-row">
+            {inner}
+          </div>
+        )
+      })}
     </div>
   )
 }
