@@ -286,6 +286,30 @@ interface RawNodeResponse {
   children: RawChild[]
 }
 
+async function cachedFetch<TRaw, TResult>(
+  cacheKey: string,
+  url: string,
+  jsonId: string,
+  transform: (raw: TRaw) => TResult,
+  force: boolean,
+): Promise<TResult> {
+  if (!force) {
+    const cached = getCached<TResult>(cacheKey)
+    if (cached) return cached
+  }
+  const doFetch = async () => {
+    const response = await fetchWithTimeout(url)
+    if (!response.ok) throw new Error(`nevydalo: ${response.status}`)
+    const html = await response.text()
+    const data = extractJson<TRaw>(html, jsonId)
+    if (!data) throw new Error(`Failed to parse ${cacheKey} data`)
+    const result = transform(data)
+    setCache(cacheKey, result)
+    return result
+  }
+  return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
+}
+
 /**
  * Parse MPN JSON data
  * Aggregates entries by node ID and counts occurrences
@@ -422,28 +446,8 @@ function parseChildJson(raw: RawChild, lastVisit?: Date): NodeComment {
 /**
  * Fetch and parse MPN data from server
  */
-export async function fetchMpnData(force = false): Promise<MpnNode[]> {
-  const cacheKey = 'mpn'
-  if (!force) {
-    const cached = getCached<MpnNode[]>(cacheKey)
-    if (cached) return cached
-  }
-  const doFetch = async () => {
-    const url = `${config.apiBase}${config.base}${config.templates.mpn}`
-    const response = await fetchWithTimeout(url)
-    if (!response.ok) {
-      throw new Error(`nevydalo: ${response.status}`)
-    }
-    const html = await response.text()
-    const data = extractJson<RawMpnItem[]>(html, 'kymono.mpn')
-    if (!data) {
-      throw new Error('Failed to parse MPN data')
-    }
-    const result = parseMpnJson(data)
-    setCache(cacheKey, result)
-    return result
-  }
-  return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
+export function fetchMpnData(force = false): Promise<MpnNode[]> {
+  return cachedFetch('mpn', `${config.apiBase}${config.base}${config.templates.mpn}`, 'kymono.mpn', parseMpnJson, force)
 }
 
 interface RawReply {
@@ -510,28 +514,8 @@ export async function fetchSidebarData(force = false): Promise<SidebarData> {
 /**
  * Fetch and parse bookmarks data from server
  */
-export async function fetchBookmarksData(force = false): Promise<BookmarkCategory[]> {
-  const cacheKey = 'bookmarks'
-  if (!force) {
-    const cached = getCached<BookmarkCategory[]>(cacheKey)
-    if (cached) return cached
-  }
-  const doFetch = async () => {
-    const url = `${config.apiBase}${config.base}${config.templates.bookmarks}`
-    const response = await fetchWithTimeout(url)
-    if (!response.ok) {
-      throw new Error(`nevydalo: ${response.status}`)
-    }
-    const html = await response.text()
-    const data = extractJson<RawBookmarkCategory[]>(html, 'kymono.bookmarks')
-    if (!data) {
-      throw new Error('Failed to parse bookmarks data')
-    }
-    const result = parseBookmarksJson(data)
-    setCache(cacheKey, result)
-    return result
-  }
-  return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
+export function fetchBookmarksData(force = false): Promise<BookmarkCategory[]> {
+  return cachedFetch('bookmarks', `${config.apiBase}${config.base}${config.templates.bookmarks}`, 'kymono.bookmarks', parseBookmarksJson, force)
 }
 
 /**
@@ -608,28 +592,8 @@ function parseKItem(raw: RawKItem): KItem {
 /**
  * Fetch and parse K (karma) data from server
  */
-export async function fetchKData(force = false): Promise<KItem[]> {
-  const cacheKey = 'k'
-  if (!force) {
-    const cached = getCached<KItem[]>(cacheKey)
-    if (cached) return cached
-  }
-  const doFetch = async () => {
-    const url = `${config.apiBase}${config.base}${config.templates.k}`
-    const response = await fetchWithTimeout(url)
-    if (!response.ok) {
-      throw new Error(`nevydalo: ${response.status}`)
-    }
-    const html = await response.text()
-    const data = extractJson<RawKItem[]>(html, 'kymono.k')
-    if (!data) {
-      throw new Error('Failed to parse K data')
-    }
-    const result = data.map(parseKItem)
-    setCache(cacheKey, result)
-    return result
-  }
-  return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
+export function fetchKData(force = false): Promise<KItem[]> {
+  return cachedFetch('k', `${config.apiBase}${config.base}${config.templates.k}`, 'kymono.k', (data: RawKItem[]) => data.map(parseKItem), force)
 }
 
 interface RawLastKItem {
@@ -816,25 +780,12 @@ interface RawFriendSubmission {
 /**
  * Fetch and parse friends' submissions data from server
  */
-export async function fetchFriendsSubmissions(force = false): Promise<FriendSubmission[]> {
-  const cacheKey = 'friendsSubmissions'
-  if (!force) {
-    const cached = getCached<FriendSubmission[]>(cacheKey)
-    if (cached) return cached
-  }
-  const doFetch = async () => {
-    const url = `${config.apiBase}${config.base}${config.templates.friendsSubmissions}`
-    const response = await fetchWithTimeout(url)
-    if (!response.ok) {
-      throw new Error(`nevydalo: ${response.status}`)
-    }
-    const html = await response.text()
-    const data = extractJson<RawFriendSubmission[]>(html, 'kymono.friendsSubmissions')
-    if (!data) {
-      throw new Error('Failed to parse friends submissions data')
-    }
-
-    const result = data.map((r) => ({
+export function fetchFriendsSubmissions(force = false): Promise<FriendSubmission[]> {
+  return cachedFetch(
+    'friendsSubmissions',
+    `${config.apiBase}${config.base}${config.templates.friendsSubmissions}`,
+    'kymono.friendsSubmissions',
+    (data: RawFriendSubmission[]) => data.map((r) => ({
       id: r.node_id,
       name: stripHtml(r.node_name || ''),
       parentId: r.node_parent,
@@ -845,11 +796,9 @@ export async function fetchFriendsSubmissions(force = false): Promise<FriendSubm
       content: stripHtml(r.node_content || ''),
       createdAt: r.node_created,
       karma: typeof r.k === 'string' ? parseInt(r.k, 10) : r.k,
-    }))
-    setCache(cacheKey, result)
-    return result
-  }
-  return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
+    })),
+    force,
+  )
 }
 
 interface RawMailMessage {
@@ -866,24 +815,12 @@ interface RawMailMessage {
 /**
  * Fetch and parse mail data from server
  */
-export async function fetchMailData(force = false): Promise<MailMessage[]> {
-  const cacheKey = 'mail'
-  if (!force) {
-    const cached = getCached<MailMessage[]>(cacheKey)
-    if (cached) return cached
-  }
-  const doFetch = async () => {
-    const url = `${config.apiBase}${config.base}${config.templates.mail}`
-    const response = await fetchWithTimeout(url)
-    if (!response.ok) {
-      throw new Error(`nevydalo: ${response.status}`)
-    }
-    const html = await response.text()
-    const data = extractJson<RawMailMessage[]>(html, 'kymono.mail')
-    if (!data) {
-      throw new Error('Failed to parse mail data')
-    }
-    const result: MailMessage[] = data.map((m) => ({
+export function fetchMailData(force = false): Promise<MailMessage[]> {
+  return cachedFetch(
+    'mail',
+    `${config.apiBase}${config.base}${config.templates.mail}`,
+    'kymono.mail',
+    (data: RawMailMessage[]) => data.map((m) => ({
       id: m.mail_id,
       fromId: m.mail_from,
       fromName: m.mail_from_name,
@@ -892,9 +829,7 @@ export async function fetchMailData(force = false): Promise<MailMessage[]> {
       text: m.mail_text,
       timestamp: m.mail_timestamp,
       read: m.mail_read === 'yes',
-    }))
-    setCache(cacheKey, result)
-    return result
-  }
-  return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
+    })),
+    force,
+  )
 }
