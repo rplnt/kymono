@@ -19,16 +19,6 @@ export function parseVisitDate(dateStr: string): Date | null {
 }
 
 /**
- * Calculate minutes since a date string
- */
-export function dateDiffMins(dateStr: string): number {
-  const date = parseVisitDate(dateStr)
-  if (!date) return 0
-
-  return Math.floor((Date.now() - date.getTime()) / (60 * 1000))
-}
-
-/**
  * Calculate minutes since a Date object
  */
 export function minutesSince(date: Date | null): number {

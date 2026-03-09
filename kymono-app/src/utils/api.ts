@@ -5,7 +5,6 @@ import type {
   OnlineFriend,
   LatestReply,
   SidebarData,
-  ConfigJson,
   NodeData,
   NodeAncestor,
   NodeComment,
@@ -433,7 +432,7 @@ export async function fetchMpnData(force = false): Promise<MpnNode[]> {
     const url = `${config.apiBase}${config.base}${config.templates.mpn}`
     const response = await fetchWithTimeout(url)
     if (!response.ok) {
-      throw new Error(`Failed to fetch MPN data: ${response.status}`)
+      throw new Error(`nevydalo: ${response.status}`)
     }
     const html = await response.text()
     const data = extractJson<RawMpnItem[]>(html, 'kymono.mpn')
@@ -472,7 +471,7 @@ export async function fetchSidebarData(force = false): Promise<SidebarData> {
     const url = `${config.apiBase}${config.base}${config.templates.sidebar}`
     const response = await fetchWithTimeout(url)
     if (!response.ok) {
-      throw new Error(`Failed to fetch sidebar data: ${response.status}`)
+      throw new Error(`nevydalo: ${response.status}`)
     }
     const html = await response.text()
 
@@ -521,7 +520,7 @@ export async function fetchBookmarksData(force = false): Promise<BookmarkCategor
     const url = `${config.apiBase}${config.base}${config.templates.bookmarks}`
     const response = await fetchWithTimeout(url)
     if (!response.ok) {
-      throw new Error(`Failed to fetch bookmarks data: ${response.status}`)
+      throw new Error(`nevydalo: ${response.status}`)
     }
     const html = await response.text()
     const data = extractJson<RawBookmarkCategory[]>(html, 'kymono.bookmarks')
@@ -533,17 +532,6 @@ export async function fetchBookmarksData(force = false): Promise<BookmarkCategor
     return result
   }
   return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
-}
-
-/**
- * Fetch configuration JSON
- */
-export async function fetchConfig(url: string): Promise<ConfigJson> {
-  const response = await fetchWithTimeout(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch config: ${response.status}`)
-  }
-  return response.json()
 }
 
 /**
@@ -559,7 +547,7 @@ export async function fetchNodeData(nodeId: string, templateId?: string): Promis
 
     const response = await fetchWithTimeout(url)
     if (!response.ok) {
-      throw new Error(`Failed to fetch node data: ${response.status}`)
+      throw new Error(`nodu ${nodeId} nevydalo: ${response.status}`)
     }
 
     const html = await response.text()
@@ -567,7 +555,7 @@ export async function fetchNodeData(nodeId: string, templateId?: string): Promis
 
     if (!data) {
       if (html.includes("you don't have permissions for viewing this data node")) {
-        throw new Error("You don't have permissions for viewing this data node")
+        throw new Error("you don't have permissions for viewing this data node")
       }
       throw new Error('Failed to parse node data')
     }
@@ -630,7 +618,7 @@ export async function fetchKData(force = false): Promise<KItem[]> {
     const url = `${config.apiBase}${config.base}${config.templates.k}`
     const response = await fetchWithTimeout(url)
     if (!response.ok) {
-      throw new Error(`Failed to fetch K data: ${response.status}`)
+      throw new Error(`nevydalo: ${response.status}`)
     }
     const html = await response.text()
     const data = extractJson<RawKItem[]>(html, 'kymono.k')
@@ -699,7 +687,7 @@ export async function fetchLastKData(
       response = await fetchWithTimeout(url, { method: 'POST', body: formData })
     }
     if (!response.ok) {
-      throw new Error(`Failed to fetch Last K data: ${response.status}`)
+      throw new Error(`nevydalo: ${response.status}`)
     }
     const html = await response.text()
     const data = extractJson<RawLastKItem[]>(html, 'kymono.lastk')
@@ -838,7 +826,7 @@ export async function fetchFriendsSubmissions(force = false): Promise<FriendSubm
     const url = `${config.apiBase}${config.base}${config.templates.friendsSubmissions}`
     const response = await fetchWithTimeout(url)
     if (!response.ok) {
-      throw new Error(`Failed to fetch friends submissions: ${response.status}`)
+      throw new Error(`nevydalo: ${response.status}`)
     }
     const html = await response.text()
     const data = extractJson<RawFriendSubmission[]>(html, 'kymono.friendsSubmissions')
@@ -888,7 +876,7 @@ export async function fetchMailData(force = false): Promise<MailMessage[]> {
     const url = `${config.apiBase}${config.base}${config.templates.mail}`
     const response = await fetchWithTimeout(url)
     if (!response.ok) {
-      throw new Error(`Failed to fetch mail data: ${response.status}`)
+      throw new Error(`nevydalo: ${response.status}`)
     }
     const html = await response.text()
     const data = extractJson<RawMailMessage[]>(html, 'kymono.mail')

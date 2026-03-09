@@ -1,13 +1,11 @@
 export {
   parseVisitDate,
-  dateDiffMins,
   minutesSince,
   formatDate,
   formatRelativeDate,
   formatRelativeString,
 } from './date'
 export {
-  fetchConfig,
   fetchMpnData,
   fetchSidebarData,
   fetchBookmarksData,
