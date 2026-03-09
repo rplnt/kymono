@@ -20,7 +20,7 @@ export type ModuleId =
 
 export interface ModuleConfig {
   id: ModuleId
-  component: React.ComponentType
+  component: React.ComponentType<{ forceRefresh?: boolean }>
   orderPath: string
 }
 
@@ -75,7 +75,7 @@ export function Home() {
   return (
     <div className={twoColumn ? 'home-grid' : undefined}>
       {sortedModules.map(({ id, component: Component }) => (
-        <Component key={`${id}-${refreshKey}`} />
+        <Component key={`${id}-${refreshKey}`} forceRefresh={refreshKey > 0} />
       ))}
     </div>
   )

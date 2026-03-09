@@ -6,7 +6,7 @@ import { LatestReplies } from '@/components/LatestReplies'
 import { fetchSidebarData, toggleBookmark } from '@/utils'
 import type { OnlineFriend, LatestReply } from '@/types'
 
-const LAST_LOADED_KEY = 'kymono.sidebar.lastLoaded'
+import { SIDEBAR_LOADED_KEY as LAST_LOADED_KEY } from '@/utils/configStorage'
 
 interface SidePanelProps {
   isOpen: boolean
@@ -28,7 +28,9 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
   const [replies, setReplies] = useState<LatestReply[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [lastLoadedAt] = useState<string | null>(() => localStorage.getItem(LAST_LOADED_KEY))
+  const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(() =>
+    localStorage.getItem(LAST_LOADED_KEY)
+  )
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [bookmarking, setBookmarking] = useState(false)
 
@@ -41,6 +43,7 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
       setReplies(data.replies)
       const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19)
       localStorage.setItem(LAST_LOADED_KEY, timestamp)
+      setLastLoadedAt(timestamp)
     } catch (err) {
       console.error('Failed to load sidebar:', err)
       setError('Failed to load sidebar')

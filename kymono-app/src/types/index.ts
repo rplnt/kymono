@@ -8,7 +8,7 @@ export interface SettingTemplate {
 export interface SettingOption {
   name: string
   description: string
-  type: 'int' | 'float' | 'string' | 'boolean' | 'enum' | 'moduleOrder'
+  type: 'int' | 'float' | 'string' | 'boolean' | 'enum' | 'moduleOrder' | 'modules'
   value: number | string | boolean | string[]
 }
 

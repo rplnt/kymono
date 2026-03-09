@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { KItem } from '@/types'
 import { useConfigValue } from '@/contexts'
-import { fetchKData, fetchLastKData, giveKarma, formatDate, formatRelativeDate } from '@/utils'
+import { fetchKData, fetchLastKData, giveKarma, scrollToElement } from '@/utils'
 import { useTitle } from '@/utils/useTitle'
 import { usePullToRefresh } from '@/utils/usePullToRefresh'
 import { CONFIG_PATHS } from '@/config'
+import { Timestamp } from '@/components/Timestamp'
 
 type KTab = 'k' | '1h' | '1d' | '1w'
 
@@ -28,51 +29,10 @@ interface KItemCardProps {
   onGiveK: (id: string) => void
 }
 
-function Timestamp({
-  createdAt,
-  updatedAt,
-  fullTimestamps,
-}: {
-  createdAt: Date | null
-  updatedAt: Date | null
-  fullTimestamps: boolean
-}) {
-  const [mode, setMode] = useState(0)
-
-  if (!createdAt) return null
-
-  const cycle = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (mode === 0) {
-      setMode(fullTimestamps ? (updatedAt ? 2 : 0) : 1)
-    } else if (mode === 1) {
-      setMode(updatedAt ? 2 : 0)
-    } else {
-      setMode(0)
-    }
-  }
-
-  const showFull = mode === 1 || mode === 2 || (mode === 0 && fullTimestamps)
-  const showEdited = mode === 2
-  const date = showEdited && updatedAt ? updatedAt : createdAt
-
-  return (
-    <span className="comment-date comment-date-clickable" onClick={cycle}>
-      {showFull ? formatDate(date) : formatRelativeDate(createdAt)}
-      {updatedAt && <span className={showEdited ? 'comment-date-edited' : undefined}>*</span>}
-    </span>
-  )
-}
-
 const scrollToSibling = (itemId: string, direction: 'prev' | 'next') => {
   const el = document.getElementById(`k-item-${itemId}`)
   const sibling = direction === 'prev' ? el?.previousElementSibling : el?.nextElementSibling
-  if (sibling) {
-    const menuHeight =
-      parseInt(getComputedStyle(document.documentElement).getPropertyValue('--menu-height')) || 56
-    const top = sibling.getBoundingClientRect().top + window.scrollY - menuHeight - 8
-    window.scrollTo({ top, behavior: 'smooth' })
-  }
+  if (sibling) scrollToElement(sibling)
 }
 
 const KItemCard = memo(function KItemCard({
@@ -204,14 +164,7 @@ const KItemCard = memo(function KItemCard({
               className="toolbar-btn"
               onClick={() => {
                 const el = document.getElementById(`k-item-${item.id}`)
-                if (el) {
-                  const menuHeight =
-                    parseInt(
-                      getComputedStyle(document.documentElement).getPropertyValue('--menu-height')
-                    ) || 56
-                  const top = el.getBoundingClientRect().top + window.scrollY - menuHeight - 8
-                  window.scrollTo({ top, behavior: 'smooth' })
-                }
+                if (el) scrollToElement(el)
               }}
             >
               up
@@ -331,6 +284,11 @@ export function K() {
       try {
         const result = await giveKarma(id)
         setKStates((prev) => new Map(prev).set(id, result))
+        if (result === 'ok') {
+          setItems((prev) =>
+            prev.map((item) => (item.id === id ? { ...item, karma: item.karma + 1 } : item))
+          )
+        }
       } catch {
         setKStates((prev) => new Map(prev).set(id, 'error'))
       }

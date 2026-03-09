@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { ConfigContext } from './configTypes'
 import type { KymonoConfig } from './configTypes'
 
-const STORAGE_KEY = 'kymono.config'
+import { CONFIG_STORAGE_KEY as STORAGE_KEY } from '@/utils/configStorage'
 
 function loadConfig(): KymonoConfig {
   try {

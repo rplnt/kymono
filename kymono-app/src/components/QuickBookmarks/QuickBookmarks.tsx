@@ -8,7 +8,7 @@ import { HomeModule } from '@/components/HomeModule'
 
 const MAX_DISPLAY = 8
 
-export function QuickBookmarks() {
+export function QuickBookmarks({ forceRefresh }: { forceRefresh?: boolean }) {
   const navigate = useNavigate()
   const [categories, setCategories] = useState<BookmarkCategory[]>([])
   const [loading, setLoading] = useState(true)
@@ -30,8 +30,8 @@ export function QuickBookmarks() {
   }, [])
 
   useEffect(() => {
-    loadData()
-  }, [loadData])
+    if (enabled) loadData(forceRefresh)
+  }, [loadData, forceRefresh, enabled])
 
   // Filter to bookmarks from last month with new replies, sorted by last visited
   // Prioritize those with unread, then fill with descendants-only

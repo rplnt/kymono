@@ -64,52 +64,16 @@ const settingsConfig: ConfigJson = {
       name: 'home',
       settings: [
         {
-          name: 'quickBookmarksEnabled',
-          description: 'Enable Quick Bookmarks module',
-          type: 'boolean',
-          value: d(CONFIG_PATHS.QUICK_BOOKMARKS_ENABLED),
-        },
-        {
-          name: 'mpnEnabled',
-          description: 'Enable Most Populated Nodes module',
-          type: 'boolean',
-          value: d(CONFIG_PATHS.MPN_ENABLED),
-        },
-        {
-          name: 'friendsSubmissionsEnabled',
-          description: "Enable Friends' Submissions module",
-          type: 'boolean',
-          value: d(CONFIG_PATHS.FRIENDS_SUBMISSIONS_ENABLED),
-        },
-        {
-          name: 'latestSubmissionsEnabled',
-          description: 'Enable Latest Submissions module',
-          type: 'boolean',
-          value: d(CONFIG_PATHS.LATEST_SUBMISSIONS_ENABLED),
-        },
-        {
-          name: 'hotNodesEnabled',
-          description: 'Enable Hot Nodes module',
-          type: 'boolean',
-          value: d(CONFIG_PATHS.HOT_NODES_ENABLED),
-        },
-        {
-          name: 'freshKEnabled',
-          description: 'Enable Fresh K module (recent karma)',
-          type: 'boolean',
-          value: d(CONFIG_PATHS.FRESH_K_ENABLED),
-        },
-        {
           name: 'twoColumnLayout',
           description: 'Two-column layout on desktop',
           type: 'boolean',
           value: d(CONFIG_PATHS.TWO_COLUMN_LAYOUT),
         },
         {
-          name: 'moduleOrder',
-          description: 'Module display order',
-          type: 'moduleOrder',
-          value: DEFAULT_MODULE_ORDER,
+          name: 'modules',
+          description: 'Modules',
+          type: 'modules',
+          value: '',
         },
       ],
     },
@@ -170,80 +134,111 @@ const settingsConfig: ConfigJson = {
   ],
 }
 
-const MODULE_LABELS: Record<string, string> = {
-  quickBookmarks: 'Quick Bookmarks',
-  mpn: 'Most Populated Nodes',
-  friendsSubmissions: "Friends' Submissions",
-  latestSubmissions: 'Latest Submissions',
-  hotNodes: 'Hot Nodes',
-  freshK: 'Fresh K',
-}
-
-const MODULE_ORDER_PATHS: Record<string, string> = {
-  quickBookmarks: CONFIG_PATHS.QUICK_BOOKMARKS_ORDER,
-  mpn: CONFIG_PATHS.MPN_ORDER,
-  friendsSubmissions: CONFIG_PATHS.FRIENDS_SUBMISSIONS_ORDER,
-  latestSubmissions: CONFIG_PATHS.LATEST_SUBMISSIONS_ORDER,
-  hotNodes: CONFIG_PATHS.HOT_NODES_ORDER,
-  freshK: CONFIG_PATHS.FRESH_K_ORDER,
-}
+const MODULE_CONFIG: { id: string; label: string; enabledPath: string; orderPath: string }[] = [
+  {
+    id: 'quickBookmarks',
+    label: 'Quick Bookmarks',
+    enabledPath: CONFIG_PATHS.QUICK_BOOKMARKS_ENABLED,
+    orderPath: CONFIG_PATHS.QUICK_BOOKMARKS_ORDER,
+  },
+  {
+    id: 'mpn',
+    label: 'Most Populated Nodes',
+    enabledPath: CONFIG_PATHS.MPN_ENABLED,
+    orderPath: CONFIG_PATHS.MPN_ORDER,
+  },
+  {
+    id: 'friendsSubmissions',
+    label: "Friends' Submissions",
+    enabledPath: CONFIG_PATHS.FRIENDS_SUBMISSIONS_ENABLED,
+    orderPath: CONFIG_PATHS.FRIENDS_SUBMISSIONS_ORDER,
+  },
+  {
+    id: 'latestSubmissions',
+    label: 'Latest Submissions',
+    enabledPath: CONFIG_PATHS.LATEST_SUBMISSIONS_ENABLED,
+    orderPath: CONFIG_PATHS.LATEST_SUBMISSIONS_ORDER,
+  },
+  {
+    id: 'hotNodes',
+    label: 'Hot Nodes',
+    enabledPath: CONFIG_PATHS.HOT_NODES_ENABLED,
+    orderPath: CONFIG_PATHS.HOT_NODES_ORDER,
+  },
+  {
+    id: 'freshK',
+    label: 'Fresh K',
+    enabledPath: CONFIG_PATHS.FRESH_K_ENABLED,
+    orderPath: CONFIG_PATHS.FRESH_K_ORDER,
+  },
+]
 
 type SettingValue = string | number | boolean | string[]
 
-interface ModuleOrderControlProps {
-  defaultOrder: string[]
-}
-
-function ModuleOrderControl({ defaultOrder }: ModuleOrderControlProps) {
+function ModuleControl() {
   const { getValue, setValue: setConfigValue } = useConfig()
 
-  const currentOrder = [...defaultOrder].sort((a, b) => {
-    const orderA = getValue<number>(MODULE_ORDER_PATHS[a], defaultOrder.indexOf(a))
-    const orderB = getValue<number>(MODULE_ORDER_PATHS[b], defaultOrder.indexOf(b))
+  const sorted = [...MODULE_CONFIG].sort((a, b) => {
+    const defA = DEFAULT_MODULE_ORDER.indexOf(a.id)
+    const defB = DEFAULT_MODULE_ORDER.indexOf(b.id)
+    const orderA = getValue<number>(a.orderPath, defA === -1 ? 999 : defA)
+    const orderB = getValue<number>(b.orderPath, defB === -1 ? 999 : defB)
     return orderA - orderB
   })
 
   const moveUp = (index: number) => {
     if (index === 0) return
-    const moduleId = currentOrder[index]
-    const prevModuleId = currentOrder[index - 1]
-    setConfigValue(MODULE_ORDER_PATHS[moduleId], index - 1)
-    setConfigValue(MODULE_ORDER_PATHS[prevModuleId], index)
+    const cur = sorted[index]
+    const prev = sorted[index - 1]
+    setConfigValue(cur.orderPath, index - 1)
+    setConfigValue(prev.orderPath, index)
   }
 
   const moveDown = (index: number) => {
-    if (index === currentOrder.length - 1) return
-    const moduleId = currentOrder[index]
-    const nextModuleId = currentOrder[index + 1]
-    setConfigValue(MODULE_ORDER_PATHS[moduleId], index + 1)
-    setConfigValue(MODULE_ORDER_PATHS[nextModuleId], index)
+    if (index === sorted.length - 1) return
+    const cur = sorted[index]
+    const next = sorted[index + 1]
+    setConfigValue(cur.orderPath, index + 1)
+    setConfigValue(next.orderPath, index)
   }
 
   return (
     <div className="setting-order-list">
-      {currentOrder.map((moduleId, index) => (
-        <div key={moduleId} className="setting-order-item">
-          <span className="setting-order-label">{MODULE_LABELS[moduleId] || moduleId}</span>
-          <div className="setting-order-arrows">
-            <button
-              className="setting-order-btn"
-              onClick={() => moveUp(index)}
-              disabled={index === 0}
-              title="Move up"
-            >
-              ▲
-            </button>
-            <button
-              className="setting-order-btn"
-              onClick={() => moveDown(index)}
-              disabled={index === currentOrder.length - 1}
-              title="Move down"
-            >
-              ▼
-            </button>
+      {sorted.map((mod, index) => {
+        const enabledDefault = (CONFIG_DEFAULTS[mod.enabledPath] as boolean) ?? true
+        const enabled = getValue<boolean>(mod.enabledPath, enabledDefault)
+        return (
+          <div key={mod.id} className="setting-order-item">
+            <label className="setting-order-toggle">
+              <input
+                type="checkbox"
+                className="setting-checkbox"
+                checked={Boolean(enabled)}
+                onChange={(e) => setConfigValue(mod.enabledPath, e.target.checked)}
+              />
+              <span className="setting-order-label">{mod.label}</span>
+            </label>
+            <div className="setting-order-arrows">
+              <button
+                className="setting-order-btn"
+                onClick={() => moveUp(index)}
+                disabled={index === 0}
+                title="Move up"
+              >
+                ▲
+              </button>
+              <button
+                className="setting-order-btn"
+                onClick={() => moveDown(index)}
+                disabled={index === sorted.length - 1}
+                title="Move down"
+              >
+                ▼
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -327,8 +322,8 @@ function SettingControl({ category, option }: SettingControlProps) {
         </select>
       )
 
-    case 'moduleOrder':
-      return <ModuleOrderControl defaultOrder={option.value as string[]} />
+    case 'modules':
+      return <ModuleControl />
 
     default:
       return <span>Unknown type: {option.type}</span>
@@ -350,6 +345,13 @@ function SettingSection({ section }: SettingSectionProps) {
             <SettingControl category={section.name} option={option} />
           </>
         )
+        if (option.type === 'modules') {
+          return (
+            <div key={option.name}>
+              <SettingControl category={section.name} option={option} />
+            </div>
+          )
+        }
         return option.type === 'boolean' ? (
           <label key={option.name} className="setting-row setting-row-toggle">
             {inner}

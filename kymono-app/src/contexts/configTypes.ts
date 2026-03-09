@@ -1,21 +1,8 @@
 import { createContext } from 'react'
 
-export interface KymonoConfig {
-  version?: string
-  global?: {
-    fontSize?: number
-    defaultScreen?: string
-  }
-  home?: {
-    mpnEnabled?: boolean
-    mpnOrder?: number
-    quickBookmarksEnabled?: boolean
-    quickBookmarksOrder?: number
-  }
-  bookmarks?: {
-    includeDescendants?: boolean
-  }
-}
+// Config is a nested key-value store accessed via dot-path strings (e.g. "global.fontSize").
+// All access goes through getValue/setValue, so we keep the type generic.
+export type KymonoConfig = Record<string, Record<string, unknown> | unknown>
 
 export interface ConfigContextValue {
   config: KymonoConfig

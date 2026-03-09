@@ -16,6 +16,7 @@ interface SubmissionsListProps {
   enabledPath: string
   defaultEnabled?: boolean
   filter?: (item: FriendSubmission) => boolean
+  forceRefresh?: boolean
 }
 
 export function SubmissionsList({
@@ -25,6 +26,7 @@ export function SubmissionsList({
   enabledPath,
   defaultEnabled = true,
   filter,
+  forceRefresh,
 }: SubmissionsListProps) {
   const navigate = useNavigate()
   const [items, setItems] = useState<FriendSubmission[]>([])
@@ -50,8 +52,8 @@ export function SubmissionsList({
   }, [])
 
   useEffect(() => {
-    loadData()
-  }, [loadData])
+    if (enabled) loadData(forceRefresh)
+  }, [loadData, forceRefresh, enabled])
 
   const handleLink = (e: React.MouseEvent, path: string) => {
     e.preventDefault()

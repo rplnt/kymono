@@ -1,11 +1,12 @@
-const STORAGE_KEY = 'kymono.config'
+export const CONFIG_STORAGE_KEY = 'kymono.config'
+export const SIDEBAR_LOADED_KEY = 'kymono.sidebar.lastLoaded'
 
 export function hasConfig(): boolean {
-  return localStorage.getItem(STORAGE_KEY) !== null
+  return localStorage.getItem(CONFIG_STORAGE_KEY) !== null
 }
 
 export function initConfig(version: string): void {
   if (!hasConfig()) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version }))
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ version }))
   }
 }

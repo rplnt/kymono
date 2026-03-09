@@ -45,7 +45,7 @@ function sanitizeColor(color: string): string | null {
 /**
  * Strip all HTML tags and return plain text
  */
-function stripHtml(html: string): string {
+export function stripHtml(html: string): string {
   const parser = new DOMParser()
   const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html')
   return doc.body.textContent?.trim() || ''
@@ -130,6 +130,12 @@ function applyNl2br(content: string, nl2br: unknown): string {
     return content.replace(/\n/g, '<br>\n')
   }
   return content
+}
+
+const FETCH_TIMEOUT_MS = 30_000
+
+function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  return fetch(input, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS), ...init })
 }
 
 /**
@@ -222,6 +228,10 @@ interface RawNode {
   k: string | number
   node_children_count: string | number
   ancestors: RawNodeAncestor[]
+  nl2br?: string | number
+  given_k?: string
+  node_bookmark?: string
+  last_visit?: string
   // Additional fields we don't map but exist
   [key: string]: unknown
 }
@@ -241,6 +251,8 @@ interface RawChild {
   depth: string | number
   orphan: number
   node_status?: string
+  nl2br?: string | number
+  given_k?: string
   // Additional fields
   [key: string]: unknown
 }
@@ -259,6 +271,7 @@ interface RawKItem {
   k: string | number
   node_children_count: string | number
   nl2br: string | number
+  given_k?: string
   [key: string]: unknown
 }
 
@@ -416,19 +429,22 @@ export async function fetchMpnData(force = false): Promise<MpnNode[]> {
     const cached = getCached<MpnNode[]>(cacheKey)
     if (cached) return cached
   }
-  const url = `${config.apiBase}${config.base}${config.templates.mpn}`
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch MPN data: ${response.status}`)
+  const doFetch = async () => {
+    const url = `${config.apiBase}${config.base}${config.templates.mpn}`
+    const response = await fetchWithTimeout(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch MPN data: ${response.status}`)
+    }
+    const html = await response.text()
+    const data = extractJson<RawMpnItem[]>(html, 'kymono.mpn')
+    if (!data) {
+      throw new Error('Failed to parse MPN data')
+    }
+    const result = parseMpnJson(data)
+    setCache(cacheKey, result)
+    return result
   }
-  const html = await response.text()
-  const data = extractJson<RawMpnItem[]>(html, 'kymono.mpn')
-  if (!data) {
-    throw new Error('Failed to parse MPN data')
-  }
-  const result = parseMpnJson(data)
-  setCache(cacheKey, result)
-  return result
+  return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
 }
 
 interface RawReply {
@@ -452,38 +468,44 @@ export async function fetchSidebarData(force = false): Promise<SidebarData> {
     const cached = getCached<SidebarData>(cacheKey)
     if (cached) return cached
   }
-  const url = `${config.apiBase}${config.base}${config.templates.sidebar}`
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch sidebar data: ${response.status}`)
+  const doFetch = async () => {
+    const url = `${config.apiBase}${config.base}${config.templates.sidebar}`
+    const response = await fetchWithTimeout(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sidebar data: ${response.status}`)
+    }
+    const html = await response.text()
+
+    const friendsRaw = extractJson<
+      (Omit<OnlineFriend, 'creatorImageUrl'> & { creatorImageUrl?: string })[]
+    >(html, 'kymono.friends')
+    const friends = friendsRaw
+      ? friendsRaw.map((f) => ({
+          ...f,
+          creatorImageUrl: f.creatorImageUrl || getImageUrl(f.userId),
+        }))
+      : []
+
+    const repliesRaw = extractJson<RawReply[]>(html, 'kymono.replies')
+    const replies: LatestReply[] = repliesRaw
+      ? repliesRaw.map((r) => ({
+          id: r.node_id,
+          name: stripHtml(r.node_name || ''),
+          parentId: r.node_parent,
+          parentName: stripHtml(r.parent_name || ''),
+          creatorId: r.node_creator,
+          login: r.login,
+          creatorImageUrl: r.creatorImageUrl || getImageUrl(r.node_creator),
+          content: stripHtml(r.node_content || ''),
+          createdAt: r.node_created,
+        }))
+      : []
+
+    const result = { friends, replies }
+    setCache(cacheKey, result)
+    return result
   }
-  const html = await response.text()
-
-  const friendsRaw = extractJson<
-    (Omit<OnlineFriend, 'creatorImageUrl'> & { creatorImageUrl?: string })[]
-  >(html, 'kymono.friends')
-  const friends = friendsRaw
-    ? friendsRaw.map((f) => ({ ...f, creatorImageUrl: f.creatorImageUrl || getImageUrl(f.userId) }))
-    : []
-
-  const repliesRaw = extractJson<RawReply[]>(html, 'kymono.replies')
-  const replies: LatestReply[] = repliesRaw
-    ? repliesRaw.map((r) => ({
-        id: r.node_id,
-        name: stripHtml(r.node_name || ''),
-        parentId: r.node_parent,
-        parentName: stripHtml(r.parent_name || ''),
-        creatorId: r.node_creator,
-        login: r.login,
-        creatorImageUrl: r.creatorImageUrl || getImageUrl(r.node_creator),
-        content: stripHtml(r.node_content || ''),
-        createdAt: r.node_created,
-      }))
-    : []
-
-  const result = { friends, replies }
-  setCache(cacheKey, result)
-  return result
+  return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
 }
 
 /**
@@ -495,26 +517,29 @@ export async function fetchBookmarksData(force = false): Promise<BookmarkCategor
     const cached = getCached<BookmarkCategory[]>(cacheKey)
     if (cached) return cached
   }
-  const url = `${config.apiBase}${config.base}${config.templates.bookmarks}`
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch bookmarks data: ${response.status}`)
+  const doFetch = async () => {
+    const url = `${config.apiBase}${config.base}${config.templates.bookmarks}`
+    const response = await fetchWithTimeout(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch bookmarks data: ${response.status}`)
+    }
+    const html = await response.text()
+    const data = extractJson<RawBookmarkCategory[]>(html, 'kymono.bookmarks')
+    if (!data) {
+      throw new Error('Failed to parse bookmarks data')
+    }
+    const result = parseBookmarksJson(data)
+    setCache(cacheKey, result)
+    return result
   }
-  const html = await response.text()
-  const data = extractJson<RawBookmarkCategory[]>(html, 'kymono.bookmarks')
-  if (!data) {
-    throw new Error('Failed to parse bookmarks data')
-  }
-  const result = parseBookmarksJson(data)
-  setCache(cacheKey, result)
-  return result
+  return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
 }
 
 /**
  * Fetch configuration JSON
  */
 export async function fetchConfig(url: string): Promise<ConfigJson> {
-  const response = await fetch(url)
+  const response = await fetchWithTimeout(url)
   if (!response.ok) {
     throw new Error(`Failed to fetch config: ${response.status}`)
   }
@@ -527,40 +552,44 @@ export async function fetchConfig(url: string): Promise<ConfigJson> {
  * @param templateId - The template ID to use for rendering (defaults to config.templates.node)
  */
 export async function fetchNodeData(nodeId: string, templateId?: string): Promise<NodeResponse> {
-  const effectiveTemplateId = templateId || config.templates.node
-  const url = `${config.apiBase}/id/${nodeId}/${effectiveTemplateId}`
+  const dedupKey = `node-${nodeId}-${templateId || ''}`
+  const doFetch = async () => {
+    const effectiveTemplateId = templateId || config.templates.node
+    const url = `${config.apiBase}/id/${nodeId}/${effectiveTemplateId}`
 
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch node data: ${response.status}`)
-  }
-
-  const html = await response.text()
-  const data = extractJson<RawNodeResponse>(html, 'kymono.node')
-
-  if (!data) {
-    if (html.includes("you don't have permissions for viewing this data node")) {
-      throw new Error("You don't have permissions for viewing this data node")
+    const response = await fetchWithTimeout(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch node data: ${response.status}`)
     }
-    throw new Error('Failed to parse node data')
-  }
 
-  return {
-    node: parseNodeJson(
-      data.node,
-      data.canWrite ?? false,
-      typeof data.node_views === 'string' ? parseInt(data.node_views, 10) : data.node_views || 0,
-      data.nodeImageUrl,
-      data.creatorImageUrl
-    ),
-    children: (() => {
-      const lastVisit = data.node.last_visit ? new Date(data.node.last_visit as string) : undefined
-      return (data.children || []).map((c) => parseChildJson(c, lastVisit))
-    })(),
-    listingAmount: data.listing_amount,
-    offset: data.offset,
-    anticsrf: data.anticsrf,
+    const html = await response.text()
+    const data = extractJson<RawNodeResponse>(html, 'kymono.node')
+
+    if (!data) {
+      if (html.includes("you don't have permissions for viewing this data node")) {
+        throw new Error("You don't have permissions for viewing this data node")
+      }
+      throw new Error('Failed to parse node data')
+    }
+
+    return {
+      node: parseNodeJson(
+        data.node,
+        data.canWrite ?? false,
+        typeof data.node_views === 'string' ? parseInt(data.node_views, 10) : data.node_views || 0,
+        data.nodeImageUrl,
+        data.creatorImageUrl
+      ),
+      children: (() => {
+        const lastVisit = data.node.last_visit ? new Date(data.node.last_visit) : undefined
+        return (data.children || []).map((c) => parseChildJson(c, lastVisit))
+      })(),
+      listingAmount: data.listing_amount,
+      offset: data.offset,
+      anticsrf: data.anticsrf,
+    }
   }
+  return dedupedFetch(dedupKey, doFetch)
 }
 
 /**
@@ -597,19 +626,22 @@ export async function fetchKData(force = false): Promise<KItem[]> {
     const cached = getCached<KItem[]>(cacheKey)
     if (cached) return cached
   }
-  const url = `${config.apiBase}${config.base}${config.templates.k}`
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch K data: ${response.status}`)
+  const doFetch = async () => {
+    const url = `${config.apiBase}${config.base}${config.templates.k}`
+    const response = await fetchWithTimeout(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch K data: ${response.status}`)
+    }
+    const html = await response.text()
+    const data = extractJson<RawKItem[]>(html, 'kymono.k')
+    if (!data) {
+      throw new Error('Failed to parse K data')
+    }
+    const result = data.map(parseKItem)
+    setCache(cacheKey, result)
+    return result
   }
-  const html = await response.text()
-  const data = extractJson<RawKItem[]>(html, 'kymono.k')
-  if (!data) {
-    throw new Error('Failed to parse K data')
-  }
-  const result = data.map(parseKItem)
-  setCache(cacheKey, result)
-  return result
+  return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
 }
 
 interface RawLastKItem {
@@ -659,12 +691,12 @@ export async function fetchLastKData(
     const url = `${config.apiBase}${config.base}${config.templates.lastK}`
     let response: Response
     if (interval === '1h') {
-      response = await fetch(url)
+      response = await fetchWithTimeout(url)
     } else {
       const formData = new FormData()
       formData.append('interval', interval === '1d' ? '24' : '168')
       formData.append('template_event', 'Hour')
-      response = await fetch(url, { method: 'POST', body: formData })
+      response = await fetchWithTimeout(url, { method: 'POST', body: formData })
     }
     if (!response.ok) {
       throw new Error(`Failed to fetch Last K data: ${response.status}`)
@@ -699,7 +731,11 @@ export async function submitComment(
   formData.append('event', 'add')
   formData.append('anticsrf', anticsrf)
 
-  const response = await fetch(url, { method: 'POST', body: formData, redirect: 'manual' })
+  const response = await fetchWithTimeout(url, {
+    method: 'POST',
+    body: formData,
+    redirect: 'manual',
+  })
   if (response.type !== 'opaqueredirect' && !response.ok) {
     throw new Error(`Failed to submit comment: ${response.status}`)
   }
@@ -718,7 +754,11 @@ export async function giveKarma(
   if (anticsrf) {
     formData.append('anticsrf', anticsrf)
   }
-  const response = await fetch(url, { method: 'POST', body: formData, redirect: 'manual' })
+  const response = await fetchWithTimeout(url, {
+    method: 'POST',
+    body: formData,
+    redirect: 'manual',
+  })
   if (response.type === 'opaqueredirect') return 'ok'
   if (!response.ok) {
     throw new Error(`Failed to give K: ${response.status}`)
@@ -745,7 +785,11 @@ export async function toggleBookmark(
   if (anticsrf) {
     formData.append('anticsrf', anticsrf)
   }
-  const response = await fetch(url, { method: 'POST', body: formData, redirect: 'manual' })
+  const response = await fetchWithTimeout(url, {
+    method: 'POST',
+    body: formData,
+    redirect: 'manual',
+  })
   if (response.type === 'opaqueredirect') return !isCurrentlyBookmarked
   if (!response.ok) {
     throw new Error(`Failed to toggle bookmark: ${response.status}`)
@@ -792,7 +836,7 @@ export async function fetchFriendsSubmissions(force = false): Promise<FriendSubm
   }
   const doFetch = async () => {
     const url = `${config.apiBase}${config.base}${config.templates.friendsSubmissions}`
-    const response = await fetch(url)
+    const response = await fetchWithTimeout(url)
     if (!response.ok) {
       throw new Error(`Failed to fetch friends submissions: ${response.status}`)
     }
@@ -842,7 +886,7 @@ export async function fetchMailData(force = false): Promise<MailMessage[]> {
   }
   const doFetch = async () => {
     const url = `${config.apiBase}${config.base}${config.templates.mail}`
-    const response = await fetch(url)
+    const response = await fetchWithTimeout(url)
     if (!response.ok) {
       throw new Error(`Failed to fetch mail data: ${response.status}`)
     }

@@ -33,7 +33,7 @@
   --font-size-lg: 1.125rem;
   --font-size-xl: 1.25rem;
   --font-size-2xl: 1.5rem;
-  --font-size-menu: 40px;
+  --font-size-menu: 2.5rem;
 
   --line-height-tight: 1.2;
   --line-height-normal: 1.5;
@@ -647,6 +647,13 @@ a {
   background: var(--color-bg-surface);
 }
 
+.setting-order-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
 .setting-order-label {
   font-size: var(--font-size-sm);
   color: var(--color-text-primary);
@@ -790,27 +797,6 @@ a {
   animation: fadeIn var(--transition-normal) ease-out;
 }
 
-/* Staggered list animations */
-.bookmark {
-  animation: fadeIn var(--transition-normal) ease-out backwards;
-}
-
-.book-cat:nth-child(1) .bookmark {
-  animation-delay: 0ms;
-}
-.book-cat:nth-child(2) .bookmark {
-  animation-delay: 30ms;
-}
-.book-cat:nth-child(3) .bookmark {
-  animation-delay: 60ms;
-}
-.book-cat:nth-child(4) .bookmark {
-  animation-delay: 90ms;
-}
-.book-cat:nth-child(5) .bookmark {
-  animation-delay: 120ms;
-}
-
 /* ============================================================
    Home Modules
    ============================================================ */
@@ -896,7 +882,7 @@ a {
 
 .module-error {
   padding: var(--space-4);
-  color: var(--color-error, #ff6b6b);
+  color: var(--color-error);
   font-size: var(--font-size-sm);
 }
 
@@ -939,7 +925,7 @@ a {
 }
 
 .error-message {
-  color: var(--color-error, #ff6b6b);
+  color: var(--color-error);
   margin-bottom: var(--space-4);
 }
 
@@ -1096,10 +1082,6 @@ a {
 
 .side-panel-node .node-karma-value {
   margin-right: var(--space-1);
-}
-
-.side-panel-node .node-karma-icon {
-  /* inherits red from parent */
 }
 
 .side-panel-node .node-ancestors {
@@ -1287,10 +1269,6 @@ a {
   font-size: var(--font-size-xs);
 }
 
-.friend-location:hover {
-  color: var(--color-text-secondary);
-}
-
 /* ============================================================
    Latest Replies (Side Panel)
    ============================================================ */
@@ -1439,7 +1417,7 @@ a {
    ============================================================ */
 @media (max-width: 640px) {
   :root {
-    --font-size-menu: 32px;
+    --font-size-menu: 2rem;
     --menu-height: 48px;
     --content-padding: var(--space-3);
   }
@@ -1873,6 +1851,7 @@ a {
   text-overflow: ellipsis;
   max-width: max-content;
   min-width: 0;
+  flex-shrink: 1;
 }
 
 .comment-title:hover {
@@ -2092,6 +2071,10 @@ a {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   margin-left: var(--space-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .k-parent-in {
@@ -2317,6 +2300,21 @@ a {
   padding-left: 36px;
   margin-top: 2px;
   line-height: var(--line-height-normal);
+}
+
+.mail-more {
+  text-align: center;
+  padding: var(--space-4);
+  font-size: var(--font-size-sm);
+}
+
+.mail-more a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.mail-more a:hover {
+  color: var(--color-text-secondary);
 }
 
 /* Conversation list */

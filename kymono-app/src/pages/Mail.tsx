@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { MailMessage } from '@/types'
 import { useConfigValue, useUser } from '@/contexts'
-import { fetchMailData, formatRelativeString, formatDate } from '@/utils'
+import { fetchMailData, formatRelativeString, formatDate, stripHtml } from '@/utils'
 import { useTitle } from '@/utils/useTitle'
 import { usePullToRefresh } from '@/utils/usePullToRefresh'
 import { config, CONFIG_PATHS } from '@/config'
@@ -31,9 +31,9 @@ function groupIntoConversations(messages: MailMessage[], userId: string | null):
 
   const conversations: Conversation[] = []
   for (const [otherUserId, msgs] of map) {
-    // Sort messages oldest first within conversation
-    msgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-    const lastMessage = msgs[msgs.length - 1]
+    // Sort messages newest first within conversation
+    msgs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    const lastMessage = msgs[0]
     const otherUserName =
       lastMessage.fromId === otherUserId ? lastMessage.fromName : lastMessage.toName
     conversations.push({
@@ -52,12 +52,6 @@ function groupIntoConversations(messages: MailMessage[], userId: string | null):
   )
 
   return conversations
-}
-
-function stripHtml(html: string): string {
-  const tmp = document.createElement('div')
-  tmp.innerHTML = html
-  return tmp.textContent || tmp.innerText || ''
 }
 
 export function Mail() {
@@ -213,6 +207,11 @@ export function Mail() {
             </div>
           ))}
         </div>
+        <div className="mail-more">
+          <a href={`${config.externalBase}/id/21`} target="_blank" rel="noopener noreferrer">
+            more in /id/21
+          </a>
+        </div>
       </div>
     )
   }
@@ -257,13 +256,18 @@ export function Mail() {
                 <span className="mail-date">{formatTimestamp(conv.lastMessage.timestamp)}</span>
               </div>
               <div className="conv-preview">
-                {conv.lastMessage.fromId === userId ? 'You' : conv.lastMessage.fromName}
+                {conv.lastMessage.fromId === userId ? 'you' : conv.lastMessage.fromName}
                 {': '}
                 {stripHtml(conv.lastMessage.text)}
               </div>
             </div>
           </div>
         ))}
+      </div>
+      <div className="mail-more">
+        <a href={`${config.externalBase}/id/21`} target="_blank" rel="noopener noreferrer">
+          more in /id/21
+        </a>
       </div>
     </div>
   )

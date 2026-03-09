@@ -9,7 +9,7 @@ import { HomeModule } from '@/components/HomeModule'
 // Max number of single-user nodes to display
 const MAX_SINGLE_COUNT_NODES = 10
 
-export function MpnModule() {
+export function MpnModule({ forceRefresh }: { forceRefresh?: boolean }) {
   const navigate = useNavigate()
   const [nodes, setNodes] = useState<MpnNode[]>([])
   const [loading, setLoading] = useState(true)
@@ -31,20 +31,19 @@ export function MpnModule() {
   }, [])
 
   useEffect(() => {
-    loadData()
-  }, [loadData])
+    if (enabled) loadData(forceRefresh)
+  }, [loadData, forceRefresh, enabled])
 
   // Filter nodes according to original logic
   const filteredNodes = useMemo(() => {
     const filtered = nodes.filter((node) => {
-      const nodeId = parseInt(node.id, 10)
       const nodeName = node.name.toLowerCase()
 
       return !(
         !node.name.trim() ||
-        nodeId <= 100 ||
+        parseInt(node.id, 10) <= 100 ||
         nodeName.startsWith('bookm') ||
-        config.mpnBlacklist.includes(nodeId)
+        config.mpnBlacklist.has(node.id)
       )
     })
 

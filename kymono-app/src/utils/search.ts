@@ -46,7 +46,7 @@ export function buildSearchIndex(items: Array<[string, string]>): SearchIndex {
     const words = normalizeText(name).split(/\s+/).filter(Boolean)
 
     for (const word of words) {
-      if (word.length < 3) continue
+      if (word.length < 2) continue
 
       const prefix = word.substring(0, 2)
 

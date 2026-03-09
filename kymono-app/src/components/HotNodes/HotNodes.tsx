@@ -16,7 +16,7 @@ interface HotNode {
   latestCreatedAt: string
 }
 
-export function HotNodes() {
+export function HotNodes({ forceRefresh }: { forceRefresh?: boolean }) {
   const navigate = useNavigate()
   const [submissions, setSubmissions] = useState<FriendSubmission[]>([])
   const [loading, setLoading] = useState(true)
@@ -39,9 +39,9 @@ export function HotNodes() {
 
   useEffect(() => {
     if (enabled) {
-      loadData()
+      loadData(forceRefresh)
     }
-  }, [loadData, enabled])
+  }, [loadData, enabled, forceRefresh])
 
   const hotNodes = useMemo(() => {
     const grouped = new Map<string, HotNode>()

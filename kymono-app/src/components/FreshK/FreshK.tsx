@@ -3,17 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import type { KItem } from '@/types'
 import { useConfigValue } from '@/contexts'
 import { CONFIG_PATHS } from '@/config'
-import { fetchLastKData } from '@/utils'
+import { fetchLastKData, stripHtml } from '@/utils'
 import { HomeModule } from '@/components/HomeModule'
 
 const MAX_DISPLAY = 5
 
-function stripHtml(html: string): string {
-  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html')
-  return doc.body.textContent?.trim() || ''
-}
-
-export function FreshK() {
+export function FreshK({ forceRefresh }: { forceRefresh?: boolean }) {
   const navigate = useNavigate()
   const [items, setItems] = useState<KItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -36,9 +31,9 @@ export function FreshK() {
 
   useEffect(() => {
     if (enabled) {
-      loadData()
+      loadData(forceRefresh)
     }
-  }, [loadData, enabled])
+  }, [loadData, enabled, forceRefresh])
 
   const handleLink = (e: React.MouseEvent, path: string) => {
     e.preventDefault()

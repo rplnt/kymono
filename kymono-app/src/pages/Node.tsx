@@ -1,48 +1,12 @@
-import { useState, useEffect, useCallback, useRef, memo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { NodeData, NodeComment } from '@/types'
 import { useCurrentNode, useConfigValue, useFriends, useUser } from '@/contexts'
-import { fetchNodeData, submitComment, giveKarma, formatDate, formatRelativeDate } from '@/utils'
+import { fetchNodeData, submitComment, giveKarma, scrollToElement } from '@/utils'
 import { useTitle } from '@/utils/useTitle'
 import { config, CONFIG_PATHS } from '@/config'
 import { ExternalLinkIcon } from '@/components/ExternalLinkIcon'
-
-// Cycles: relative → full created → full edited → relative (if edited)
-//         relative → full created → relative (if not edited)
-function Timestamp({
-  createdAt,
-  updatedAt,
-  fullTimestamps,
-}: {
-  createdAt: Date
-  updatedAt: Date | null
-  fullTimestamps: boolean
-}) {
-  // 0 = default (uses fullTimestamps setting), 1 = full created, 2 = full edited
-  const [mode, setMode] = useState(0)
-
-  const cycle = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (mode === 0) {
-      setMode(fullTimestamps ? (updatedAt ? 2 : 0) : 1)
-    } else if (mode === 1) {
-      setMode(updatedAt ? 2 : 0)
-    } else {
-      setMode(0)
-    }
-  }
-
-  const showFull = mode === 1 || mode === 2 || (mode === 0 && fullTimestamps)
-  const showEdited = mode === 2
-  const date = showEdited && updatedAt ? updatedAt : createdAt
-
-  return (
-    <span className="comment-date comment-date-clickable" onClick={cycle}>
-      {showFull ? formatDate(date) : formatRelativeDate(createdAt)}
-      {updatedAt && <span className={showEdited ? 'comment-date-edited' : undefined}>*</span>}
-    </span>
-  )
-}
+import { Timestamp } from '@/components/Timestamp'
 
 function getCommentIndent(level: number): number {
   // Logarithmic indent: each level adds less than the previous
@@ -141,8 +105,6 @@ export function Node() {
       setNode(response.node)
       setComments(response.children)
       setCurrentNode(response.node)
-      const tid = response.node.templateId
-      setContentCollapsed(tid === '21' || (hideTopic && tid !== '4'))
       setAnticsrf(response.anticsrf)
     } catch (err) {
       console.error('Failed to load node:', err)
@@ -150,23 +112,42 @@ export function Node() {
     } finally {
       setLoading(false)
     }
-  }, [nodeId, setCurrentNode])
+  }, [nodeId, setCurrentNode, setAnticsrf])
 
   useEffect(() => {
     window.scrollTo(0, 0)
     loadData()
   }, [loadData])
 
+  // Set initial content collapsed state based on template and hideTopic setting
+  useEffect(() => {
+    if (node) {
+      const tid = node.templateId
+      setContentCollapsed(tid === '21' || (hideTopic && tid !== '4'))
+    }
+  }, [node, hideTopic])
+
   // Reset visible batches when comments change
   useEffect(() => {
     setVisibleBatches(1)
   }, [comments])
 
+  const minDepth = useMemo(
+    () =>
+      comments.length > 0
+        ? comments.reduce((min, c) => (c.depth < min ? c.depth : min), comments[0].depth)
+        : 0,
+    [comments]
+  )
+
+  const topLevelCount = useMemo(
+    () => comments.filter((c) => c.depth === minDepth).length,
+    [comments, minDepth]
+  )
+
   // Auto-load comments on scroll
   useEffect(() => {
     if (!progressiveComments || !autoLoadCommentsOnScroll || comments.length === 0) return
-    const minDepth = Math.min(...comments.map((c) => c.depth))
-    const topLevelCount = comments.filter((c) => c.depth === minDepth).length
     const onScroll = () => {
       if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
         setVisibleBatches((prev) => (prev < topLevelCount ? prev + 1 : prev))
@@ -174,20 +155,18 @@ export function Node() {
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
-  }, [progressiveComments, autoLoadCommentsOnScroll, comments])
+  }, [progressiveComments, autoLoadCommentsOnScroll, comments, topLevelCount])
 
   // Fill screen on initial load when content is short
   useEffect(() => {
     if (!progressiveComments || !autoLoadCommentsOnScroll || comments.length === 0) return
-    const minDepth = Math.min(...comments.map((c) => c.depth))
-    const topLevelCount = comments.filter((c) => c.depth === minDepth).length
     const raf = requestAnimationFrame(() => {
       if (window.innerHeight >= document.body.offsetHeight - 100) {
         setVisibleBatches((prev) => (prev < topLevelCount ? prev + 1 : prev))
       }
     })
     return () => cancelAnimationFrame(raf)
-  }, [progressiveComments, autoLoadCommentsOnScroll, comments, visibleBatches])
+  }, [progressiveComments, autoLoadCommentsOnScroll, comments, visibleBatches, topLevelCount])
 
   const handleSubmit = async () => {
     if (submittingRef.current) return
@@ -250,6 +229,9 @@ export function Node() {
     try {
       const result = await giveKarma(node.id, anticsrf)
       setNodeKState(result)
+      if (result === 'ok') {
+        setNode((prev) => prev && { ...prev, karma: prev.karma + 1 })
+      }
     } catch {
       setNodeKState('error')
     }
@@ -262,6 +244,11 @@ export function Node() {
     try {
       const result = await giveKarma(commentId, anticsrf)
       setCommentKStates((prev) => new Map(prev).set(commentId, result))
+      if (result === 'ok') {
+        setComments((prev) =>
+          prev.map((c) => (c.id === commentId ? { ...c, karma: c.karma + 1 } : c))
+        )
+      }
     } catch {
       setCommentKStates((prev) => new Map(prev).set(commentId, 'error'))
     }
@@ -318,12 +305,7 @@ export function Node() {
 
   const scrollToComments = () => {
     const commentsEl = document.querySelector('.node-comments')
-    if (commentsEl) {
-      const menuHeight =
-        parseInt(getComputedStyle(document.documentElement).getPropertyValue('--menu-height')) || 56
-      const top = commentsEl.getBoundingClientRect().top + window.scrollY - menuHeight - 8
-      window.scrollTo({ top, behavior: 'smooth' })
-    }
+    if (commentsEl) scrollToElement(commentsEl)
   }
 
   return (
@@ -450,18 +432,7 @@ export function Node() {
                 title="Open on kyberia.sk"
                 onClick={(e) => e.stopPropagation()}
               >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                  <polyline points="15 3 21 3 21 9" />
-                  <line x1="10" y1="14" x2="21" y2="3" />
-                </svg>
+                <ExternalLinkIcon />
               </a>
             </div>
             <div className="node-header-row">
@@ -717,8 +688,6 @@ export function Node() {
             })()
           : comments.length > 0
             ? (() => {
-                const minDepth = Math.min(...comments.map((c) => c.depth))
-
                 // Find top-level comment indices (level === 0)
                 const topLevelIndices: number[] = []
                 comments.forEach((c, i) => {
@@ -882,18 +851,8 @@ export function Node() {
                               findSibling('prev') || (idx > 0 ? displayComments[idx - 1].id : null)
                             const nextId = findSibling('next')
                             const scrollTo = (elId: string) => {
-                              const menuHeight =
-                                parseInt(
-                                  getComputedStyle(document.documentElement).getPropertyValue(
-                                    '--menu-height'
-                                  )
-                                ) || 56
                               const el = document.getElementById(`comment-${elId}`)
-                              if (el) {
-                                const top =
-                                  el.getBoundingClientRect().top + window.scrollY - menuHeight - 8
-                                window.scrollTo({ top, behavior: 'smooth' })
-                              }
+                              if (el) scrollToElement(el)
                             }
                             return (
                               <div className="comment-toolbar">

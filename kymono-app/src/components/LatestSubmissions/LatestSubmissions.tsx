@@ -1,7 +1,7 @@
 import { CONFIG_PATHS } from '@/config'
 import { SubmissionsList } from '@/components/FriendsSubmissions/SubmissionsList'
 
-export function LatestSubmissions() {
+export function LatestSubmissions({ forceRefresh }: { forceRefresh?: boolean }) {
   return (
     <SubmissionsList
       title="latest.submissions"
@@ -9,6 +9,7 @@ export function LatestSubmissions() {
       emptyMessage="No submissions"
       enabledPath={CONFIG_PATHS.LATEST_SUBMISSIONS_ENABLED}
       defaultEnabled={false}
+      forceRefresh={forceRefresh}
     />
   )
 }

@@ -7,7 +7,9 @@ type State = 'idle' | 'pulling' | 'refreshing'
 export function usePullToRefresh(onRefresh?: () => Promise<void> | void): void {
   const [enabled] = useConfigValue(CONFIG_PATHS.PULL_TO_REFRESH, false)
   const callbackRef = useRef(onRefresh)
-  callbackRef.current = onRefresh
+  useEffect(() => {
+    callbackRef.current = onRefresh
+  })
 
   useEffect(() => {
     if (!enabled) return

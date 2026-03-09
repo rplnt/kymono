@@ -1,6 +1,6 @@
 import { fetchSidebarData } from './api'
 
-const LAST_LOADED_KEY = 'kymono.sidebar.lastLoaded'
+import { SIDEBAR_LOADED_KEY as LAST_LOADED_KEY } from './configStorage'
 
 /**
  * Start a background runner that polls for new replies every 5 minutes.
@@ -13,6 +13,7 @@ export function startRepliesChecker(onNewCount: (n: number) => void): () => void
 
   const check = async () => {
     try {
+      // Not forcing refresh — may return cached data if fetched recently, which is fine.
       const data = await fetchSidebarData()
       if (stopped) return
 
