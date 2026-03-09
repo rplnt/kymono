@@ -753,6 +753,11 @@ export async function toggleBookmark(
   return !isCurrentlyBookmarked
 }
 
+export function getUserIdFromDom(): string | null {
+  const el = document.querySelector('script#kymono\\.userId')
+  return el?.textContent?.trim() || null
+}
+
 export function getFriendMapFromDom(): Record<string, boolean> {
   const el = document.querySelector('script#kymono\\.friendList')
   if (!el?.textContent) return {}

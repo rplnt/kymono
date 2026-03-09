@@ -35,18 +35,32 @@ export const MODULE_ROUTES: Record<ModuleId, string> = {
 
 export const MODULES: ModuleConfig[] = [
   { id: 'mpn', component: MpnModule, orderPath: CONFIG_PATHS.MPN_ORDER },
-  { id: 'quickBookmarks', component: QuickBookmarks, orderPath: CONFIG_PATHS.QUICK_BOOKMARKS_ORDER },
-  { id: 'friendsSubmissions', component: FriendsSubmissions, orderPath: CONFIG_PATHS.FRIENDS_SUBMISSIONS_ORDER },
+  {
+    id: 'quickBookmarks',
+    component: QuickBookmarks,
+    orderPath: CONFIG_PATHS.QUICK_BOOKMARKS_ORDER,
+  },
+  {
+    id: 'friendsSubmissions',
+    component: FriendsSubmissions,
+    orderPath: CONFIG_PATHS.FRIENDS_SUBMISSIONS_ORDER,
+  },
   { id: 'hotNodes', component: HotNodes, orderPath: CONFIG_PATHS.HOT_NODES_ORDER },
   { id: 'freshK', component: FreshK, orderPath: CONFIG_PATHS.FRESH_K_ORDER },
-  { id: 'latestSubmissions', component: LatestSubmissions, orderPath: CONFIG_PATHS.LATEST_SUBMISSIONS_ORDER },
+  {
+    id: 'latestSubmissions',
+    component: LatestSubmissions,
+    orderPath: CONFIG_PATHS.LATEST_SUBMISSIONS_ORDER,
+  },
 ]
 
 export function Home() {
   useTitle('Home')
   const { getValue } = useConfig()
   const [refreshKey, setRefreshKey] = useState(0)
-  usePullToRefresh(() => { setRefreshKey((k) => k + 1) })
+  usePullToRefresh(() => {
+    setRefreshKey((k) => k + 1)
+  })
 
   const sortedModules = useMemo(() => {
     const modulesWithOrder = MODULES.map((mod) => ({

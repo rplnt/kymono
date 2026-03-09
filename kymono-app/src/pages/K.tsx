@@ -237,7 +237,7 @@ export function K() {
   const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<KTab>('k')
   const [showCommentToolbar] = useConfigValue(CONFIG_PATHS.COMMENT_TOOLBAR, true)
-  const [fullTimestamps] = useConfigValue(CONFIG_PATHS.FULL_TIMESTAMPS, true)
+  const [fullTimestamps] = useConfigValue<boolean>(CONFIG_PATHS.FULL_TIMESTAMPS)
   const [progressiveDisplay] = useConfigValue(CONFIG_PATHS.K_PROGRESSIVE_DISPLAY, true)
   const [autoLoadOnScroll] = useConfigValue(CONFIG_PATHS.K_AUTO_LOAD_SCROLL, true)
   const [visibleCount, setVisibleCount] = useState(4)

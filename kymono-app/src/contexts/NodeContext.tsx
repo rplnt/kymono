@@ -15,6 +15,8 @@ export function NodeProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <NodeContext.Provider value={{ currentNode, setCurrentNode, anticsrf, setAnticsrf }}>{children}</NodeContext.Provider>
+    <NodeContext.Provider value={{ currentNode, setCurrentNode, anticsrf, setAnticsrf }}>
+      {children}
+    </NodeContext.Provider>
   )
 }

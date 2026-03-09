@@ -23,6 +23,7 @@
 
   --color-friend: #f0eed8;
   --color-friend-glow: rgba(240, 195, 40, 0.7);
+  --color-self-glow: rgba(0, 255, 0, 0.7);
 
   /* Typography */
   --font-family: Verdana, sans-serif;
@@ -1855,6 +1856,12 @@ a {
   color: var(--color-friend);
   opacity: 0.8;
 }
+.comment-author.is-self {
+  text-shadow: 0 0 6px var(--color-self-glow);
+}
+.comment-author.is-self:hover {
+  opacity: 0.8;
+}
 
 .comment-title {
   color: var(--color-text-primary);
@@ -2312,6 +2319,76 @@ a {
   line-height: var(--line-height-normal);
 }
 
+/* Conversation list */
+.conv-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-bg-surface);
+  cursor: pointer;
+}
+
+.conv-entry:hover {
+  background: var(--color-bg-surface);
+}
+
+.conv-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.conv-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.conv-name {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.conv-preview {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* Conversation detail header */
+.conv-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+}
+
+#root .conv-back {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+  padding: 0 var(--space-1);
+}
+
+.conv-back:hover {
+  color: var(--color-phosphor);
+}
+
+.conv-header-name {
+  color: var(--color-text-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.conv-header-name:hover {
+  color: var(--color-text-secondary);
+}
+
 /* Menu badge */
 .menu-item-mail,
 .menu-item-sidebar {
@@ -2406,4 +2483,3 @@ a {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
-

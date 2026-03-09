@@ -31,7 +31,7 @@ export function SubmissionsList({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [enabled] = useConfigValue(enabledPath, defaultEnabled)
-  const [fullTimestamps] = useConfigValue(CONFIG_PATHS.FULL_TIMESTAMPS, true)
+  const [fullTimestamps] = useConfigValue<boolean>(CONFIG_PATHS.FULL_TIMESTAMPS)
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE)
 
   const loadData = useCallback(async (force = false) => {

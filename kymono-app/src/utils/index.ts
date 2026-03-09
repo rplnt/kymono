@@ -19,6 +19,7 @@ export {
   submitComment,
   giveKarma,
   toggleBookmark,
+  getUserIdFromDom,
 } from './api'
 export { startMailChecker } from './mailChecker'
 export { startRepliesChecker } from './repliesChecker'

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { NodeData, NodeComment } from '@/types'
-import { useCurrentNode, useConfigValue, useFriends } from '@/contexts'
+import { useCurrentNode, useConfigValue, useFriends, useUser } from '@/contexts'
 import { fetchNodeData, submitComment, giveKarma, formatDate, formatRelativeDate } from '@/utils'
 import { useTitle } from '@/utils/useTitle'
 import { config, CONFIG_PATHS } from '@/config'
@@ -71,6 +71,7 @@ export function Node() {
   const navigate = useNavigate()
   const { setCurrentNode, anticsrf, setAnticsrf } = useCurrentNode()
   const { isFriend } = useFriends()
+  const { userId } = useUser()
   const [node, setNode] = useState<NodeData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -91,7 +92,9 @@ export function Node() {
   const [showCommentToolbar] = useConfigValue<boolean>(CONFIG_PATHS.COMMENT_TOOLBAR)
   const [fullTimestamps] = useConfigValue<boolean>(CONFIG_PATHS.FULL_TIMESTAMPS)
   const [progressiveComments] = useConfigValue<boolean>(CONFIG_PATHS.NODE_PROGRESSIVE_COMMENTS)
-  const [autoLoadCommentsOnScroll] = useConfigValue<boolean>(CONFIG_PATHS.NODE_AUTO_LOAD_COMMENTS_SCROLL)
+  const [autoLoadCommentsOnScroll] = useConfigValue<boolean>(
+    CONFIG_PATHS.NODE_AUTO_LOAD_COMMENTS_SCROLL
+  )
   const [hideTopic] = useConfigValue<boolean>(CONFIG_PATHS.NODE_HIDE_TOPIC)
   const [visibleBatches, setVisibleBatches] = useState(1)
   const [childFilter, setChildFilter] = useState('')
@@ -367,7 +370,7 @@ export function Node() {
               <div className="comment-meta-line">
                 <a
                   href={`#/id/${node.creatorId}`}
-                  className={`comment-author${isFriend(node.creatorId) ? ' is-friend' : ''}`}
+                  className={`comment-author${node.creatorId === userId ? ' is-self' : isFriend(node.creatorId) ? ' is-friend' : ''}`}
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
@@ -399,13 +402,13 @@ export function Node() {
             </a>
           </div>
           {!contentCollapsed && (
-              <div className="comment-body">
-                <div
-                  className="comment-content"
-                  dangerouslySetInnerHTML={{ __html: node.content }}
-                  onClick={handleContentClick}
-                />
-              </div>
+            <div className="comment-body">
+              <div
+                className="comment-content"
+                dangerouslySetInnerHTML={{ __html: node.content }}
+                onClick={handleContentClick}
+              />
+            </div>
           )}
           <div className="give-k-wrap">
             {node.givenK || nodeKState === 'ok' ? (
@@ -492,17 +495,17 @@ export function Node() {
 
           {/* Node content */}
           {!contentCollapsed && (
-              <div className="node-content-box">
-                {node.templateId === '14' ? (
-                  <pre className="node-content node-content-mono">{node.content}</pre>
-                ) : (
-                  <div
-                    className="node-content"
-                    dangerouslySetInnerHTML={{ __html: node.content }}
-                    onClick={handleContentClick}
-                  />
-                )}
-              </div>
+            <div className="node-content-box">
+              {node.templateId === '14' ? (
+                <pre className="node-content node-content-mono">{node.content}</pre>
+              ) : (
+                <div
+                  className="node-content"
+                  dangerouslySetInnerHTML={{ __html: node.content }}
+                  onClick={handleContentClick}
+                />
+              )}
+            </div>
           )}
           <div className="give-k-wrap">
             {node.givenK || nodeKState === 'ok' ? (
@@ -778,7 +781,7 @@ export function Node() {
                               <div className="comment-meta-line">
                                 <a
                                   href={`#/id/${comment.creatorId}`}
-                                  className={`comment-author${isFriend(comment.creatorId) ? ' is-friend' : ''}`}
+                                  className={`comment-author${comment.creatorId === userId ? ' is-self' : isFriend(comment.creatorId) ? ' is-friend' : ''}`}
                                   onClick={(e) => {
                                     e.preventDefault()
                                     e.stopPropagation()
