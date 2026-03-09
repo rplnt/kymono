@@ -69,7 +69,7 @@ const CommentContent = memo(function CommentContent({
 export function Node() {
   const { nodeId } = useParams<{ nodeId: string }>()
   const navigate = useNavigate()
-  const { setCurrentNode } = useCurrentNode()
+  const { setCurrentNode, anticsrf, setAnticsrf } = useCurrentNode()
   const { isFriend } = useFriends()
   const [node, setNode] = useState<NodeData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -79,7 +79,6 @@ export function Node() {
   const [collapsedComments, setCollapsedComments] = useState<Set<string>>(new Set())
   const [replyTitle, setReplyTitle] = useState('')
   const [replyContent, setReplyContent] = useState('')
-  const [anticsrf, setAnticsrf] = useState<string | undefined>()
   const [replyError, setReplyError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const submittingRef = useRef(false)
@@ -400,7 +399,6 @@ export function Node() {
             </a>
           </div>
           {!contentCollapsed && (
-            <>
               <div className="comment-body">
                 <div
                   className="comment-content"
@@ -408,27 +406,26 @@ export function Node() {
                   onClick={handleContentClick}
                 />
               </div>
-              <div className="give-k-wrap">
-                {node.givenK || nodeKState === 'ok' ? (
-                  <span className="give-k-given">given</span>
-                ) : nodeKState === 'nehul' ? (
-                  <span className="give-k-err">nehul</span>
-                ) : nodeKState === 'neda-sa' ? (
-                  <span className="give-k-err">neda sa</span>
-                ) : nodeKState === 'error' ? (
-                  <span className="give-k-err">err</span>
-                ) : (
-                  <button
-                    className="give-k-btn"
-                    onClick={handleGiveNodeK}
-                    disabled={nodeKState === 'sending'}
-                  >
-                    give k
-                  </button>
-                )}
-              </div>
-            </>
           )}
+          <div className="give-k-wrap">
+            {node.givenK || nodeKState === 'ok' ? (
+              <span className="give-k-given">k given</span>
+            ) : nodeKState === 'nehul' ? (
+              <span className="give-k-err">nehul</span>
+            ) : nodeKState === 'neda-sa' ? (
+              <span className="give-k-err">neda sa</span>
+            ) : nodeKState === 'error' ? (
+              <span className="give-k-err">err</span>
+            ) : (
+              <button
+                className="give-k-btn"
+                onClick={handleGiveNodeK}
+                disabled={nodeKState === 'sending'}
+              >
+                give k
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <>
@@ -495,7 +492,6 @@ export function Node() {
 
           {/* Node content */}
           {!contentCollapsed && (
-            <>
               <div className="node-content-box">
                 {node.templateId === '14' ? (
                   <pre className="node-content node-content-mono">{node.content}</pre>
@@ -507,27 +503,26 @@ export function Node() {
                   />
                 )}
               </div>
-              <div className="give-k-wrap">
-                {node.givenK || nodeKState === 'ok' ? (
-                  <span className="give-k-given">given</span>
-                ) : nodeKState === 'nehul' ? (
-                  <span className="give-k-err">nehul</span>
-                ) : nodeKState === 'neda-sa' ? (
-                  <span className="give-k-err">neda sa</span>
-                ) : nodeKState === 'error' ? (
-                  <span className="give-k-err">err</span>
-                ) : (
-                  <button
-                    className="give-k-btn"
-                    onClick={handleGiveNodeK}
-                    disabled={nodeKState === 'sending'}
-                  >
-                    give k
-                  </button>
-                )}
-              </div>
-            </>
           )}
+          <div className="give-k-wrap">
+            {node.givenK || nodeKState === 'ok' ? (
+              <span className="give-k-given">k given</span>
+            ) : nodeKState === 'nehul' ? (
+              <span className="give-k-err">nehul</span>
+            ) : nodeKState === 'neda-sa' ? (
+              <span className="give-k-err">neda sa</span>
+            ) : nodeKState === 'error' ? (
+              <span className="give-k-err">err</span>
+            ) : (
+              <button
+                className="give-k-btn"
+                onClick={handleGiveNodeK}
+                disabled={nodeKState === 'sending'}
+              >
+                give k
+              </button>
+            )}
+          </div>
         </>
       )}
 
@@ -832,7 +827,7 @@ export function Node() {
                             const kS = commentKStates.get(comment.id) || 'idle'
                             const kBtn =
                               comment.givenK || kS === 'ok' ? (
-                                <span className="give-k-given">given</span>
+                                <span className="give-k-given">k given</span>
                               ) : kS === 'nehul' ? (
                                 <span className="give-k-err">nehul</span>
                               ) : kS === 'neda-sa' ? (

@@ -131,6 +131,7 @@ export interface NodeData {
   childrenCount: number
   views: number
   givenK: boolean
+  bookmarked: boolean
 }
 
 // Node comment/child types

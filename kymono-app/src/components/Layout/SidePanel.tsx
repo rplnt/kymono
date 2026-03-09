@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useCurrentNode } from '@/contexts'
 import { FriendsOnline } from '@/components/FriendsOnline'
 import { LatestReplies } from '@/components/LatestReplies'
-import { fetchSidebarData } from '@/utils'
+import { fetchSidebarData, toggleBookmark } from '@/utils'
 import type { OnlineFriend, LatestReply } from '@/types'
 
 const LAST_LOADED_KEY = 'kymono.sidebar.lastLoaded'
@@ -14,7 +14,7 @@ interface SidePanelProps {
 }
 
 export function SidePanel({ isOpen, onClose }: SidePanelProps) {
-  const { currentNode } = useCurrentNode()
+  const { currentNode, anticsrf } = useCurrentNode()
   const navigate = useNavigate()
   const location = useLocation()
   const isHome =
@@ -29,6 +29,8 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastLoadedAt] = useState<string | null>(() => localStorage.getItem(LAST_LOADED_KEY))
+  const [isBookmarked, setIsBookmarked] = useState(false)
+  const [bookmarking, setBookmarking] = useState(false)
 
   const loadSidebar = useCallback(async (force = false) => {
     setLoading(true)
@@ -46,6 +48,13 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
       setLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    if (currentNode) {
+      setIsBookmarked(currentNode.bookmarked)
+      setBookmarking(false)
+    }
+  }, [currentNode])
 
   useEffect(() => {
     if (isOpen && isHome) {
@@ -81,6 +90,19 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
     if (currentNode?.parentId) {
       navigate(`/id/${currentNode.parentId}`)
       onClose()
+    }
+  }
+
+  const handleToggleBookmark = async () => {
+    if (bookmarking || !currentNode) return
+    setBookmarking(true)
+    try {
+      const newState = await toggleBookmark(currentNode.id, isBookmarked, anticsrf)
+      setIsBookmarked(newState)
+    } catch {
+      // user can retry by clicking again
+    } finally {
+      setBookmarking(false)
     }
   }
 
@@ -217,6 +239,15 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
               {currentNode.views > 0 && (
                 <div className="node-visits">{currentNode.views.toLocaleString()} visits</div>
               )}
+
+              {/* Bookmark */}
+              <button
+                className="sidebar-book-btn"
+                onClick={handleToggleBookmark}
+                disabled={bookmarking}
+              >
+                {isBookmarked ? 'unbook' : 'book'}
+              </button>
             </div>
           )}
         </div>

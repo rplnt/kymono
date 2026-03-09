@@ -1114,6 +1114,30 @@ a {
   color: var(--color-text-muted);
 }
 
+.sidebar-book-btn {
+  display: block;
+  margin: var(--space-3) auto 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid transparent;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  padding: 0;
+  transition: color var(--transition-fast);
+}
+
+.sidebar-book-btn:hover {
+  color: var(--color-phosphor-bright);
+  border-bottom-color: var(--color-phosphor-dim);
+}
+
+.sidebar-book-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
 .side-panel-node .node-ancestors-label {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);

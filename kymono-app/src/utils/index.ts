@@ -18,6 +18,7 @@ export {
   fetchMailData,
   submitComment,
   giveKarma,
+  toggleBookmark,
 } from './api'
 export { startMailChecker } from './mailChecker'
 export { startRepliesChecker } from './repliesChecker'

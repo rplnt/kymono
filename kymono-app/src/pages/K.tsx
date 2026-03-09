@@ -169,7 +169,7 @@ const KItemCard = memo(function KItemCard({
       {(() => {
         const kBtn =
           item.givenK || kState === 'ok' ? (
-            <span className="give-k-given">given</span>
+            <span className="give-k-given">k given</span>
           ) : kState === 'nehul' ? (
             <span className="give-k-err">nehul</span>
           ) : kState === 'neda-sa' ? (

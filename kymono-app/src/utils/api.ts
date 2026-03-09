@@ -368,6 +368,7 @@ function parseNodeJson(
         : raw.node_children_count || 0,
     views,
     givenK: raw.given_k === 'yes',
+    bookmarked: raw.node_bookmark === 'yes',
   }
 }
 
@@ -728,6 +729,28 @@ export async function giveKarma(
   if (text.includes('musis byt prihlaseny') || text.includes("don't have permissions"))
     return 'neda-sa'
   return 'ok'
+}
+
+/**
+ * Toggle bookmark (book/unbook) on a node
+ */
+export async function toggleBookmark(
+  nodeId: string,
+  isCurrentlyBookmarked: boolean,
+  anticsrf?: string
+): Promise<boolean> {
+  const url = `${config.apiBase}/id/${nodeId}/`
+  const formData = new FormData()
+  formData.append('event', isCurrentlyBookmarked ? 'unbook' : 'book')
+  if (anticsrf) {
+    formData.append('anticsrf', anticsrf)
+  }
+  const response = await fetch(url, { method: 'POST', body: formData, redirect: 'manual' })
+  if (response.type === 'opaqueredirect') return !isCurrentlyBookmarked
+  if (!response.ok) {
+    throw new Error(`Failed to toggle bookmark: ${response.status}`)
+  }
+  return !isCurrentlyBookmarked
 }
 
 export function getFriendMapFromDom(): Record<string, boolean> {
