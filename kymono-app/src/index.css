@@ -22,7 +22,7 @@
   --color-karma: #f22;
 
   --color-friend: #f0eed8;
-  --color-friend-glow: rgba(232, 200, 60, 0.5);
+  --color-friend-glow: rgba(240, 195, 40, 0.7);
 
   /* Typography */
   --font-family: Verdana, sans-serif;
@@ -94,6 +94,8 @@
 #root select,
 #root textarea {
   color: inherit;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 html {
@@ -132,6 +134,9 @@ body {
   font-size: var(--font-size-base);
   line-height: var(--line-height-normal);
   min-height: 100vh;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 a {
@@ -215,13 +220,15 @@ a {
   transition: transform var(--transition-normal);
 }
 
-.btn-menu:hover {
-  color: var(--color-phosphor);
-  background: var(--color-bg-elevated);
-}
+@media (hover: hover) {
+  .btn-menu:hover {
+    color: var(--color-phosphor);
+    background: var(--color-bg-elevated);
+  }
 
-.btn-menu:hover::after {
-  transform: scaleX(1);
+  .btn-menu:hover::after {
+    transform: scaleX(1);
+  }
 }
 
 .btn-menu.active,
@@ -239,6 +246,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0 var(--space-5) 0 var(--space-8);
 }
 
 .hamburger-icon {
@@ -251,8 +259,10 @@ a {
   font-size: calc(var(--font-size-menu) * 1.3);
 }
 
-.btn-menu.btn-mail:hover {
-  color: var(--color-text-secondary);
+@media (hover: hover) {
+  .btn-menu.btn-mail:hover {
+    color: var(--color-text-secondary);
+  }
 }
 
 /* Spacer below fixed menu */
@@ -666,6 +676,21 @@ a {
   cursor: not-allowed;
 }
 
+.btn-reset-config {
+  background: none;
+  border: 1px solid var(--color-text-muted);
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+}
+
+.btn-reset-confirm {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
 /* ============================================================
    Loading Spinner
    ============================================================ */
@@ -1000,6 +1025,7 @@ a {
 .side-panel-footer {
   border-top: 1px solid var(--color-bg-surface);
   padding: var(--space-2);
+  padding-bottom: env(safe-area-inset-bottom, var(--space-4));
 }
 
 .side-panel-link {
@@ -1556,6 +1582,8 @@ a {
   line-height: var(--line-height-relaxed);
   word-wrap: break-word;
   overflow-wrap: break-word;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .node-content a {
@@ -1754,6 +1782,8 @@ a {
 .comment-body {
   padding: var(--space-1) var(--space-2);
   border-left: 2px solid var(--color-phosphor-dim);
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .comment-avatar {
@@ -2008,11 +2038,12 @@ a {
 .k-tabs {
   display: flex;
   gap: 0;
+  margin-top: calc(-1 * var(--space-1));
   margin-bottom: var(--space-2);
 }
 
 .k-tab {
-  padding: var(--space-1) var(--space-4);
+  padding: var(--space-2) var(--space-5);
   background: none;
   border: none;
   color: var(--color-text-muted);
@@ -2326,10 +2357,29 @@ a {
   font-size: var(--font-size-xs);
 }
 
-/* Disable all hover effects on touch-only devices */
-@media (hover: none) {
-  #root *:hover {
-    background-color: inherit !important;
-    color: inherit !important;
-  }
+/* ============================================================
+   Pull to Refresh
+   ============================================================ */
+#pull-refresh-indicator {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  height: 0;
 }
+
+#pull-refresh-indicator.pulling {
+  /* height set inline via JS, no transition for direct tracking */
+}
+
+#pull-refresh-indicator.refreshing {
+  height: 48px;
+  transition: height var(--transition-normal);
+}
+
+.pull-text {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+

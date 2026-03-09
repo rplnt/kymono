@@ -1,7 +1,12 @@
+import { useState } from 'react'
 import type { SettingTemplate, SettingOption, ConfigJson } from '@/types'
 import { useConfig } from '@/contexts'
-import { CONFIG_PATHS } from '@/config'
+import { CONFIG_PATHS, CONFIG_DEFAULTS, DEFAULT_MODULE_ORDER } from '@/config'
 import { useTitle } from '@/utils/useTitle'
+
+function d(path: string): number | string | boolean | string[] {
+  return CONFIG_DEFAULTS[path] as number | string | boolean | string[]
+}
 
 const settingsConfig: ConfigJson = {
   version: 1,
@@ -26,25 +31,31 @@ const settingsConfig: ConfigJson = {
           name: 'fullTimestamps',
           description: 'Display full timestamps',
           type: 'boolean',
-          value: true,
+          value: d(CONFIG_PATHS.FULL_TIMESTAMPS),
         },
         {
           name: 'commentToolbar',
           description: 'Show prev/next navigation between sibling nodes',
           type: 'boolean',
-          value: true,
+          value: d(CONFIG_PATHS.COMMENT_TOOLBAR),
         },
         {
           name: 'responsiveYoutube',
           description: 'Resize YouTube embeds to fit screen width',
           type: 'boolean',
-          value: true,
+          value: d(CONFIG_PATHS.RESPONSIVE_YOUTUBE),
         },
         {
           name: 'responsiveImages',
           description: 'Resize images to fit screen width',
           type: 'boolean',
-          value: true,
+          value: d(CONFIG_PATHS.RESPONSIVE_IMAGES),
+        },
+        {
+          name: 'pullToRefresh',
+          description: 'Pull to refresh on touch devices',
+          type: 'boolean',
+          value: d(CONFIG_PATHS.PULL_TO_REFRESH),
         },
       ],
     },
@@ -56,56 +67,49 @@ const settingsConfig: ConfigJson = {
           name: 'quickBookmarksEnabled',
           description: 'Enable Quick Bookmarks module',
           type: 'boolean',
-          value: true,
+          value: d(CONFIG_PATHS.QUICK_BOOKMARKS_ENABLED),
         },
         {
           name: 'mpnEnabled',
           description: 'Enable Most Populated Nodes module',
           type: 'boolean',
-          value: true,
+          value: d(CONFIG_PATHS.MPN_ENABLED),
         },
         {
           name: 'friendsSubmissionsEnabled',
           description: "Enable Friends' Submissions module",
           type: 'boolean',
-          value: true,
+          value: d(CONFIG_PATHS.FRIENDS_SUBMISSIONS_ENABLED),
         },
         {
           name: 'latestSubmissionsEnabled',
           description: 'Enable Latest Submissions module',
           type: 'boolean',
-          value: false,
+          value: d(CONFIG_PATHS.LATEST_SUBMISSIONS_ENABLED),
         },
         {
           name: 'hotNodesEnabled',
           description: 'Enable Hot Nodes module',
           type: 'boolean',
-          value: true,
+          value: d(CONFIG_PATHS.HOT_NODES_ENABLED),
         },
         {
           name: 'freshKEnabled',
           description: 'Enable Fresh K module (recent karma)',
           type: 'boolean',
-          value: false,
+          value: d(CONFIG_PATHS.FRESH_K_ENABLED),
         },
         {
           name: 'twoColumnLayout',
           description: 'Two-column layout on desktop',
           type: 'boolean',
-          value: true,
+          value: d(CONFIG_PATHS.TWO_COLUMN_LAYOUT),
         },
         {
           name: 'moduleOrder',
           description: 'Module display order',
           type: 'moduleOrder',
-          value: [
-            'mpn',
-            'quickBookmarks',
-            'friendsSubmissions',
-            'hotNodes',
-            'latestSubmissions',
-            'freshK',
-          ],
+          value: DEFAULT_MODULE_ORDER,
         },
       ],
     },
@@ -117,7 +121,7 @@ const settingsConfig: ConfigJson = {
           name: 'includeDescendants',
           description: 'NEW filter will also show nodes with new descendants',
           type: 'boolean',
-          value: true,
+          value: d(CONFIG_PATHS.INCLUDE_DESCENDANTS),
         },
       ],
     },
@@ -129,13 +133,13 @@ const settingsConfig: ConfigJson = {
           name: 'progressiveDisplay',
           description: 'Progressive load (display items in batches)',
           type: 'boolean',
-          value: true,
+          value: d(CONFIG_PATHS.K_PROGRESSIVE_DISPLAY),
         },
         {
           name: 'autoLoadOnScroll',
           description: 'Auto-load next item on scroll to bottom',
           type: 'boolean',
-          value: true,
+          value: d(CONFIG_PATHS.K_AUTO_LOAD_SCROLL),
         },
       ],
     },
@@ -147,13 +151,19 @@ const settingsConfig: ConfigJson = {
           name: 'progressiveComments',
           description: 'Progressive load (display comment groups in batches)',
           type: 'boolean',
-          value: true,
+          value: d(CONFIG_PATHS.NODE_PROGRESSIVE_COMMENTS),
         },
         {
           name: 'autoLoadCommentsOnScroll',
           description: 'Auto-load next group on scroll to bottom',
           type: 'boolean',
-          value: true,
+          value: d(CONFIG_PATHS.NODE_AUTO_LOAD_COMMENTS_SCROLL),
+        },
+        {
+          name: 'hideTopic',
+          description: 'Hide topic by default (forums & nodeshells)',
+          type: 'boolean',
+          value: d(CONFIG_PATHS.NODE_HIDE_TOPIC),
         },
       ],
     },
@@ -354,6 +364,28 @@ function SettingSection({ section }: SettingSectionProps) {
   )
 }
 
+function ResetConfigButton() {
+  const { resetConfig } = useConfig()
+  const [confirming, setConfirming] = useState(false)
+
+  return (
+    <button
+      className={`btn-reset-config ${confirming ? 'btn-reset-confirm' : ''}`}
+      onClick={() => {
+        if (confirming) {
+          resetConfig()
+          setConfirming(false)
+        } else {
+          setConfirming(true)
+        }
+      }}
+      onBlur={() => setConfirming(false)}
+    >
+      {confirming ? 'confirm reset' : 'reset config'}
+    </button>
+  )
+}
+
 export function Settings() {
   useTitle('Settings')
   return (
@@ -361,6 +393,9 @@ export function Settings() {
       {settingsConfig.template.map((section) => (
         <SettingSection key={section.name} section={section} />
       ))}
+      <div className="setting-section">
+        <ResetConfigButton />
+      </div>
     </div>
   )
 }

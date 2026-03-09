@@ -64,7 +64,7 @@ export function HotNodes() {
     }
 
     return Array.from(grouped.values())
-      .filter((node) => node.count > MIN_SUBMISSIONS)
+      .filter((node) => node.count > MIN_SUBMISSIONS && node.parentId !== '123456')
       .sort((a, b) => b.count - a.count || (b.latestCreatedAt > a.latestCreatedAt ? 1 : -1))
       .slice(0, MAX_DISPLAY)
   }, [submissions])

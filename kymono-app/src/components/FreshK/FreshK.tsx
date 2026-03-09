@@ -108,7 +108,7 @@ export function FreshK() {
                   {plainContent.endsWith('...') && <span className="fs-truncated">[...]</span>}
                 </>
               ) : (
-                <span className="fs-content-empty">¯\_(ツ)_/¯</span>
+                <span className="fs-content-empty">...</span>
               )}
             </div>
           </div>

@@ -5,6 +5,7 @@ import { TIME_RANGES, CONFIG_PATHS } from '@/config'
 import { fetchBookmarksData, buildSearchIndex, searchIndex, minutesSince } from '@/utils'
 import { useConfigValue } from '@/contexts'
 import { useTitle } from '@/utils/useTitle'
+import { usePullToRefresh } from '@/utils/usePullToRefresh'
 
 const STORAGE_KEY = 'kymono.bookmarks.filters'
 
@@ -74,6 +75,8 @@ export function Bookmarks() {
     }
   }, [])
 
+  usePullToRefresh(() => loadData(true))
+
   useEffect(() => {
     loadData()
   }, [loadData])
@@ -88,10 +91,12 @@ export function Bookmarks() {
         return searchIds.includes(bookmark.id)
       }
 
-      // Check time range
-      const minutesAgo = minutesSince(bookmark.visitedAt)
-      if (minutesAgo > currentTimeRange.minutes) {
-        return false
+      // Check time range (0 = ALL, no filtering)
+      if (currentTimeRange.minutes > 0) {
+        const minutesAgo = minutesSince(bookmark.visitedAt)
+        if (minutesAgo > currentTimeRange.minutes) {
+          return false
+        }
       }
 
       // Check NEW filter

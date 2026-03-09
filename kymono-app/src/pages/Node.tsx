@@ -39,7 +39,7 @@ function Timestamp({
   return (
     <span className="comment-date comment-date-clickable" onClick={cycle}>
       {showFull ? formatDate(date) : formatRelativeDate(createdAt)}
-      {updatedAt && <span className="comment-date-edited">*</span>}
+      {updatedAt && <span className={showEdited ? 'comment-date-edited' : undefined}>*</span>}
     </span>
   )
 }
@@ -89,13 +89,11 @@ export function Node() {
   const [modalUrl, setModalUrl] = useState('')
   const [modalTitle, setModalTitle] = useState('')
   const [modalWidth, setModalWidth] = useState('')
-  const [showCommentToolbar] = useConfigValue(CONFIG_PATHS.COMMENT_TOOLBAR, true)
-  const [fullTimestamps] = useConfigValue(CONFIG_PATHS.FULL_TIMESTAMPS, true)
-  const [progressiveComments] = useConfigValue(CONFIG_PATHS.NODE_PROGRESSIVE_COMMENTS, true)
-  const [autoLoadCommentsOnScroll] = useConfigValue(
-    CONFIG_PATHS.NODE_AUTO_LOAD_COMMENTS_SCROLL,
-    true
-  )
+  const [showCommentToolbar] = useConfigValue<boolean>(CONFIG_PATHS.COMMENT_TOOLBAR)
+  const [fullTimestamps] = useConfigValue<boolean>(CONFIG_PATHS.FULL_TIMESTAMPS)
+  const [progressiveComments] = useConfigValue<boolean>(CONFIG_PATHS.NODE_PROGRESSIVE_COMMENTS)
+  const [autoLoadCommentsOnScroll] = useConfigValue<boolean>(CONFIG_PATHS.NODE_AUTO_LOAD_COMMENTS_SCROLL)
+  const [hideTopic] = useConfigValue<boolean>(CONFIG_PATHS.NODE_HIDE_TOPIC)
   const [visibleBatches, setVisibleBatches] = useState(1)
   const [childFilter, setChildFilter] = useState('')
   const [nodeKState, setNodeKState] = useState<
@@ -141,7 +139,8 @@ export function Node() {
       setNode(response.node)
       setComments(response.children)
       setCurrentNode(response.node)
-      setContentCollapsed(response.node.templateId === '21')
+      const tid = response.node.templateId
+      setContentCollapsed(tid === '21' || (hideTopic && tid !== '4'))
       setAnticsrf(response.anticsrf)
     } catch (err) {
       console.error('Failed to load node:', err)
@@ -152,6 +151,7 @@ export function Node() {
   }, [nodeId, setCurrentNode])
 
   useEffect(() => {
+    window.scrollTo(0, 0)
     loadData()
   }, [loadData])
 
@@ -163,14 +163,29 @@ export function Node() {
   // Auto-load comments on scroll
   useEffect(() => {
     if (!progressiveComments || !autoLoadCommentsOnScroll || comments.length === 0) return
+    const minDepth = Math.min(...comments.map((c) => c.depth))
+    const topLevelCount = comments.filter((c) => c.depth === minDepth).length
     const onScroll = () => {
       if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
-        setVisibleBatches((prev) => prev + 1)
+        setVisibleBatches((prev) => (prev < topLevelCount ? prev + 1 : prev))
       }
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
-  }, [progressiveComments, autoLoadCommentsOnScroll, comments.length])
+  }, [progressiveComments, autoLoadCommentsOnScroll, comments])
+
+  // Fill screen on initial load when content is short
+  useEffect(() => {
+    if (!progressiveComments || !autoLoadCommentsOnScroll || comments.length === 0) return
+    const minDepth = Math.min(...comments.map((c) => c.depth))
+    const topLevelCount = comments.filter((c) => c.depth === minDepth).length
+    const raf = requestAnimationFrame(() => {
+      if (window.innerHeight >= document.body.offsetHeight - 100) {
+        setVisibleBatches((prev) => (prev < topLevelCount ? prev + 1 : prev))
+      }
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [progressiveComments, autoLoadCommentsOnScroll, comments, visibleBatches])
 
   const handleSubmit = async () => {
     if (submittingRef.current) return
@@ -530,6 +545,8 @@ export function Node() {
             value={replyTitle}
             onChange={(e) => setReplyTitle(e.target.value)}
             disabled={submitting}
+            autoComplete="off"
+            autoCorrect="off"
           />
           <textarea
             ref={textareaRef}
@@ -539,6 +556,8 @@ export function Node() {
             onChange={(e) => setReplyContent(e.target.value)}
             rows={4}
             disabled={submitting}
+            autoComplete="off"
+            autoCorrect="off"
           />
           {replyError && <p className="reply-error">{replyError}</p>}
           <div className="reply-actions">
@@ -594,12 +613,13 @@ export function Node() {
               <div className="insert-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="insert-modal-title">Insert {insertModal}</div>
                 <input
-                  type="text"
+                  type="url"
                   className="insert-modal-input"
                   placeholder="URL"
                   value={modalUrl}
                   onChange={(e) => setModalUrl(e.target.value)}
                   autoFocus
+                  autoComplete="off"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleInsert()
                   }}
@@ -611,6 +631,7 @@ export function Node() {
                     placeholder="Title (optional)"
                     value={modalTitle}
                     onChange={(e) => setModalTitle(e.target.value)}
+                    autoComplete="off"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleInsert()
                     }}
@@ -618,11 +639,12 @@ export function Node() {
                 )}
                 {insertModal === 'image' && (
                   <input
-                    type="text"
+                    type="number"
                     className="insert-modal-input"
                     placeholder="Width (optional, e.g. 300)"
                     value={modalWidth}
                     onChange={(e) => setModalWidth(e.target.value)}
+                    autoComplete="off"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleInsert()
                     }}
@@ -657,11 +679,12 @@ export function Node() {
               return (
                 <>
                   <input
-                    type="text"
+                    type="search"
                     className="child-filter"
                     placeholder="Filter..."
                     value={childFilter}
                     onChange={(e) => setChildFilter(e.target.value)}
+                    autoComplete="off"
                   />
                   {filtered.map((child) => (
                     <div key={child.id} className="node-child-item">
@@ -780,7 +803,7 @@ export function Node() {
                                 {(comment.isNew || comment.isOrphan) && (
                                   <span className="comment-badge comment-new">NEW</span>
                                 )}
-                                {comment.contentChanged && (
+                                {comment.contentChanged && !comment.isNew && !comment.isOrphan && (
                                   <span className="comment-badge comment-changed">changed</span>
                                 )}
                                 {comment.isHardlink && (

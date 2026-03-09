@@ -21,6 +21,7 @@ export interface ConfigContextValue {
   config: KymonoConfig
   getValue: <T>(path: string, defaultValue: T) => T
   setValue: (path: string, value: unknown) => void
+  resetConfig: () => void
 }
 
 export const ConfigContext = createContext<ConfigContextValue | null>(null)

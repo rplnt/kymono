@@ -4,6 +4,7 @@ import type { KItem } from '@/types'
 import { useConfigValue } from '@/contexts'
 import { fetchKData, fetchLastKData, giveKarma, formatDate, formatRelativeDate } from '@/utils'
 import { useTitle } from '@/utils/useTitle'
+import { usePullToRefresh } from '@/utils/usePullToRefresh'
 import { CONFIG_PATHS } from '@/config'
 
 type KTab = 'k' | '1h' | '1d' | '1w'
@@ -58,7 +59,7 @@ function Timestamp({
   return (
     <span className="comment-date comment-date-clickable" onClick={cycle}>
       {showFull ? formatDate(date) : formatRelativeDate(createdAt)}
-      {updatedAt && <span className="comment-date-edited">*</span>}
+      {updatedAt && <span className={showEdited ? 'comment-date-edited' : undefined}>*</span>}
     </span>
   )
 }
@@ -263,6 +264,8 @@ export function K() {
     }
   }, [])
 
+  usePullToRefresh(() => loadData(activeTab, true))
+
   useEffect(() => {
     loadData(activeTab)
   }, [loadData, activeTab])
@@ -275,15 +278,26 @@ export function K() {
 
   // Auto-load on scroll
   useEffect(() => {
-    if (!progressiveDisplay || !autoLoadOnScroll) return
+    if (!progressiveDisplay || !autoLoadOnScroll || items.length === 0) return
     const onScroll = () => {
       if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
-        setVisibleCount((prev) => prev + 1)
+        setVisibleCount((prev) => (prev < items.length ? prev + 1 : prev))
       }
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
-  }, [progressiveDisplay, autoLoadOnScroll])
+  }, [progressiveDisplay, autoLoadOnScroll, items.length])
+
+  // Fill screen on initial load when content is short
+  useEffect(() => {
+    if (!progressiveDisplay || !autoLoadOnScroll || items.length === 0) return
+    const raf = requestAnimationFrame(() => {
+      if (window.innerHeight >= document.body.offsetHeight - 100) {
+        setVisibleCount((prev) => (prev < items.length ? prev + 1 : prev))
+      }
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [progressiveDisplay, autoLoadOnScroll, items.length, visibleCount])
 
   const handleTabChange = (tab: KTab) => {
     if (tab === activeTab) return

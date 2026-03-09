@@ -34,7 +34,8 @@ export const TIME_RANGES: TimeRange[] = [
   { label: '24H', minutes: 24 * 60 },
   { label: '1W', minutes: 7 * 24 * 60 },
   { label: '1M', minutes: 30 * 24 * 60 },
-  { label: '23Y', minutes: 23 * 365 * 24 * 60 },
+  { label: '1Y', minutes: 365 * 24 * 60 },
+  { label: 'ALL', minutes: 0 },
 ]
 
 // Config paths for getConfigValue/setConfigValue
@@ -53,6 +54,7 @@ export const CONFIG_PATHS = {
   K_AUTO_LOAD_SCROLL: 'k.autoLoadOnScroll',
   NODE_PROGRESSIVE_COMMENTS: 'node.progressiveComments',
   NODE_AUTO_LOAD_COMMENTS_SCROLL: 'node.autoLoadCommentsOnScroll',
+  NODE_HIDE_TOPIC: 'node.hideTopic',
   FRIENDS_SUBMISSIONS_ENABLED: 'home.friendsSubmissionsEnabled',
   FRIENDS_SUBMISSIONS_ORDER: 'home.friendsSubmissionsOrder',
   LATEST_SUBMISSIONS_ENABLED: 'home.latestSubmissionsEnabled',
@@ -64,4 +66,39 @@ export const CONFIG_PATHS = {
   FRESH_K_ENABLED: 'home.freshKEnabled',
   FRESH_K_ORDER: 'home.freshKOrder',
   TWO_COLUMN_LAYOUT: 'home.twoColumnLayout',
+  PULL_TO_REFRESH: 'global.pullToRefresh',
 } as const
+
+// Default module order (single source of truth)
+export const DEFAULT_MODULE_ORDER: string[] = [
+  'mpn',
+  'quickBookmarks',
+  'friendsSubmissions',
+  'hotNodes',
+  'freshK',
+  'latestSubmissions',
+]
+
+// Default values for all config paths (single source of truth)
+export const CONFIG_DEFAULTS: Record<string, unknown> = {
+  [CONFIG_PATHS.FONT_SIZE]: 'M',
+  [CONFIG_PATHS.DEFAULT_SCREEN]: 'H',
+  [CONFIG_PATHS.FULL_TIMESTAMPS]: false,
+  [CONFIG_PATHS.COMMENT_TOOLBAR]: true,
+  [CONFIG_PATHS.RESPONSIVE_YOUTUBE]: true,
+  [CONFIG_PATHS.RESPONSIVE_IMAGES]: true,
+  [CONFIG_PATHS.QUICK_BOOKMARKS_ENABLED]: true,
+  [CONFIG_PATHS.MPN_ENABLED]: true,
+  [CONFIG_PATHS.FRIENDS_SUBMISSIONS_ENABLED]: true,
+  [CONFIG_PATHS.LATEST_SUBMISSIONS_ENABLED]: false,
+  [CONFIG_PATHS.HOT_NODES_ENABLED]: true,
+  [CONFIG_PATHS.FRESH_K_ENABLED]: false,
+  [CONFIG_PATHS.TWO_COLUMN_LAYOUT]: true,
+  [CONFIG_PATHS.INCLUDE_DESCENDANTS]: true,
+  [CONFIG_PATHS.K_PROGRESSIVE_DISPLAY]: true,
+  [CONFIG_PATHS.K_AUTO_LOAD_SCROLL]: true,
+  [CONFIG_PATHS.NODE_PROGRESSIVE_COMMENTS]: true,
+  [CONFIG_PATHS.NODE_AUTO_LOAD_COMMENTS_SCROLL]: true,
+  [CONFIG_PATHS.NODE_HIDE_TOPIC]: true,
+  [CONFIG_PATHS.PULL_TO_REFRESH]: false,
+}

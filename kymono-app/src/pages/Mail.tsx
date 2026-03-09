@@ -4,6 +4,7 @@ import type { MailMessage } from '@/types'
 import { useConfigValue } from '@/contexts'
 import { fetchMailData, formatRelativeString, formatDate } from '@/utils'
 import { useTitle } from '@/utils/useTitle'
+import { usePullToRefresh } from '@/utils/usePullToRefresh'
 import { config, CONFIG_PATHS } from '@/config'
 import { ExternalLinkIcon } from '@/components/ExternalLinkIcon'
 
@@ -28,6 +29,8 @@ export function Mail() {
       setLoading(false)
     }
   }, [])
+
+  usePullToRefresh(() => loadData(true))
 
   useEffect(() => {
     loadData()

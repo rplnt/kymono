@@ -89,7 +89,15 @@ export function ConfigProvider({ children }: ConfigProviderProps) {
     })
   }, [])
 
-  const contextValue = useMemo(() => ({ config, getValue, setValue }), [config, getValue, setValue])
+  const resetConfig = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY)
+    setConfig({})
+  }, [])
+
+  const contextValue = useMemo(
+    () => ({ config, getValue, setValue, resetConfig }),
+    [config, getValue, setValue, resetConfig]
+  )
 
   return <ConfigContext.Provider value={contextValue}>{children}</ConfigContext.Provider>
 }
