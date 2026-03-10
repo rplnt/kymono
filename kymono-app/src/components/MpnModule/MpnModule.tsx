@@ -24,7 +24,7 @@ export function MpnModule({ forceRefresh }: { forceRefresh?: boolean }) {
       setNodes(allNodes)
     } catch (err) {
       console.error('Failed to load MPN data:', err)
-      setError('Failed to load data')
+      setError('errorrrr')
     } finally {
       setLoading(false)
     }

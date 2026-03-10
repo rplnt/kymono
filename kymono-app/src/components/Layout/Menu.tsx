@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
+import { config } from '@/config'
 
 interface MenuProps {
   onToggleSidePanel: () => void
@@ -60,6 +61,15 @@ export function Menu({ onToggleSidePanel, onCloseSidePanel, mailCount, repliesCo
         </NavLink>
         {mailCount > 0 && <span className="menu-badge">{mailCount}</span>}
       </div>
+      <a
+        href={`${config.externalBase}${config.base}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="menu-info-link"
+        title="About KyMoNo"
+      >
+        &#9432;
+      </a>
     </nav>
   )
 }

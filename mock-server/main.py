@@ -68,11 +68,11 @@ async def proxy_request(path: str) -> Response:
         )
 
 
-@app.get("/id/8099985/{template_id}")
+@app.get("/id/9301167/{template_id}")
 async def get_base_template(template_id: str, request: Request) -> Response:
     """Serve HTML for base path (bookmarks, MPN)."""
     if PROXY_MODE:
-        return await proxy_request(f"/id/8099985/{template_id}")
+        return await proxy_request(f"/id/9301167/{template_id}")
 
     file_path = HTML_DIR / "base" / f"{template_id}.html"
 
@@ -82,20 +82,20 @@ async def get_base_template(template_id: str, request: Request) -> Response:
     return HTMLResponse(content=file_path.read_text(encoding="utf-8"))
 
 
-@app.post("/id/8099985/{template_id}")
+@app.post("/id/9301167/{template_id}")
 async def post_base_template(template_id: str, request: Request) -> Response:
     """Handle POST to base path (e.g. last-k interval changes)."""
     if PROXY_MODE:
         body = await request.body()
         content_type = request.headers.get("content-type", "")
-        return await proxy_post(f"/id/8099985/{template_id}", body, content_type)
+        return await proxy_post(f"/id/9301167/{template_id}", body, content_type)
 
     # In mock mode, return the same HTML as GET
     file_path = HTML_DIR / "base" / f"{template_id}.html"
     if not file_path.exists():
         raise HTTPException(status_code=404, detail=f"Template {template_id} not found")
 
-    print(f"MOCK POST: /id/8099985/{template_id}")
+    print(f"MOCK POST: /id/9301167/{template_id}")
     return HTMLResponse(content=file_path.read_text(encoding="utf-8"))
 
 

@@ -211,7 +211,7 @@ export function K() {
       setItems(data)
     } catch (err) {
       console.error('Failed to load K data:', err)
-      setError('Failed to load K data')
+      setError(':(')
     } finally {
       setLoading(false)
     }

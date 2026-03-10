@@ -23,7 +23,7 @@ export function FreshK({ forceRefresh }: { forceRefresh?: boolean }) {
       setItems(data)
     } catch (err) {
       console.error('Failed to load fresh K:', err)
-      setError('Failed to load fresh K')
+      setError('nevydalo')
     } finally {
       setLoading(false)
     }

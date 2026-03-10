@@ -2404,6 +2404,20 @@ a {
 }
 
 /* Menu badge */
+.menu-info-link {
+  margin-left: auto;
+  align-self: center;
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  opacity: 0.65;
+}
+
+.menu-info-link:hover {
+  opacity: 0.9;
+}
+
 .menu-item-mail,
 .menu-item-sidebar {
   position: relative;

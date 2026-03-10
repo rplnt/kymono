@@ -47,7 +47,7 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
       setLastLoadedAt(timestamp)
     } catch (err) {
       console.error('Failed to load sidebar:', err)
-      setError('Failed to load sidebar')
+      setError('nincsen')
     } finally {
       setLoading(false)
     }

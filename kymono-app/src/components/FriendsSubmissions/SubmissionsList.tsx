@@ -45,7 +45,7 @@ export function SubmissionsList({
       setVisibleCount(ITEMS_PER_PAGE)
     } catch (err) {
       console.error('Failed to load submissions:', err)
-      setError('Failed to load data')
+      setError('nepodarilo sa')
     } finally {
       setLoading(false)
     }

@@ -107,7 +107,7 @@ async function cachedFetch<TRaw, TResult>(
   }
   const doFetch = async () => {
     const response = await fetchWithTimeout(url)
-    if (!response.ok) throw new Error(`nevydalo: ${response.status}`)
+    if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`)
     const html = await response.text()
     const data = extractJson<TRaw>(html, jsonId)
     if (!data) throw new Error(`Failed to parse ${cacheKey} data`)
@@ -138,7 +138,7 @@ export async function fetchSidebarData(force = false): Promise<SidebarData> {
     const url = `${config.apiBase}${config.base}${config.templates.sidebar}`
     const response = await fetchWithTimeout(url)
     if (!response.ok) {
-      throw new Error(`nevydalo: ${response.status}`)
+      throw new Error(`Failed to fetch sidebar: ${response.status}`)
     }
     const html = await response.text()
 
@@ -192,7 +192,7 @@ export async function fetchNodeData(nodeId: string, templateId?: string): Promis
 
     const response = await fetchWithTimeout(url)
     if (!response.ok) {
-      throw new Error(`nodu ${nodeId} nevydalo: ${response.status}`)
+      throw new Error(`Failed to fetch node ${nodeId}: ${response.status}`)
     }
 
     const html = await response.text()
@@ -256,7 +256,7 @@ export async function fetchLastKData(
       response = await fetchWithTimeout(url, { method: 'POST', body: formData })
     }
     if (!response.ok) {
-      throw new Error(`nevydalo: ${response.status}`)
+      throw new Error(`Failed to fetch last K data: ${response.status}`)
     }
     const html = await response.text()
     const data = extractJson<RawLastKItem[]>(html, 'kymono.lastk')

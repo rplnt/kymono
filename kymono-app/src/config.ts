@@ -8,7 +8,7 @@ const apiBase = isLocalhost ? 'http://localhost:8099' : ''
 const externalBase = isLocalhost ? 'https://kyberia.sk' : ''
 
 export const config = {
-  base: '/id/8099985/',
+  base: '/id/9301167/',
   name: 'KyMoNo',
   version: 'v2.0.1',
   configUrl: 'https://cdn.jsdelivr.net/gh/rplnt/kymono@master/config.json',
@@ -42,7 +42,7 @@ export const config = {
     '8894278',
     '5286347',
     '8340566',
-    '8099985',
+    '9301167',
   ]),
 }
 

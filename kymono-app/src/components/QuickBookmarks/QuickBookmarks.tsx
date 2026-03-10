@@ -23,7 +23,7 @@ export function QuickBookmarks({ forceRefresh }: { forceRefresh?: boolean }) {
       setCategories(data)
     } catch (err) {
       console.error('Failed to load bookmarks:', err)
-      setError('Failed to load bookmarks')
+      setError('data nevydalo')
     } finally {
       setLoading(false)
     }

@@ -31,7 +31,7 @@ export function HotNodes({ forceRefresh }: { forceRefresh?: boolean }) {
       setSubmissions(data)
     } catch (err) {
       console.error('Failed to load hot nodes:', err)
-      setError('Failed to load hot nodes')
+      setError('fial')
     } finally {
       setLoading(false)
     }
