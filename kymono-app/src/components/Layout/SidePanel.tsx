@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useCurrentNode } from '@/contexts'
+import { config } from '@/config'
 import { FriendsOnline } from '@/components/FriendsOnline'
 import { LatestReplies } from '@/components/LatestReplies'
-import { fetchSidebarData, toggleBookmark } from '@/utils'
+import { fetchSidebarData, toggleBookmark, getRequestCount } from '@/utils'
 import type { OnlineFriend, LatestReply } from '@/types'
 
 import { SIDEBAR_LOADED_KEY as LAST_LOADED_KEY } from '@/utils/configStorage'
@@ -258,6 +259,7 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
           <NavLink to="/settings" className="side-panel-link" onClick={onClose}>
             &#9881; Settings
           </NavLink>
+          <div className="side-panel-version">{config.version} | {getRequestCount()} req</div>
         </div>
       </aside>
     </>

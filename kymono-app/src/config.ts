@@ -97,7 +97,7 @@ export const DEFAULT_MODULE_ORDER: string[] = [
 
 // Default values for all config paths (single source of truth)
 export const CONFIG_DEFAULTS: Record<string, unknown> = {
-  [CONFIG_PATHS.FONT_SIZE]: 'M',
+  [CONFIG_PATHS.FONT_SIZE]: 'S',
   [CONFIG_PATHS.DEFAULT_SCREEN]: 'H',
   [CONFIG_PATHS.FULL_TIMESTAMPS]: false,
   [CONFIG_PATHS.COMMENT_TOOLBAR]: true,

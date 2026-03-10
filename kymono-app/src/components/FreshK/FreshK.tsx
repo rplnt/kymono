@@ -13,7 +13,7 @@ export function FreshK({ forceRefresh }: { forceRefresh?: boolean }) {
   const [items, setItems] = useState<KItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [enabled] = useConfigValue(CONFIG_PATHS.FRESH_K_ENABLED, false)
+  const [enabled] = useConfigValue(CONFIG_PATHS.FRESH_K_ENABLED)
 
   const loadData = useCallback(async (force = false) => {
     setLoading(true)

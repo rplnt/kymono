@@ -13,7 +13,7 @@ export function QuickBookmarks({ forceRefresh }: { forceRefresh?: boolean }) {
   const [categories, setCategories] = useState<BookmarkCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [enabled] = useConfigValue(CONFIG_PATHS.QUICK_BOOKMARKS_ENABLED, true)
+  const [enabled] = useConfigValue(CONFIG_PATHS.QUICK_BOOKMARKS_ENABLED)
 
   const loadData = useCallback(async (force = false) => {
     setLoading(true)

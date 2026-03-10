@@ -21,7 +21,7 @@ export function HotNodes({ forceRefresh }: { forceRefresh?: boolean }) {
   const [submissions, setSubmissions] = useState<FriendSubmission[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [enabled] = useConfigValue(CONFIG_PATHS.HOT_NODES_ENABLED, true)
+  const [enabled] = useConfigValue(CONFIG_PATHS.HOT_NODES_ENABLED)
 
   const loadData = useCallback(async (force = false) => {
     setLoading(true)

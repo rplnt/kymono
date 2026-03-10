@@ -5,7 +5,7 @@ import { CONFIG_PATHS } from '@/config'
 type State = 'idle' | 'pulling' | 'refreshing'
 
 export function usePullToRefresh(onRefresh?: () => Promise<void> | void): void {
-  const [enabled] = useConfigValue(CONFIG_PATHS.PULL_TO_REFRESH, false)
+  const [enabled] = useConfigValue(CONFIG_PATHS.PULL_TO_REFRESH)
   const callbackRef = useRef(onRefresh)
   useEffect(() => {
     callbackRef.current = onRefresh

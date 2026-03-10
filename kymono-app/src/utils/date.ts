@@ -51,12 +51,12 @@ export function formatRelativeDate(date: Date): string {
   const years = Math.floor(days / 365)
 
   if (minutes < 1) return 'now'
-  if (minutes < 60) return `${minutes}m ago`
-  if (hours < 24) return `${hours}h ago`
-  if (days < 7) return `${days}d ago`
-  if (weeks < 5) return `${weeks}w ago`
-  if (months < 12) return `${months}mo ago`
-  return `${years}y ago`
+  if (minutes < 60) return `${minutes}m`
+  if (hours < 24) return `${hours}h`
+  if (days < 7) return `${days}d`
+  if (weeks < 5) return `${weeks}w`
+  if (months < 12) return `${months}mo`
+  return `${years}y`
 }
 
 /**

@@ -14,7 +14,7 @@ export function MpnModule({ forceRefresh }: { forceRefresh?: boolean }) {
   const [nodes, setNodes] = useState<MpnNode[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [enabled] = useConfigValue(CONFIG_PATHS.MPN_ENABLED, true)
+  const [enabled] = useConfigValue(CONFIG_PATHS.MPN_ENABLED)
 
   const loadData = useCallback(async (force = false) => {
     setLoading(true)

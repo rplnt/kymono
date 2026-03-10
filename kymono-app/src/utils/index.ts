@@ -18,6 +18,7 @@ export {
   giveKarma,
   toggleBookmark,
   getUserIdFromDom,
+  getRequestCount,
   stripHtml,
 } from './api'
 export { startMailChecker } from './mailChecker'

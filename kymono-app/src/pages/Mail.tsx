@@ -84,6 +84,16 @@ export function Mail() {
     loadData()
   }, [loadData])
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent).detail === '/mail') {
+        setSelectedConversation(null)
+      }
+    }
+    window.addEventListener('menu-nav-reset', handler)
+    return () => window.removeEventListener('menu-nav-reset', handler)
+  }, [])
+
   const conversations = useMemo(() => groupIntoConversations(messages, userId), [messages, userId])
 
   const activeConversation = useMemo(
@@ -136,13 +146,13 @@ export function Mail() {
       <div className="mail-view">
         <div className="mail-header">
           <a
-            href={`${config.externalBase}/id/21`}
+            href={`${config.externalBase}/id/24`}
             target="_blank"
             rel="noopener noreferrer"
             className="mail-header-link"
             title="Open mail on kyberia"
           >
-            visit /id/21 <ExternalLinkIcon />
+            visit /id/24 <ExternalLinkIcon />
           </a>
           <button className="mail-reload" onClick={() => loadData(true)} title="Reload">
             ↻
@@ -208,8 +218,8 @@ export function Mail() {
           ))}
         </div>
         <div className="mail-more">
-          <a href={`${config.externalBase}/id/21`} target="_blank" rel="noopener noreferrer">
-            more in /id/21
+          <a href={`${config.externalBase}/id/24`} target="_blank" rel="noopener noreferrer">
+            more in /id/24
           </a>
         </div>
       </div>
@@ -221,13 +231,13 @@ export function Mail() {
     <div className="mail-view">
       <div className="mail-header">
         <a
-          href={`${config.externalBase}/id/21`}
+          href={`${config.externalBase}/id/24`}
           target="_blank"
           rel="noopener noreferrer"
           className="mail-header-link"
           title="Open mail on kyberia"
         >
-          visit /id/21 <ExternalLinkIcon />
+          visit /id/24 <ExternalLinkIcon />
         </a>
         <button className="mail-reload" onClick={() => loadData(true)} title="Reload">
           ↻
@@ -265,8 +275,8 @@ export function Mail() {
         ))}
       </div>
       <div className="mail-more">
-        <a href={`${config.externalBase}/id/21`} target="_blank" rel="noopener noreferrer">
-          more in /id/21
+        <a href={`${config.externalBase}/id/24`} target="_blank" rel="noopener noreferrer">
+          more in /id/24
         </a>
       </div>
     </div>

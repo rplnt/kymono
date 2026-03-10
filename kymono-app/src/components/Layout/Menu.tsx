@@ -18,6 +18,7 @@ export function Menu({ onToggleSidePanel, onCloseSidePanel, mailCount, repliesCo
     if (location.pathname === to) {
       e.preventDefault()
       window.scrollTo({ top: 0, behavior: 'smooth' })
+      window.dispatchEvent(new CustomEvent('menu-nav-reset', { detail: to }))
     }
   }
   return (

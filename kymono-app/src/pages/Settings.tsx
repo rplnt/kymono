@@ -251,7 +251,7 @@ interface SettingControlProps {
 function SettingControl({ category, option }: SettingControlProps) {
   const { getValue, setValue: setConfigValue } = useConfig()
   const path = `${category}.${option.name}`
-  const defaultValue = option.type === 'enum' ? (option.value as string[])[0] : option.value
+  const defaultValue = CONFIG_DEFAULTS[path] ?? (option.type === 'enum' ? (option.value as string[])[0] : option.value)
   const value = getValue(path, defaultValue as SettingValue)
 
   const handleChange = (newValue: SettingValue) => {

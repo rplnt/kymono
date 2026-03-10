@@ -42,7 +42,7 @@ function saveFilters(filters: BookmarkFilters): void {
 export function Bookmarks() {
   useTitle('Bookmarks')
   const navigate = useNavigate()
-  const [includeDescendants] = useConfigValue(CONFIG_PATHS.INCLUDE_DESCENDANTS, true)
+  const [includeDescendants] = useConfigValue(CONFIG_PATHS.INCLUDE_DESCENDANTS)
   const [categories, setCategories] = useState<BookmarkCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

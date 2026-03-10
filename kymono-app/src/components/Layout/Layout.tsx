@@ -12,9 +12,9 @@ export function Layout() {
   const [repliesCount, setRepliesCount] = useState(0)
 
   // Get font size from config - reactively updates when changed in settings
-  const [fontSizeValue] = useConfigValue<string>(CONFIG_PATHS.FONT_SIZE, 'M')
-  const [responsiveYoutube] = useConfigValue<boolean>(CONFIG_PATHS.RESPONSIVE_YOUTUBE, true)
-  const [responsiveImages] = useConfigValue<boolean>(CONFIG_PATHS.RESPONSIVE_IMAGES, true)
+  const [fontSizeValue] = useConfigValue<string>(CONFIG_PATHS.FONT_SIZE)
+  const [responsiveYoutube] = useConfigValue<boolean>(CONFIG_PATHS.RESPONSIVE_YOUTUBE)
+  const [responsiveImages] = useConfigValue<boolean>(CONFIG_PATHS.RESPONSIVE_IMAGES)
 
   const toggleSidePanel = useCallback(() => {
     setSidePanelOpen((prev) => {

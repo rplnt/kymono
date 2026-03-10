@@ -33,7 +33,13 @@ export { stripHtml } from './html'
 
 const FETCH_TIMEOUT_MS = 30_000
 
+let requestCount = 0
+export function getRequestCount(): number {
+  return requestCount
+}
+
 function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  requestCount++
   return fetch(input, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS), ...init })
 }
 

@@ -189,10 +189,10 @@ export function K() {
   const [error, setError] = useState<string | null>(null)
   const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<KTab>('k')
-  const [showCommentToolbar] = useConfigValue(CONFIG_PATHS.COMMENT_TOOLBAR, true)
+  const [showCommentToolbar] = useConfigValue(CONFIG_PATHS.COMMENT_TOOLBAR)
   const [fullTimestamps] = useConfigValue<boolean>(CONFIG_PATHS.FULL_TIMESTAMPS)
-  const [progressiveDisplay] = useConfigValue(CONFIG_PATHS.K_PROGRESSIVE_DISPLAY, true)
-  const [autoLoadOnScroll] = useConfigValue(CONFIG_PATHS.K_AUTO_LOAD_SCROLL, true)
+  const [progressiveDisplay] = useConfigValue(CONFIG_PATHS.K_PROGRESSIVE_DISPLAY)
+  const [autoLoadOnScroll] = useConfigValue(CONFIG_PATHS.K_AUTO_LOAD_SCROLL)
   const [visibleCount, setVisibleCount] = useState(4)
   const [kStates, setKStates] = useState<
     Map<string, 'idle' | 'sending' | 'ok' | 'error' | 'nehul' | 'neda-sa'>
