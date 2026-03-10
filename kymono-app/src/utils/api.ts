@@ -45,15 +45,25 @@ function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise
 
 const CACHE_TTL_MS = 60_000
 
+type CacheKey =
+  | 'mpn'
+  | 'sidebar'
+  | 'bookmarks'
+  | 'k'
+  | 'friendsSubmissions'
+  | 'mail'
+  | `lastk-${'1h' | '1d' | '1w'}`
+type InflightKey = CacheKey | `node-${string}`
+
 interface CacheEntry<T> {
   data: T
   fetchedAt: number
 }
 
-const cache = new Map<string, CacheEntry<unknown>>()
-const inflight = new Map<string, Promise<unknown>>()
+const cache = new Map<CacheKey, CacheEntry<unknown>>()
+const inflight = new Map<InflightKey, Promise<unknown>>()
 
-function getCached<T>(key: string): T | null {
+function getCached<T>(key: CacheKey): T | null {
   const entry = cache.get(key)
   if (entry && Date.now() - entry.fetchedAt < CACHE_TTL_MS) {
     return entry.data as T
@@ -61,11 +71,11 @@ function getCached<T>(key: string): T | null {
   return null
 }
 
-function setCache<T>(key: string, data: T): void {
+function setCache<T>(key: CacheKey, data: T): void {
   cache.set(key, { data, fetchedAt: Date.now() })
 }
 
-function dedupedFetch<T>(key: string, fn: () => Promise<T>): Promise<T> {
+function dedupedFetch<T>(key: InflightKey, fn: () => Promise<T>): Promise<T> {
   const existing = inflight.get(key)
   if (existing) return existing as Promise<T>
   const promise = fn().finally(() => inflight.delete(key))
@@ -85,7 +95,7 @@ function extractJson<T>(html: string, id: string): T | null {
 }
 
 async function cachedFetch<TRaw, TResult>(
-  cacheKey: string,
+  cacheKey: CacheKey,
   url: string,
   jsonId: string,
   transform: (raw: TRaw) => TResult,
@@ -175,7 +185,7 @@ export function fetchBookmarksData(force = false): Promise<BookmarkCategory[]> {
 }
 
 export async function fetchNodeData(nodeId: string, templateId?: string): Promise<NodeResponse> {
-  const dedupKey = `node-${nodeId}-${templateId || ''}`
+  const dedupKey: InflightKey = `node-${nodeId}-${templateId || ''}`
   const doFetch = async () => {
     const effectiveTemplateId = templateId || config.templates.node
     const url = `${config.apiBase}/id/${nodeId}/${effectiveTemplateId}`
@@ -229,7 +239,7 @@ export async function fetchLastKData(
   interval: '1h' | '1d' | '1w' = '1h',
   force = false
 ): Promise<KItem[]> {
-  const cacheKey = `lastk-${interval}`
+  const cacheKey = `lastk-${interval}` as const
   if (!force) {
     const cached = getCached<KItem[]>(cacheKey)
     if (cached) return cached

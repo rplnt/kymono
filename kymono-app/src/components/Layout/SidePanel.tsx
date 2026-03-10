@@ -259,7 +259,9 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
           <NavLink to="/settings" className="side-panel-link" onClick={onClose}>
             &#9881; Settings
           </NavLink>
-          <div className="side-panel-version">{config.version} | {getRequestCount()} req</div>
+          <div className="side-panel-version">
+            {config.version} | {getRequestCount()} req
+          </div>
         </div>
       </aside>
     </>
