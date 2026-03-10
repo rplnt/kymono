@@ -11,7 +11,7 @@ BUMP="${1:-patch}"
 CONFIG="src/config.ts"
 
 # Extract current semver from config.ts
-CURRENT=$(grep -oP "version: 'v\K[0-9]+\.[0-9]+\.[0-9]+" "$CONFIG")
+CURRENT=$(sed -n "s/.*version: 'v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p" "$CONFIG")
 if [ -z "$CURRENT" ]; then
   echo "Error: could not read version from $CONFIG"
   exit 1
@@ -39,7 +39,7 @@ FULL_VERSION=$(git describe --tags)
 echo "Version: ${FULL_VERSION}"
 
 # Update config.ts
-sed -i "s/version: 'v[^']*'/version: '${FULL_VERSION}'/" "$CONFIG"
+sed -i '' "s/version: 'v[^']*'/version: '${FULL_VERSION}'/" "$CONFIG"
 
 # Build production
 echo "Building production..."
