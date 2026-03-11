@@ -22,8 +22,15 @@ export function getImageUrl(nodeId: string): string {
 export interface RawMpnItem {
   id: string
   name: string
+}
+
+export interface RawPeopleItem extends RawMpnItem {
   userId?: string
   login?: string
+  friend?: boolean
+  idleMinutes?: number
+  idleSeconds?: number
+  creatorImageUrl?: string
 }
 
 export interface RawBookmarkChild {
@@ -179,14 +186,28 @@ export function parseMpnJson(items: RawMpnItem[]): MpnNode[] {
   return Array.from(nodeMap.entries()).map(([id, { name, count }]) => ({ id, name, count }))
 }
 
-export function parsePeopleUsers(items: RawMpnItem[]): Person[] {
-  const seen = new Map<string, string>()
+export function parsePeopleUsers(items: RawPeopleItem[]): Person[] {
+  const seen = new Map<string, Person>()
   for (const item of items) {
-    if (item.userId && item.login && !seen.has(item.userId)) {
-      seen.set(item.userId, item.login)
+    if (item.userId && item.login) {
+      const existing = seen.get(item.userId)
+      if (existing) {
+        if (item.friend) existing.isFriend = true
+      } else {
+        seen.set(item.userId, {
+          userId: item.userId,
+          login: item.login,
+          isFriend: item.friend === true,
+          idleMinutes: item.idleMinutes,
+          idleSeconds: item.idleSeconds,
+          creatorImageUrl: item.creatorImageUrl || getImageUrl(item.userId),
+          locationId: item.id,
+          location: item.name,
+        })
+      }
     }
   }
-  return Array.from(seen.entries()).map(([userId, login]) => ({ userId, login }))
+  return Array.from(seen.values())
 }
 
 export function parseBookmarksJson(categories: RawBookmarkCategory[]): BookmarkCategory[] {

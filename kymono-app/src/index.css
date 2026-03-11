@@ -1276,6 +1276,48 @@ a {
   font-size: var(--font-size-xs);
 }
 
+/* People list (sidebar) */
+.people-section {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-bg-surface);
+}
+
+.people-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.people-title {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.people-toggle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.people-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--space-2);
+  line-height: var(--line-height-relaxed);
+}
+
+.people-name {
+  color: var(--color-text-primary);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+}
+
+.people-name:hover {
+  color: var(--color-text-secondary);
+}
+
 /* ============================================================
    Latest Replies (Side Panel)
    ============================================================ */
@@ -2641,4 +2683,8 @@ a {
 .pull-text {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+.hide-mood small.mood {
+  display: none;
 }

@@ -128,13 +128,19 @@ async def post_node_with_template(node_id: str, template_id: str, request: Reque
 @app.post("/id/{node_id}/")
 @app.post("/id/{node_id}")
 async def post_node(node_id: str, request: Request) -> Response:
-    """Handle POST to node (comment submission)."""
+    """Handle POST to node (comment submission, mail send)."""
     if PROXY_MODE:
         body = await request.body()
         content_type = request.headers.get("content-type", "")
         return await proxy_post(f"/id/{node_id}", body, content_type)
 
     body = await request.body()
+
+    # Mail send (node 24)
+    if node_id == "24" and b"event" in body and b"send" in body:
+        print(f"MOCK POST: /id/24 (send mail)")
+        return Response(status_code=302, headers={"Location": "/id/24"})
+
     if b"event" in body and b"K" in body:
         print(f"MOCK POST: /id/{node_id} (give K)")
         r = random.random()

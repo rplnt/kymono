@@ -129,6 +129,12 @@ const settingsConfig: ConfigJson = {
           type: 'boolean',
           value: d(CONFIG_PATHS.NODE_HIDE_TOPIC),
         },
+        {
+          name: 'hideMood',
+          description: 'Hide mood text in user signatures',
+          type: 'boolean',
+          value: d(CONFIG_PATHS.NODE_HIDE_MOOD),
+        },
       ],
     },
   ],

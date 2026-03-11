@@ -44,16 +44,12 @@ export interface MpnNode {
 export interface Person {
   userId: string
   login: string
-}
-
-export interface OnlineFriend {
-  userId: string
-  login: string
-  creatorImageUrl: string
-  locationId: string
-  location: string
-  idleMinutes: number
-  idleSeconds: number
+  isFriend: boolean
+  idleMinutes?: number
+  idleSeconds?: number
+  creatorImageUrl?: string
+  locationId?: string
+  location?: string
 }
 
 export interface LatestReply {
@@ -66,11 +62,6 @@ export interface LatestReply {
   creatorImageUrl: string
   content: string
   createdAt: string
-}
-
-export interface SidebarData {
-  friends: OnlineFriend[]
-  replies: LatestReply[]
 }
 
 export interface FriendSubmission {

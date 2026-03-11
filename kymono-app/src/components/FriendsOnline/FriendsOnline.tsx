@@ -1,9 +1,9 @@
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { OnlineFriend } from '@/types'
-import { truncate } from '@/utils'
+import type { Person } from '@/types'
+import { fetchPeopleData, truncate } from '@/utils'
 
 interface FriendsOnlineProps {
-  friends: OnlineFriend[]
   onNavigate?: () => void
 }
 
@@ -13,8 +13,27 @@ function formatIdle(minutes: number, seconds: number): string {
   return `${minutes}m`
 }
 
-export function FriendsOnline({ friends, onNavigate: onNav }: FriendsOnlineProps) {
+export function FriendsOnline({ onNavigate: onNav }: FriendsOnlineProps) {
   const navigate = useNavigate()
+  const [people, setPeople] = useState<Person[]>([])
+
+  useEffect(() => {
+    fetchPeopleData()
+      .then(setPeople)
+      .catch(() => {})
+  }, [])
+
+  const friends = useMemo(
+    () =>
+      people
+        .filter((p) => p.isFriend)
+        .sort((a, b) => {
+          const idleA = (a.idleMinutes ?? 0) * 60 + (a.idleSeconds ?? 0)
+          const idleB = (b.idleMinutes ?? 0) * 60 + (b.idleSeconds ?? 0)
+          return idleA - idleB
+        }),
+    [people]
+  )
 
   if (friends.length === 0) return null
 
@@ -28,7 +47,7 @@ export function FriendsOnline({ friends, onNavigate: onNav }: FriendsOnlineProps
         {friends.map((friend) => (
           <div key={friend.userId} className="friend-entry">
             <img
-              src={friend.creatorImageUrl}
+              src={friend.creatorImageUrl || ''}
               alt={friend.login}
               className="friend-icon"
               onError={(e) => {
@@ -48,24 +67,28 @@ export function FriendsOnline({ friends, onNavigate: onNav }: FriendsOnlineProps
                 >
                   {friend.login}
                 </a>
-                <span className="friend-idle">
-                  {formatIdle(friend.idleMinutes, friend.idleSeconds)}
-                </span>
+                {friend.idleMinutes != null && friend.idleSeconds != null && (
+                  <span className="friend-idle">
+                    {formatIdle(friend.idleMinutes, friend.idleSeconds)}
+                  </span>
+                )}
               </div>
-              <div className="friend-line-2">
-                <a
-                  href={`#/id/${friend.locationId}`}
-                  className="friend-location"
-                  title={friend.location}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    navigate(`/id/${friend.locationId}`)
-                    onNav?.()
-                  }}
-                >
-                  {truncate(friend.location, 25)}
-                </a>
-              </div>
+              {friend.locationId && friend.location && (
+                <div className="friend-line-2">
+                  <a
+                    href={`#/id/${friend.locationId}`}
+                    className="friend-location"
+                    title={friend.location}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      navigate(`/id/${friend.locationId}`)
+                      onNav?.()
+                    }}
+                  >
+                    {truncate(friend.location, 25)}
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         ))}

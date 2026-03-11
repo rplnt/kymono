@@ -15,6 +15,7 @@ export function Layout() {
   const [fontSizeValue] = useConfigValue<string>(CONFIG_PATHS.FONT_SIZE)
   const [responsiveYoutube] = useConfigValue<boolean>(CONFIG_PATHS.RESPONSIVE_YOUTUBE)
   const [responsiveImages] = useConfigValue<boolean>(CONFIG_PATHS.RESPONSIVE_IMAGES)
+  const [hideMood] = useConfigValue<boolean>(CONFIG_PATHS.NODE_HIDE_MOOD)
 
   const toggleSidePanel = useCallback(() => {
     setSidePanelOpen((prev) => !prev)
@@ -55,7 +56,7 @@ export function Layout() {
 
   return (
     <div
-      className={`${responsiveYoutube ? 'responsive-youtube' : ''} ${responsiveImages ? 'responsive-images' : ''}`}
+      className={`${responsiveYoutube ? 'responsive-youtube' : ''} ${responsiveImages ? 'responsive-images' : ''} ${hideMood ? 'hide-mood' : ''}`}
     >
       <Menu
         onToggleSidePanel={toggleSidePanel}
@@ -63,7 +64,11 @@ export function Layout() {
         mailCount={mailCount}
         repliesCount={repliesCount}
       />
-      <SidePanel isOpen={sidePanelOpen} onClose={closeSidePanel} onRepliesShown={() => setRepliesCount(0)} />
+      <SidePanel
+        isOpen={sidePanelOpen}
+        onClose={closeSidePanel}
+        onRepliesShown={() => setRepliesCount(0)}
+      />
       <div className="pad" />
       <main id="app">
         <Outlet />

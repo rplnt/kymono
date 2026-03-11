@@ -8,7 +8,7 @@ export {
 export {
   fetchMpnData,
   fetchPeopleData,
-  fetchSidebarData,
+  fetchRepliesData,
   fetchBookmarksData,
   fetchNodeData,
   fetchKData,

@@ -151,15 +151,19 @@ function NewConversationSearch({
   useEffect(() => {
     let cancelled = false
     setLoadingPeople(true)
-    fetchPeopleData().then((data) => {
-      if (!cancelled) {
-        setPeople(data)
-        setLoadingPeople(false)
-      }
-    }).catch(() => {
-      if (!cancelled) setLoadingPeople(false)
-    })
-    return () => { cancelled = true }
+    fetchPeopleData()
+      .then((data) => {
+        if (!cancelled) {
+          setPeople(data)
+          setLoadingPeople(false)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLoadingPeople(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const suggestions = useMemo(() => {
@@ -229,11 +233,7 @@ function NewConversationSearch({
               className={`new-conv-result${i === 0 ? ' new-conv-result-active' : ''}`}
               onClick={() => onSelect(s.userId)}
             >
-              <img
-                src={getImageUrl(s.userId)}
-                alt=""
-                className="mail-avatar"
-              />
+              <img src={getImageUrl(s.userId)} alt="" className="mail-avatar" />
               <span className="new-conv-result-label">{s.label}</span>
             </div>
           ))}
@@ -477,10 +477,7 @@ export function Mail() {
   return (
     <div className="mail-view">
       <div className="mail-header">
-        <button
-          className="btn btn-new-conv"
-          onClick={() => setShowNewConversation(true)}
-        >
+        <button className="btn btn-new-conv" onClick={() => setShowNewConversation(true)}>
           new mail
         </button>
         <button className="mail-reload" onClick={() => loadData(true)} title="Reload">

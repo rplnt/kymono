@@ -2,9 +2,7 @@ import type {
   BookmarkCategory,
   MpnNode,
   Person,
-  OnlineFriend,
   LatestReply,
-  SidebarData,
   NodeResponse,
   KItem,
   FriendSubmission,
@@ -23,7 +21,7 @@ import {
   parseLastKItem,
 } from './parse'
 import type {
-  RawMpnItem,
+  RawPeopleItem,
   RawNodeResponse,
   RawKItem,
   RawLastKItem,
@@ -50,7 +48,7 @@ const CACHE_TTL_MS = 60_000
 
 type CacheKey =
   | 'people'
-  | 'sidebar'
+  | 'replies'
   | 'bookmarks'
   | 'k'
   | 'friendsSubmissions'
@@ -137,7 +135,7 @@ async function fetchPeopleRaw(force = false): Promise<PeopleData> {
     const response = await fetchWithTimeout(url)
     if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`)
     const html = await response.text()
-    const data = extractJson<RawMpnItem[]>(html, 'kymono.people')
+    const data = extractJson<RawPeopleItem[]>(html, 'kymono.people')
     if (!data) throw new Error('Failed to parse people data')
     const result: PeopleData = { nodes: parseMpnJson(data), users: parsePeopleUsers(data) }
     setCache(cacheKey, result)
@@ -154,32 +152,22 @@ export async function fetchPeopleData(force = false): Promise<Person[]> {
   return (await fetchPeopleRaw(force)).users
 }
 
-export async function fetchSidebarData(force = false): Promise<SidebarData> {
-  const cacheKey = 'sidebar'
+export async function fetchRepliesData(force = false): Promise<LatestReply[]> {
+  const cacheKey = 'replies'
   if (!force) {
-    const cached = getCached<SidebarData>(cacheKey)
+    const cached = getCached<LatestReply[]>(cacheKey)
     if (cached) return cached
   }
   const doFetch = async () => {
-    const url = `${config.apiBase}${config.base}${config.templates.sidebar}`
+    const url = `${config.apiBase}${config.base}${config.templates.replies}`
     const response = await fetchWithTimeout(url)
     if (!response.ok) {
-      throw new Error(`Failed to fetch sidebar: ${response.status}`)
+      throw new Error(`Failed to fetch replies: ${response.status}`)
     }
     const html = await response.text()
 
-    const friendsRaw = extractJson<
-      (Omit<OnlineFriend, 'creatorImageUrl'> & { creatorImageUrl?: string })[]
-    >(html, 'kymono.friends')
-    const friends = friendsRaw
-      ? friendsRaw.map((f) => ({
-          ...f,
-          creatorImageUrl: f.creatorImageUrl || getImageUrl(f.userId),
-        }))
-      : []
-
     const repliesRaw = extractJson<RawReply[]>(html, 'kymono.replies')
-    const replies: LatestReply[] = repliesRaw
+    const result: LatestReply[] = repliesRaw
       ? repliesRaw.map((r) => ({
           id: r.node_id,
           name: stripHtml(r.node_name || ''),
@@ -193,7 +181,6 @@ export async function fetchSidebarData(force = false): Promise<SidebarData> {
         }))
       : []
 
-    const result = { friends, replies }
     setCache(cacheKey, result)
     return result
   }
@@ -375,6 +362,7 @@ export function getUserIdFromDom(): string | null {
   return el?.textContent?.trim() || null
 }
 
+// All friends (not just online) — embedded in DOM by the backend, used to highlight friend comments
 export function getFriendMapFromDom(): Record<string, boolean> {
   const el = document.querySelector('script#kymono\\.friendList')
   if (!el?.textContent) return {}
@@ -446,11 +434,7 @@ export async function fetchMailData(force = false): Promise<MailDataResult> {
   return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
 }
 
-export async function sendMail(
-  toUserId: string,
-  text: string,
-  anticsrf: string
-): Promise<void> {
+export async function sendMail(toUserId: string, text: string, anticsrf: string): Promise<void> {
   const url = `${config.apiBase}/id/24`
   const formData = new FormData()
   formData.append('mail_to', toUserId)

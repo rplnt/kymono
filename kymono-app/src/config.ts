@@ -16,8 +16,8 @@ export const config = {
   externalBase,
   templates: {
     bookmarks: '9300218',
-    people: '9300200',
-    sidebar: '9301169',
+    people: '9302170',
+    replies: '9302167',
     node: '9300812',
     k: '9301229',
     friendsSubmissions: '9301246',
@@ -71,6 +71,7 @@ export const CONFIG_PATHS = {
   NODE_PROGRESSIVE_COMMENTS: 'node.progressiveComments',
   NODE_AUTO_LOAD_COMMENTS_SCROLL: 'node.autoLoadCommentsOnScroll',
   NODE_HIDE_TOPIC: 'node.hideTopic',
+  NODE_HIDE_MOOD: 'node.hideMood',
   FRIENDS_SUBMISSIONS_ENABLED: 'home.friendsSubmissionsEnabled',
   FRIENDS_SUBMISSIONS_ORDER: 'home.friendsSubmissionsOrder',
   LATEST_SUBMISSIONS_ENABLED: 'home.latestSubmissionsEnabled',
@@ -116,5 +117,6 @@ export const CONFIG_DEFAULTS: Record<string, unknown> = {
   [CONFIG_PATHS.NODE_PROGRESSIVE_COMMENTS]: true,
   [CONFIG_PATHS.NODE_AUTO_LOAD_COMMENTS_SCROLL]: true,
   [CONFIG_PATHS.NODE_HIDE_TOPIC]: true,
+  [CONFIG_PATHS.NODE_HIDE_MOOD]: true,
   [CONFIG_PATHS.PULL_TO_REFRESH]: false,
 }

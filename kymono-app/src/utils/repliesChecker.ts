@@ -1,4 +1,4 @@
-import { fetchSidebarData } from './api'
+import { fetchRepliesData } from './api'
 
 import { SIDEBAR_LOADED_KEY as LAST_LOADED_KEY } from './configStorage'
 
@@ -14,7 +14,7 @@ export function startRepliesChecker(onNewCount: (n: number) => void): () => void
   const check = async () => {
     try {
       // Not forcing refresh — may return cached data if fetched recently, which is fine.
-      const data = await fetchSidebarData()
+      const replies = await fetchRepliesData()
       if (stopped) return
 
       const lastLoadedAt = localStorage.getItem(LAST_LOADED_KEY)
@@ -23,7 +23,7 @@ export function startRepliesChecker(onNewCount: (n: number) => void): () => void
         return
       }
 
-      const newCount = data.replies.filter((r) => r.createdAt > lastLoadedAt).length
+      const newCount = replies.filter((r) => r.createdAt > lastLoadedAt).length
       onNewCount(newCount)
     } catch {
       // silently ignore errors, keep previous data

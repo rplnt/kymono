@@ -3,9 +3,10 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useCurrentNode } from '@/contexts'
 import { config } from '@/config'
 import { FriendsOnline } from '@/components/FriendsOnline'
+import { PeopleList } from '@/components/PeopleList'
 import { LatestReplies } from '@/components/LatestReplies'
-import { fetchSidebarData, toggleBookmark, getRequestCount } from '@/utils'
-import type { OnlineFriend, LatestReply } from '@/types'
+import { fetchRepliesData, toggleBookmark, getRequestCount } from '@/utils'
+import type { LatestReply } from '@/types'
 
 import { SIDEBAR_LOADED_KEY as LAST_LOADED_KEY } from '@/utils/configStorage'
 
@@ -26,7 +27,6 @@ export function SidePanel({ isOpen, onClose, onRepliesShown }: SidePanelProps) {
     location.pathname === '/k' ||
     location.pathname === '/mail'
   const isNode = location.pathname.startsWith('/id/')
-  const [friends, setFriends] = useState<OnlineFriend[]>([])
   const [replies, setReplies] = useState<LatestReply[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -36,24 +36,26 @@ export function SidePanel({ isOpen, onClose, onRepliesShown }: SidePanelProps) {
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [bookmarking, setBookmarking] = useState(false)
 
-  const loadSidebar = useCallback(async (force = false) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await fetchSidebarData(force)
-      setFriends(data.friends)
-      setReplies(data.replies)
-      const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19)
-      localStorage.setItem(LAST_LOADED_KEY, timestamp)
-      setLastLoadedAt(timestamp)
-      onRepliesShown?.()
-    } catch (err) {
-      console.error('Failed to load sidebar:', err)
-      setError('nincsen')
-    } finally {
-      setLoading(false)
-    }
-  }, [onRepliesShown])
+  const loadSidebar = useCallback(
+    async (force = false) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const data = await fetchRepliesData(force)
+        setReplies(data)
+        const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19)
+        localStorage.setItem(LAST_LOADED_KEY, timestamp)
+        setLastLoadedAt(timestamp)
+        onRepliesShown?.()
+      } catch (err) {
+        console.error('Failed to load sidebar:', err)
+        setError('nincsen')
+      } finally {
+        setLoading(false)
+      }
+    },
+    [onRepliesShown]
+  )
 
   useEffect(() => {
     if (currentNode) {
@@ -123,7 +125,7 @@ export function SidePanel({ isOpen, onClose, onRepliesShown }: SidePanelProps) {
       {/* Panel */}
       <aside className={`side-panel${isOpen ? ' open' : ''}`} aria-hidden={!isOpen}>
         <div className="side-panel-content">
-          {isHome && loading && friends.length === 0 && replies.length === 0 && (
+          {isHome && loading && replies.length === 0 && (
             <div className="sidebar-loading">loading...</div>
           )}
 
@@ -255,7 +257,8 @@ export function SidePanel({ isOpen, onClose, onRepliesShown }: SidePanelProps) {
           {isHome && (
             <LatestReplies replies={replies} lastLoadedAt={lastLoadedAt} onNavigate={onClose} />
           )}
-          {isHome && <FriendsOnline friends={friends} onNavigate={onClose} />}
+          {isHome && <FriendsOnline onNavigate={onClose} />}
+          {isHome && <PeopleList onNavigate={onClose} />}
         </div>
         <div className="side-panel-footer">
           <NavLink to="/settings" className="side-panel-link" onClick={onClose}>
