@@ -381,11 +381,6 @@ export function Mail() {
   if (selectedConversation) {
     return (
       <div className="mail-view">
-        <div className="mail-header">
-          <button className="mail-reload" onClick={() => loadData(true)} title="Reload">
-            ↻
-          </button>
-        </div>
         <div className="conv-header">
           <button
             className="conv-back"
@@ -412,6 +407,9 @@ export function Mail() {
           >
             {activeConversation?.otherUserName || `#${selectedConversation}`}
           </a>
+          <button className="mail-reload" onClick={() => loadData(true)} title="Reload">
+            ↻
+          </button>
         </div>
         <ReplyForm
           otherUserId={selectedConversation}

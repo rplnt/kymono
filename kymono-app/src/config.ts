@@ -10,7 +10,7 @@ const externalBase = isLocalhost ? 'https://kyberia.sk' : ''
 export const config = {
   base: '/id/9301167/',
   name: 'KyMoNo',
-  version: 'v2.0.1',
+  version: 'v2.0.2',
   configUrl: 'https://cdn.jsdelivr.net/gh/rplnt/kymono@master/config.json',
   apiBase,
   externalBase,

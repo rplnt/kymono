@@ -2360,6 +2360,15 @@ a {
   line-height: var(--line-height-normal);
 }
 
+.mail-body a {
+  color: var(--color-text-primary);
+  text-decoration: underline;
+}
+
+.mail-body a:hover {
+  color: var(--color-text-secondary);
+}
+
 .mail-more {
   text-align: center;
   padding: var(--space-4);
