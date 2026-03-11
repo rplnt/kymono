@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
 
+// Remove host page stylesheets so they don't clash with KyMoNo styles
+document.querySelectorAll('link[rel="stylesheet"]').forEach((el) => el.remove())
+
 // Prevent mobile zoom on input focus
 const viewport = document.querySelector('meta[name="viewport"]')
 if (viewport) {

@@ -47,9 +47,11 @@ export function SidePanel({ isOpen, onClose, onRepliesShown }: SidePanelProps) {
       ])
       setReplies(repliesData)
       setPeople(peopleData)
-      const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19)
-      localStorage.setItem(LAST_LOADED_KEY, timestamp)
-      setLastLoadedAt(timestamp)
+      const newest = repliesData.reduce((max, r) => (r.createdAt > max ? r.createdAt : max), '')
+      if (newest) {
+        localStorage.setItem(LAST_LOADED_KEY, newest)
+        setLastLoadedAt(newest)
+      }
     } catch (err) {
       console.error('Failed to load sidebar:', err)
       setError('nincsen')
