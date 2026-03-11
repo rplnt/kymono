@@ -12,9 +12,10 @@ import { SIDEBAR_LOADED_KEY as LAST_LOADED_KEY } from '@/utils/configStorage'
 interface SidePanelProps {
   isOpen: boolean
   onClose: () => void
+  onRepliesShown?: () => void
 }
 
-export function SidePanel({ isOpen, onClose }: SidePanelProps) {
+export function SidePanel({ isOpen, onClose, onRepliesShown }: SidePanelProps) {
   const { currentNode, anticsrf } = useCurrentNode()
   const navigate = useNavigate()
   const location = useLocation()
@@ -45,13 +46,14 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
       const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19)
       localStorage.setItem(LAST_LOADED_KEY, timestamp)
       setLastLoadedAt(timestamp)
+      onRepliesShown?.()
     } catch (err) {
       console.error('Failed to load sidebar:', err)
       setError('nincsen')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [onRepliesShown])
 
   useEffect(() => {
     if (currentNode) {
@@ -126,11 +128,6 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
           )}
 
           {isHome && !loading && error && <div className="sidebar-error">{error}</div>}
-
-          {isHome && (
-            <LatestReplies replies={replies} lastLoadedAt={lastLoadedAt} onNavigate={onClose} />
-          )}
-          {isHome && <FriendsOnline friends={friends} onNavigate={onClose} />}
 
           {isNode && currentNode && (
             <div className="side-panel-node">
@@ -254,6 +251,11 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
               </button>
             </div>
           )}
+
+          {isHome && (
+            <LatestReplies replies={replies} lastLoadedAt={lastLoadedAt} onNavigate={onClose} />
+          )}
+          {isHome && <FriendsOnline friends={friends} onNavigate={onClose} />}
         </div>
         <div className="side-panel-footer">
           <NavLink to="/settings" className="side-panel-link" onClick={onClose}>

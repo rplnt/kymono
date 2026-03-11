@@ -17,10 +17,7 @@ export function Layout() {
   const [responsiveImages] = useConfigValue<boolean>(CONFIG_PATHS.RESPONSIVE_IMAGES)
 
   const toggleSidePanel = useCallback(() => {
-    setSidePanelOpen((prev) => {
-      if (!prev) setRepliesCount(0)
-      return !prev
-    })
+    setSidePanelOpen((prev) => !prev)
   }, [])
 
   const closeSidePanel = useCallback(() => {
@@ -66,7 +63,7 @@ export function Layout() {
         mailCount={mailCount}
         repliesCount={repliesCount}
       />
-      <SidePanel isOpen={sidePanelOpen} onClose={closeSidePanel} />
+      <SidePanel isOpen={sidePanelOpen} onClose={closeSidePanel} onRepliesShown={() => setRepliesCount(0)} />
       <div className="pad" />
       <main id="app">
         <Outlet />
