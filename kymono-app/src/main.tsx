@@ -3,11 +3,12 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
 
-// Remove host page stylesheets and body content, keeping only #kymono wrapper
+// Remove host page content, keeping only #kymono wrapper
 document.querySelectorAll('link[rel="stylesheet"]').forEach((el) => el.remove())
 const kymono = document.getElementById('kymono')
 if (kymono) {
-  document.body.replaceChildren(kymono)
+  document.body.textContent = ''
+  document.body.appendChild(kymono)
 }
 
 // Prevent mobile zoom on input focus

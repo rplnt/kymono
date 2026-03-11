@@ -6,3 +6,4 @@
 <div id="root"></div>
 <script language="javascript" type="text/javascript" src="https://github.com/rplnt/kymono/releases/download/v2.0.x/bundle.js"></script>
 </div>
+</body>
