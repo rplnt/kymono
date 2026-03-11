@@ -2,6 +2,7 @@ import type {
   BookmarkCategory,
   Bookmark,
   MpnNode,
+  Person,
   NodeData,
   NodeAncestor,
   NodeComment,
@@ -21,6 +22,8 @@ export function getImageUrl(nodeId: string): string {
 export interface RawMpnItem {
   id: string
   name: string
+  userId?: string
+  login?: string
 }
 
 export interface RawBookmarkChild {
@@ -174,6 +177,16 @@ export function parseMpnJson(items: RawMpnItem[]): MpnNode[] {
   }
 
   return Array.from(nodeMap.entries()).map(([id, { name, count }]) => ({ id, name, count }))
+}
+
+export function parsePeopleUsers(items: RawMpnItem[]): Person[] {
+  const seen = new Map<string, string>()
+  for (const item of items) {
+    if (item.userId && item.login && !seen.has(item.userId)) {
+      seen.set(item.userId, item.login)
+    }
+  }
+  return Array.from(seen.entries()).map(([userId, login]) => ({ userId, login }))
 }
 
 export function parseBookmarksJson(categories: RawBookmarkCategory[]): BookmarkCategory[] {

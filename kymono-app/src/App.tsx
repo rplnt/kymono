@@ -74,6 +74,7 @@ function App() {
                     <Route path="settings" element={<Settings />} />
                     <Route path="k" element={<K />} />
                     <Route path="mail" element={<Mail />} />
+                    <Route path="mail/:userId" element={<Mail />} />
                     <Route path="module/:moduleId" element={<Module />} />
                     <Route path="id/:nodeId" element={<Node />} />
                     <Route path="*" element={<Navigate to="/home" replace />} />

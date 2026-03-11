@@ -1,6 +1,7 @@
 import type {
   BookmarkCategory,
   MpnNode,
+  Person,
   OnlineFriend,
   LatestReply,
   SidebarData,
@@ -14,6 +15,7 @@ import { stripHtml } from './html'
 import {
   getImageUrl,
   parseMpnJson,
+  parsePeopleUsers,
   parseBookmarksJson,
   parseNodeJson,
   parseChildJson,
@@ -21,6 +23,7 @@ import {
   parseLastKItem,
 } from './parse'
 import type {
+  RawMpnItem,
   RawNodeResponse,
   RawKItem,
   RawLastKItem,
@@ -46,7 +49,7 @@ function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise
 const CACHE_TTL_MS = 60_000
 
 type CacheKey =
-  | 'mpn'
+  | 'people'
   | 'sidebar'
   | 'bookmarks'
   | 'k'
@@ -118,14 +121,37 @@ async function cachedFetch<TRaw, TResult>(
   return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
 }
 
-export function fetchMpnData(force = false): Promise<MpnNode[]> {
-  return cachedFetch(
-    'mpn',
-    `${config.apiBase}${config.base}${config.templates.mpn}`,
-    'kymono.mpn',
-    parseMpnJson,
-    force
-  )
+interface PeopleData {
+  nodes: MpnNode[]
+  users: Person[]
+}
+
+async function fetchPeopleRaw(force = false): Promise<PeopleData> {
+  const cacheKey: CacheKey = 'people'
+  if (!force) {
+    const cached = getCached<PeopleData>(cacheKey)
+    if (cached) return cached
+  }
+  const doFetch = async () => {
+    const url = `${config.apiBase}${config.base}${config.templates.people}`
+    const response = await fetchWithTimeout(url)
+    if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`)
+    const html = await response.text()
+    const data = extractJson<RawMpnItem[]>(html, 'kymono.people')
+    if (!data) throw new Error('Failed to parse people data')
+    const result: PeopleData = { nodes: parseMpnJson(data), users: parsePeopleUsers(data) }
+    setCache(cacheKey, result)
+    return result
+  }
+  return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
+}
+
+export async function fetchMpnData(force = false): Promise<MpnNode[]> {
+  return (await fetchPeopleRaw(force)).nodes
+}
+
+export async function fetchPeopleData(force = false): Promise<Person[]> {
+  return (await fetchPeopleRaw(force)).users
 }
 
 export async function fetchSidebarData(force = false): Promise<SidebarData> {
@@ -381,22 +407,64 @@ export function fetchFriendsSubmissions(force = false): Promise<FriendSubmission
   )
 }
 
-export function fetchMailData(force = false): Promise<MailMessage[]> {
-  return cachedFetch(
-    'mail',
-    `${config.apiBase}${config.base}${config.templates.mail}`,
-    'kymono.mail',
-    (data: RawMailMessage[]) =>
-      data.map((m) => ({
-        id: m.mail_id,
-        fromId: m.mail_from,
-        fromName: m.mail_from_name,
-        toId: m.mail_to,
-        toName: m.mail_to_name,
-        text: m.mail_text,
-        timestamp: m.mail_timestamp,
-        read: m.mail_read === 'yes',
-      })),
-    force
-  )
+export interface MailDataResult {
+  messages: MailMessage[]
+  anticsrf?: string
+}
+
+export async function fetchMailData(force = false): Promise<MailDataResult> {
+  const cacheKey: CacheKey = 'mail'
+  if (!force) {
+    const cached = getCached<MailDataResult>(cacheKey)
+    if (cached) return cached
+  }
+  const doFetch = async () => {
+    const url = `${config.apiBase}${config.base}${config.templates.mail}`
+    const response = await fetchWithTimeout(url)
+    if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`)
+    const html = await response.text()
+    const data = extractJson<RawMailMessage[]>(html, 'kymono.mail')
+    if (!data) throw new Error('Failed to parse mail data')
+
+    const anticsrf = extractJson<string>(html, 'kymono.anticsrf') ?? undefined
+
+    const messages = data.map((m) => ({
+      id: m.mail_id,
+      fromId: m.mail_from,
+      fromName: m.mail_from_name,
+      toId: m.mail_to,
+      toName: m.mail_to_name,
+      text: m.mail_text,
+      timestamp: m.mail_timestamp,
+      read: m.mail_read === 'yes',
+    }))
+
+    const result: MailDataResult = { messages, anticsrf }
+    setCache(cacheKey, result)
+    return result
+  }
+  return force ? doFetch() : dedupedFetch(cacheKey, doFetch)
+}
+
+export async function sendMail(
+  toUserId: string,
+  text: string,
+  anticsrf: string
+): Promise<void> {
+  const url = `${config.apiBase}/id/24`
+  const formData = new FormData()
+  formData.append('mail_to', toUserId)
+  formData.append('mail_to_type', 'id')
+  formData.append('mail_text', text)
+  formData.append('event', 'send')
+  formData.append('anticsrf', anticsrf)
+
+  const response = await fetchWithTimeout(url, {
+    method: 'POST',
+    body: formData,
+    redirect: 'manual',
+  })
+  if (response.type !== 'opaqueredirect' && !response.ok) {
+    throw new Error(`Failed to send mail: ${response.status}`)
+  }
 }

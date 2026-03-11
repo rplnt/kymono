@@ -7,6 +7,7 @@ export {
 } from './date'
 export {
   fetchMpnData,
+  fetchPeopleData,
   fetchSidebarData,
   fetchBookmarksData,
   fetchNodeData,
@@ -14,6 +15,7 @@ export {
   fetchLastKData,
   fetchFriendsSubmissions,
   fetchMailData,
+  sendMail,
   submitComment,
   giveKarma,
   toggleBookmark,
@@ -21,6 +23,7 @@ export {
   getRequestCount,
   stripHtml,
 } from './api'
+export type { MailDataResult } from './api'
 export { startMailChecker } from './mailChecker'
 export { startRepliesChecker } from './repliesChecker'
 export { buildSearchIndex, searchIndex, truncate } from './search'

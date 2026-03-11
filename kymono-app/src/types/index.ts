@@ -41,6 +41,11 @@ export interface MpnNode {
   count: number
 }
 
+export interface Person {
+  userId: string
+  login: string
+}
+
 export interface OnlineFriend {
   userId: string
   login: string

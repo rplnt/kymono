@@ -16,7 +16,7 @@ export const config = {
   externalBase,
   templates: {
     bookmarks: '9300218',
-    mpn: '9300200',
+    people: '9300200',
     sidebar: '9301169',
     node: '9300812',
     k: '9301229',
