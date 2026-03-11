@@ -80,13 +80,18 @@ export function LatestReplies({ replies, lastLoadedAt, onNavigate }: LatestRepli
   const [showOlder, setShowOlder] = useState(false)
 
   const { newGroups, oldGroups } = useMemo(() => {
-    const map = new Map<string, ReplyGroup>()
+    const freshMap = new Map<string, ReplyGroup>()
+    const oldMap = new Map<string, ReplyGroup>()
+
     for (const reply of replies) {
-      const existing = map.get(reply.parentId)
+      const isNew = !lastLoadedAt || reply.createdAt > lastLoadedAt
+      const target = isNew ? freshMap : oldMap
+
+      const existing = target.get(reply.parentId)
       if (existing) {
         existing.replies.push(reply)
       } else {
-        map.set(reply.parentId, {
+        target.set(reply.parentId, {
           parentId: reply.parentId,
           parentName: reply.parentName,
           replies: [reply],
@@ -94,20 +99,10 @@ export function LatestReplies({ replies, lastLoadedAt, onNavigate }: LatestRepli
       }
     }
 
-    const all = Array.from(map.values())
-    const fresh: ReplyGroup[] = []
-    const old: ReplyGroup[] = []
-
-    for (const group of all) {
-      const hasNew = !lastLoadedAt || group.replies.some((r) => r.createdAt > lastLoadedAt)
-      if (hasNew) {
-        fresh.push(group)
-      } else {
-        old.push(group)
-      }
+    return {
+      newGroups: Array.from(freshMap.values()),
+      oldGroups: Array.from(oldMap.values()),
     }
-
-    return { newGroups: fresh, oldGroups: old }
   }, [replies, lastLoadedAt])
 
   if (newGroups.length === 0 && oldGroups.length === 0) return null

@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Person } from '@/types'
-import { fetchPeopleData, truncate } from '@/utils'
+import { truncate } from '@/utils'
 
 interface FriendsOnlineProps {
+  people: Person[]
   onNavigate?: () => void
 }
 
@@ -13,15 +14,8 @@ function formatIdle(minutes: number, seconds: number): string {
   return `${minutes}m`
 }
 
-export function FriendsOnline({ onNavigate: onNav }: FriendsOnlineProps) {
+export function FriendsOnline({ people, onNavigate: onNav }: FriendsOnlineProps) {
   const navigate = useNavigate()
-  const [people, setPeople] = useState<Person[]>([])
-
-  useEffect(() => {
-    fetchPeopleData()
-      .then(setPeople)
-      .catch(() => {})
-  }, [])
 
   const friends = useMemo(
     () =>

@@ -30,7 +30,7 @@ import type {
   RawMailMessage,
 } from './parse'
 
-export { stripHtml } from './html'
+export { stripHtml, sanitizeMailHtml } from './html'
 
 const FETCH_TIMEOUT_MS = 30_000
 

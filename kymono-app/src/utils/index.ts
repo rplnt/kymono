@@ -22,6 +22,7 @@ export {
   getUserIdFromDom,
   getRequestCount,
   stripHtml,
+  sanitizeMailHtml,
 } from './api'
 export type { MailDataResult } from './api'
 export { startMailChecker } from './mailChecker'

@@ -1,22 +1,15 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Person } from '@/types'
-import { fetchPeopleData } from '@/utils'
 
 interface PeopleListProps {
+  people: Person[]
   onNavigate?: () => void
 }
 
-export function PeopleList({ onNavigate: onNav }: PeopleListProps) {
+export function PeopleList({ people, onNavigate: onNav }: PeopleListProps) {
   const navigate = useNavigate()
-  const [people, setPeople] = useState<Person[]>([])
   const [expanded, setExpanded] = useState(false)
-
-  useEffect(() => {
-    fetchPeopleData()
-      .then(setPeople)
-      .catch(() => {})
-  }, [])
 
   const others = useMemo(
     () => people.filter((p) => !p.isFriend).sort((a, b) => a.login.localeCompare(b.login)),

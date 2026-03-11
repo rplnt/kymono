@@ -84,6 +84,77 @@ export function sanitizeHtml(html: string): string {
   return processNode(root)
 }
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+export function sanitizeMailHtml(html: string): string {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html')
+  const root = doc.body.firstChild as HTMLElement
+
+  function processNode(node: Node): string {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return escapeHtml(node.textContent || '')
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return ''
+    }
+
+    const el = node as HTMLElement
+    const tag = el.tagName.toLowerCase()
+    const children = Array.from(el.childNodes).map(processNode).join('')
+
+    if (tag === 'br') return '<br>'
+    if (tag === 'b' || tag === 'strong') return `<b>${children}</b>`
+    if (tag === 'i' || tag === 'em') return `<i>${children}</i>`
+
+    if (tag === 'a') {
+      const href = el.getAttribute('href')
+      if (href && /^https?:\/\//i.test(href)) {
+        return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${children}</a>`
+      }
+      return children
+    }
+
+    // Images → links
+    if (tag === 'img') {
+      const src = el.getAttribute('src')
+      if (src && /^https?:\/\//i.test(src)) {
+        const displayUrl = escapeHtml(src.length > 60 ? src.slice(0, 57) + '...' : src)
+        return `<a href="${escapeHtml(src)}" target="_blank" rel="noopener noreferrer">${displayUrl}</a>`
+      }
+      return ''
+    }
+
+    if (tag === 'font') {
+      const rawColor = el.getAttribute('color')
+      const color = rawColor ? sanitizeColor(rawColor) : null
+      if (color) return `<span style="color:${color}">${children}</span>`
+      return children
+    }
+
+    if (tag === 'span') {
+      const style = el.getAttribute('style') || ''
+      const colorMatch = style.match(/color\s*:\s*([^;]+)/i)
+      if (colorMatch) {
+        const color = sanitizeColor(colorMatch[1])
+        if (color) return `<span style="color:${color}">${children}</span>`
+      }
+      return children
+    }
+
+    return children
+  }
+
+  return processNode(root)
+}
+
 export function applyNl2br(content: string, nl2br: unknown): string {
   if (nl2br === '1' || nl2br === 1 || nl2br === true) {
     return content.replace(/\n/g, '<br>\n')

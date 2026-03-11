@@ -9,6 +9,7 @@ import {
   formatRelativeString,
   formatDate,
   stripHtml,
+  sanitizeMailHtml,
 } from '@/utils'
 import type { MailDataResult } from '@/utils'
 import { useTitle } from '@/utils/useTitle'
@@ -141,7 +142,7 @@ function NewConversationSearch({
 }) {
   const [query, setQuery] = useState('')
   const [people, setPeople] = useState<Person[]>([])
-  const [loadingPeople, setLoadingPeople] = useState(false)
+  const [loadingPeople, setLoadingPeople] = useState(true)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -150,7 +151,6 @@ function NewConversationSearch({
 
   useEffect(() => {
     let cancelled = false
-    setLoadingPeople(true)
     fetchPeopleData()
       .then((data) => {
         if (!cancelled) {
@@ -453,7 +453,10 @@ export function Mail() {
                   {!msg.read && <span className="comment-badge comment-new">NEW</span>}
                   <span className="mail-date">{formatTimestamp(msg.timestamp)}</span>
                 </div>
-                <div className="mail-body" dangerouslySetInnerHTML={{ __html: msg.text }} />
+                <div
+                  className="mail-body"
+                  dangerouslySetInnerHTML={{ __html: sanitizeMailHtml(msg.text) }}
+                />
               </div>
             ))}
           </div>
