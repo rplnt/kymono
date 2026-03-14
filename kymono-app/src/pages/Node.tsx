@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import type { NodeData, NodeComment } from '@/types'
 import { useCurrentNode, useConfigValue } from '@/contexts'
 import {
@@ -11,13 +11,13 @@ import {
 } from '@/utils'
 import { useTitle } from '@/utils/useTitle'
 import { CONFIG_PATHS } from '@/config'
+import { ChildList } from '@/components/ChildList'
 import { Comment, getCommentIndent } from '@/components/Comment'
 import { NodeHeader } from '@/components/NodeHeader'
 import { ReplyForm } from '@/components/ReplyForm'
 
 export function Node() {
   const { nodeId } = useParams<{ nodeId: string }>()
-  const navigate = useNavigate()
   const { setCurrentNode, anticsrf, setAnticsrf } = useCurrentNode()
   const [node, setNode] = useState<NodeData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -33,7 +33,6 @@ export function Node() {
   )
   const [hideTopic] = useConfigValue<boolean>(CONFIG_PATHS.NODE_HIDE_TOPIC)
   const [visibleBatches, setVisibleBatches] = useState(1)
-  const [childFilter, setChildFilter] = useState('')
   const [starred, setStarred] = useState(false)
 
   useTitle(node?.name)
@@ -197,54 +196,7 @@ export function Node() {
       {/* Comments section */}
       <div className="node-comments">
         {comments.length > 0 && (node.templateId === '2' || node.templateId === '14')
-          ? (() => {
-              const sorted = [...comments].sort((a, b) => a.name.localeCompare(b.name))
-              const filtered = childFilter
-                ? sorted.filter((c) => c.name.toLowerCase().includes(childFilter.toLowerCase()))
-                : sorted
-              return (
-                <>
-                  <input
-                    type="search"
-                    className="child-filter"
-                    placeholder="Filter..."
-                    value={childFilter}
-                    onChange={(e) => setChildFilter(e.target.value)}
-                    autoComplete="off"
-                  />
-                  {filtered.map((child) => (
-                    <div key={child.id} className="node-child-item list-row">
-                      <a
-                        href={`#/id/${child.id}`}
-                        className="node-child-name"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          navigate(`/id/${child.id}`)
-                        }}
-                      >
-                        {child.name || `node ${child.id}`}
-                      </a>
-                      {child.childrenCount > 0 && (
-                        <span className="node-child-children">{child.childrenCount}</span>
-                      )}
-                      {child.karma > 0 && (
-                        <span className="node-child-karma karma-value">{child.karma}K</span>
-                      )}
-                      <a
-                        href={`#/id/${child.creatorId}`}
-                        className="node-child-author"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          navigate(`/id/${child.creatorId}`)
-                        }}
-                      >
-                        {child.owner}
-                      </a>
-                    </div>
-                  ))}
-                </>
-              )
-            })()
+          ? <ChildList items={comments} />
           : comments.length > 0
             ? (() => {
                 // Find top-level comment indices (level === 0)
