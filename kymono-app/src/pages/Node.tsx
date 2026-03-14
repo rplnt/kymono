@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { NodeData, NodeComment } from '@/types'
 import { useCurrentNode, useConfigValue, useFriends, useUser } from '@/contexts'
@@ -15,28 +15,7 @@ import { useTitle } from '@/utils/useTitle'
 import { config, CONFIG_PATHS } from '@/config'
 import { ExternalLinkIcon } from '@/components/ExternalLinkIcon'
 import { Timestamp } from '@/components/Timestamp'
-
-function getCommentIndent(level: number): number {
-  // Logarithmic indent: each level adds less than the previous
-  // e.g. 24, 20, 16, 13, 11, 9, 8, 7, 6, 5, 4, 4, 3, 3, 3...
-  let indent = 0
-  for (let i = 0; i < level; i++) {
-    indent += Math.max(Math.round(24 * Math.pow(0.82, i)), 3)
-  }
-  return indent
-}
-
-const CommentContent = memo(function CommentContent({
-  html,
-  onClick,
-}: {
-  html: string
-  onClick: (e: React.MouseEvent) => void
-}) {
-  return (
-    <div className="comment-content" dangerouslySetInnerHTML={{ __html: html }} onClick={onClick} />
-  )
-})
+import { Comment, getCommentIndent } from '@/components/Comment'
 
 export function Node() {
   const { nodeId } = useParams<{ nodeId: string }>()
@@ -63,7 +42,6 @@ export function Node() {
   const [modalUrl, setModalUrl] = useState('')
   const [modalTitle, setModalTitle] = useState('')
   const [modalWidth, setModalWidth] = useState('')
-  const [showCommentToolbar] = useConfigValue<boolean>(CONFIG_PATHS.COMMENT_TOOLBAR)
   const [fullTimestamps] = useConfigValue<boolean>(CONFIG_PATHS.FULL_TIMESTAMPS)
   const [progressiveComments] = useConfigValue<boolean>(CONFIG_PATHS.NODE_PROGRESSIVE_COMMENTS)
   const [autoLoadCommentsOnScroll] = useConfigValue<boolean>(
@@ -75,9 +53,6 @@ export function Node() {
   const [nodeKState, setNodeKState] = useState<
     'idle' | 'sending' | 'ok' | 'error' | 'nehul' | 'neda-sa'
   >('idle')
-  const [commentKStates, setCommentKStates] = useState<
-    Map<string, 'idle' | 'sending' | 'ok' | 'error' | 'nehul' | 'neda-sa'>
-  >(new Map())
   const [starred, setStarred] = useState(false)
 
   useTitle(node?.name)
@@ -113,7 +88,6 @@ export function Node() {
     setReplyContent('')
     setReplyError(null)
     setNodeKState('idle')
-    setCommentKStates(new Map())
     try {
       const response = await fetchNodeData(nodeId)
       setNode(response.node)
@@ -250,23 +224,6 @@ export function Node() {
       }
     } catch {
       setNodeKState('error')
-    }
-  }
-
-  const handleGiveCommentK = async (commentId: string) => {
-    const state = commentKStates.get(commentId) || 'idle'
-    if (state !== 'idle') return
-    setCommentKStates((prev) => new Map(prev).set(commentId, 'sending'))
-    try {
-      const result = await giveKarma(commentId, anticsrf)
-      setCommentKStates((prev) => new Map(prev).set(commentId, result))
-      if (result === 'ok') {
-        setComments((prev) =>
-          prev.map((c) => (c.id === commentId ? { ...c, karma: c.karma + 1 } : c))
-        )
-      }
-    } catch {
-      setCommentKStates((prev) => new Map(prev).set(commentId, 'error'))
     }
   }
 
@@ -761,187 +718,53 @@ export function Node() {
 
                 return (
                   <>
-                    {visibleComments.map((comment) => {
-                      // Depths are in increments of 8, normalize to levels
+                    {visibleComments.map((comment, idx) => {
                       const level = Math.floor((comment.depth - minDepth) / 8)
                       const hiddenCount = hiddenCounts.get(comment.id)
+
+                      const findSibling = (dir: 'prev' | 'next') => {
+                        if (dir === 'next') {
+                          for (let i = idx + 1; i < visibleComments.length; i++) {
+                            if (
+                              visibleComments[i].depth === comment.depth &&
+                              visibleComments[i].parentId === comment.parentId
+                            )
+                              return visibleComments[i].id
+                            if (visibleComments[i].depth < comment.depth) break
+                          }
+                        } else {
+                          for (let i = idx - 1; i >= 0; i--) {
+                            if (
+                              visibleComments[i].depth === comment.depth &&
+                              visibleComments[i].parentId === comment.parentId
+                            )
+                              return visibleComments[i].id
+                            if (visibleComments[i].depth < comment.depth) break
+                          }
+                        }
+                        return null
+                      }
+                      const prevId =
+                        findSibling('prev') ||
+                        (idx > 0 ? visibleComments[idx - 1].id : null)
+                      const nextId = findSibling('next')
+                      const scrollTo = (elId: string) => {
+                        const el = document.getElementById(`comment-${elId}`)
+                        if (el) scrollToElement(el)
+                      }
+
                       return (
                         <div key={comment.id}>
-                          <div
-                            id={`comment-${comment.id}`}
-                            className={`comment${comment.isOrphan ? ' comment-orphan' : ''}`}
-                            style={{ marginLeft: `${getCommentIndent(level)}px` }}
-                          >
-                            <div
-                              className="comment-header"
-                              onClick={() =>
-                                toggleCommentCollapsed(comment.id, comment.childrenCount > 0)
-                              }
-                            >
-                              {comment.creatorImageUrl ? (
-                                <img
-                                  src={comment.creatorImageUrl}
-                                  alt=""
-                                  className="comment-avatar avatar-img"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    navigate(`/id/${comment.creatorId}`)
-                                  }}
-                                />
-                              ) : (
-                                <div
-                                  className="comment-avatar comment-avatar-placeholder"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    navigate(`/id/${comment.creatorId}`)
-                                  }}
-                                />
-                              )}
-                              <div className="comment-meta">
-                                <div className="comment-meta-line">
-                                  <a
-                                    href={`#/id/${comment.creatorId}`}
-                                    className={`comment-author${comment.creatorId === userId ? ' is-self' : isFriend(comment.creatorId) ? ' is-friend' : ''}`}
-                                    onClick={(e) => {
-                                      e.preventDefault()
-                                      e.stopPropagation()
-                                      navigate(`/id/${comment.creatorId}`)
-                                    }}
-                                  >
-                                    {comment.owner}
-                                  </a>
-                                  <Timestamp
-                                    createdAt={comment.createdAt}
-                                    updatedAt={comment.updatedAt}
-                                    fullTimestamps={fullTimestamps}
-                                  />
-                                  {comment.karma > 0 && (
-                                    <span className="comment-karma karma-value">
-                                      {comment.karma}K
-                                    </span>
-                                  )}
-                                  {(comment.isNew || comment.isOrphan) && (
-                                    <span className="comment-badge comment-new">NEW</span>
-                                  )}
-                                  {comment.contentChanged &&
-                                    !comment.isNew &&
-                                    !comment.isOrphan && (
-                                      <span className="comment-badge comment-changed">changed</span>
-                                    )}
-                                  {comment.isHardlink && (
-                                    <span className="comment-badge comment-hardlink">link</span>
-                                  )}
-                                </div>
-                                <a
-                                  href={`#/id/${comment.id}`}
-                                  className="comment-title"
-                                  onClick={(e) => {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    navigate(`/id/${comment.id}`)
-                                  }}
-                                >
-                                  {comment.name || `node ${comment.id}`}
-                                </a>
-                              </div>
-                            </div>
-                            {!collapsedComments.get(comment.id) && (
-                              <div className="comment-body">
-                                <CommentContent
-                                  html={comment.content}
-                                  onClick={handleContentClick}
-                                />
-                              </div>
-                            )}
-                            {(() => {
-                              const kS = commentKStates.get(comment.id) || 'idle'
-                              const kBtn =
-                                comment.givenK || kS === 'ok' ? (
-                                  <span className="give-k-given">k given</span>
-                                ) : kS === 'nehul' ? (
-                                  <span className="give-k-err">nehul</span>
-                                ) : kS === 'neda-sa' ? (
-                                  <span className="give-k-err">neda sa</span>
-                                ) : kS === 'error' ? (
-                                  <span className="give-k-err">err</span>
-                                ) : (
-                                  <button
-                                    className="give-k-btn"
-                                    onClick={() => handleGiveCommentK(comment.id)}
-                                    disabled={kS === 'sending'}
-                                  >
-                                    give k
-                                  </button>
-                                )
-
-                              if (!showCommentToolbar) {
-                                return (
-                                  <div className="comment-toolbar">
-                                    <span className="toolbar-k-right">{kBtn}</span>
-                                  </div>
-                                )
-                              }
-
-                              const idx = visibleComments.findIndex((c) => c.id === comment.id)
-                              const findSibling = (dir: 'prev' | 'next') => {
-                                if (dir === 'next') {
-                                  for (let i = idx + 1; i < visibleComments.length; i++) {
-                                    if (
-                                      visibleComments[i].depth === comment.depth &&
-                                      visibleComments[i].parentId === comment.parentId
-                                    )
-                                      return visibleComments[i].id
-                                    if (visibleComments[i].depth < comment.depth) break
-                                  }
-                                } else {
-                                  for (let i = idx - 1; i >= 0; i--) {
-                                    if (
-                                      visibleComments[i].depth === comment.depth &&
-                                      visibleComments[i].parentId === comment.parentId
-                                    )
-                                      return visibleComments[i].id
-                                    if (visibleComments[i].depth < comment.depth) break
-                                  }
-                                }
-                                return null
-                              }
-                              const prevId =
-                                findSibling('prev') ||
-                                (idx > 0 ? visibleComments[idx - 1].id : null)
-                              const nextId = findSibling('next')
-                              const scrollTo = (elId: string) => {
-                                const el = document.getElementById(`comment-${elId}`)
-                                if (el) scrollToElement(el)
-                              }
-                              return (
-                                <div className="comment-toolbar">
-                                  <button
-                                    className="toolbar-btn"
-                                    disabled={!prevId}
-                                    onClick={() => prevId && scrollTo(prevId)}
-                                  >
-                                    prev
-                                  </button>
-                                  <span className="toolbar-sep">|</span>
-                                  <button
-                                    className="toolbar-btn"
-                                    onClick={() => scrollTo(comment.id)}
-                                  >
-                                    up
-                                  </button>
-                                  <span className="toolbar-sep">|</span>
-                                  <button
-                                    className="toolbar-btn"
-                                    disabled={!nextId}
-                                    onClick={() => nextId && scrollTo(nextId)}
-                                  >
-                                    next
-                                  </button>
-                                  <span className="toolbar-k-right">{kBtn}</span>
-                                </div>
-                              )
-                            })()}
-                          </div>
+                          <Comment
+                            comment={comment}
+                            level={level}
+                            collapsed={collapsedComments.get(comment.id)}
+                            onToggleCollapse={() =>
+                              toggleCommentCollapsed(comment.id, comment.childrenCount > 0)
+                            }
+                            onPrev={prevId ? () => scrollTo(prevId) : null}
+                            onNext={nextId ? () => scrollTo(nextId) : null}
+                          />
                           {hiddenCount && (
                             <div
                               className="hidden-subtree-indicator"
