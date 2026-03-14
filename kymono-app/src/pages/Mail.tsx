@@ -499,6 +499,7 @@ export function Mail() {
               onClick={() => {
                 setSelectedConversation(conv.otherUserId)
                 navigate(`/mail/${conv.otherUserId}`, { replace: true })
+                window.scrollTo(0, 0)
               }}
             >
               <img

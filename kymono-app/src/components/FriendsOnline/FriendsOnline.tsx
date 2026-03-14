@@ -20,7 +20,7 @@ export function FriendsOnline({ people, onNavigate: onNav }: FriendsOnlineProps)
   const friends = useMemo(
     () =>
       people
-        .filter((p) => p.isFriend)
+        .filter((p) => p.isFriend && (p.idleMinutes ?? 0) < 60)
         .sort((a, b) => {
           const idleA = (a.idleMinutes ?? 0) * 60 + (a.idleSeconds ?? 0)
           const idleB = (b.idleMinutes ?? 0) * 60 + (b.idleSeconds ?? 0)

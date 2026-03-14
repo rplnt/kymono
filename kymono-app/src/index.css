@@ -140,6 +140,10 @@ body {
   -webkit-touch-callout: none;
 }
 
+img {
+  -webkit-touch-callout: default;
+}
+
 a {
   text-decoration: none;
 }
