@@ -406,6 +406,10 @@ a {
   transition: all var(--transition-fast);
 }
 
+.node-link.visited {
+  opacity: 0.75;
+}
+
 .mpn-link:hover {
   text-shadow: var(--shadow-glow-strong);
 }
@@ -799,6 +803,23 @@ a {
 #app > div,
 #app > main {
   animation: fadeIn var(--transition-normal) ease-out;
+}
+
+/* ============================================================
+   Visit History
+   ============================================================ */
+.visit-history-list {
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: var(--font-size-sm);
+  line-height: 1;
+  mask-image: linear-gradient(to right, #000 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, #000 85%, transparent 100%);
+}
+
+.visit-history-sep {
+  color: var(--color-green);
+  margin: 0 0.3em;
 }
 
 /* ============================================================
@@ -1523,17 +1544,23 @@ a {
 }
 
 .node-parent-ref {
+  display: flex;
+  align-items: center;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   margin-bottom: var(--space-1);
+}
+
+.node-parent-ref .node-parent-link {
   white-space: nowrap;
   overflow: hidden;
-  mask-image: linear-gradient(to right, black calc(100% - 2em), transparent);
-  -webkit-mask-image: linear-gradient(to right, black calc(100% - 2em), transparent);
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .node-parent-in {
   color: var(--color-text-muted);
+  margin-right: 0.3em;
 }
 
 .node-parent-link {
@@ -2589,19 +2616,24 @@ a {
   text-align: center;
 }
 
-/* Menu badge */
-.menu-info-link {
+/* Menu star link */
+.menu-star-link {
   margin-left: auto;
   align-self: center;
-  padding: 0 var(--space-3);
+  padding: 0 var(--space-3) 0 var(--space-5);
   font-size: var(--font-size-base);
   color: var(--color-text-muted);
   text-decoration: none;
   opacity: 0.65;
 }
 
-.menu-info-link:hover {
+.menu-star-link:hover {
   opacity: 0.9;
+}
+
+.menu-star-link.active {
+  color: var(--color-phosphor);
+  opacity: 1;
 }
 
 .menu-item-mail,
@@ -2700,4 +2732,50 @@ a {
 
 .hide-mood small.mood {
   display: none;
+}
+
+/* Star button */
+.star-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0;
+  margin-left: auto;
+  font-size: inherit;
+}
+
+.star-btn.active {
+  color: var(--color-phosphor);
+}
+
+/* Starred page */
+.starred-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+}
+
+.starred-item .star-btn {
+  margin-left: 0;
+}
+
+.starred-item .node-link {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.starred-time {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.starred-empty {
+  color: var(--color-text-secondary);
+  padding: var(--space-4) 0;
 }

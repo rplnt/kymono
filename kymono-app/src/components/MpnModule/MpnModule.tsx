@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { MpnNode } from '@/types'
 import { useConfigValue } from '@/contexts'
 import { config, CONFIG_PATHS } from '@/config'
-import { fetchMpnData, truncate } from '@/utils'
+import { fetchMpnData, truncate, getVisitedSet } from '@/utils'
 import { HomeModule } from '@/components/HomeModule'
 
 // Max number of single-user nodes to display
@@ -78,6 +78,8 @@ export function MpnModule({ forceRefresh }: { forceRefresh?: boolean }) {
     return `${size}em`
   }
 
+  const visited = useMemo(() => getVisitedSet(), [filteredNodes])
+
   const handleNodeClick = (e: React.MouseEvent, nodeId: string) => {
     e.preventDefault()
     navigate(`/id/${nodeId}`)
@@ -103,7 +105,7 @@ export function MpnModule({ forceRefresh }: { forceRefresh?: boolean }) {
               {'('}
               <a
                 href={`/id/${node.id}`}
-                className="node-link mpn-link"
+                className={`node-link mpn-link${visited.has(node.id) ? ' visited' : ''}`}
                 title={`${node.name} (${node.count})`}
                 onClick={(e) => handleNodeClick(e, node.id)}
               >

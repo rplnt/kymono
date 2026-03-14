@@ -12,7 +12,10 @@ export function PeopleList({ people, onNavigate: onNav }: PeopleListProps) {
   const [expanded, setExpanded] = useState(false)
 
   const others = useMemo(
-    () => people.filter((p) => !p.isFriend && (p.idleMinutes ?? 0) < 60).sort((a, b) => a.login.localeCompare(b.login)),
+    () =>
+      people
+        .filter((p) => !p.isFriend && (p.idleMinutes ?? 0) < 60)
+        .sort((a, b) => a.login.localeCompare(b.login)),
     [people]
   )
 

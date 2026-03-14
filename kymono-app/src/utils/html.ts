@@ -155,6 +155,10 @@ export function sanitizeMailHtml(html: string): string {
   return processNode(root)
 }
 
+export function localizeKyberiaLinks(html: string): string {
+  return html.replace(/https?:\/\/(?:www\.)?kyberia\.sk\/id\/(\d+)/g, '/id/$1')
+}
+
 export function applyNl2br(content: string, nl2br: unknown): string {
   if (nl2br === '1' || nl2br === 1 || nl2br === true) {
     return content.replace(/\n/g, '<br>\n')

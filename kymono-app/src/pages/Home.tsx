@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { CONFIG_PATHS, DEFAULT_MODULE_ORDER } from '@/config'
 import { useConfig } from '@/contexts'
 import { useTitle } from '@/utils/useTitle'
 import { usePullToRefresh } from '@/utils/usePullToRefresh'
+import { getVisitHistory, truncate } from '@/utils'
 import { QuickBookmarks } from '@/components/QuickBookmarks'
 import { MpnModule } from '@/components/MpnModule'
 import { FriendsSubmissions } from '@/components/FriendsSubmissions'
@@ -56,11 +58,14 @@ export const MODULES: ModuleConfig[] = [
 
 export function Home() {
   useTitle('Home')
+  const navigate = useNavigate()
   const { getValue } = useConfig()
   const [refreshKey, setRefreshKey] = useState(0)
   usePullToRefresh(() => {
     setRefreshKey((k) => k + 1)
   })
+
+  const history = useMemo(() => getVisitHistory().reverse(), [])
 
   const sortedModules = useMemo(() => {
     const modulesWithOrder = MODULES.map((mod) => ({
@@ -72,11 +77,34 @@ export function Home() {
 
   const twoColumn = getValue<boolean>(CONFIG_PATHS.TWO_COLUMN_LAYOUT, true)
 
+  const handleHistoryClick = (e: React.MouseEvent, id: string) => {
+    e.preventDefault()
+    navigate(`/id/${id}`)
+  }
+
   return (
-    <div className={twoColumn ? 'home-grid' : undefined}>
-      {sortedModules.map(({ id, component: Component }) => (
-        <Component key={`${id}-${refreshKey}`} forceRefresh={refreshKey > 0} />
-      ))}
-    </div>
+    <>
+      {history.length > 0 && (
+        <div className="visit-history-list">
+          {history.map((entry, i) => (
+            <span key={`${entry.id}-${i}`}>
+              {i > 0 && <span className="visit-history-sep">{'\u00b7'}</span>}
+              <a
+                href={`/id/${entry.id}`}
+                className="node-link"
+                onClick={(e) => handleHistoryClick(e, entry.id)}
+              >
+                {truncate(entry.name, 20)}
+              </a>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className={twoColumn ? 'home-grid' : undefined}>
+        {sortedModules.map(({ id, component: Component }) => (
+          <Component key={`${id}-${refreshKey}`} forceRefresh={refreshKey > 0} />
+        ))}
+      </div>
+    </>
   )
 }

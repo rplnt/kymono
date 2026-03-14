@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { FriendSubmission } from '@/types'
 import { useConfigValue } from '@/contexts'
 import { CONFIG_PATHS } from '@/config'
-import { fetchFriendsSubmissions } from '@/utils'
+import { fetchFriendsSubmissions, getVisitedSet } from '@/utils'
 import { HomeModule } from '@/components/HomeModule'
 
 const MAX_DISPLAY = 8
@@ -69,6 +69,8 @@ export function HotNodes({ forceRefresh }: { forceRefresh?: boolean }) {
       .slice(0, MAX_DISPLAY)
   }, [submissions])
 
+  const visited = useMemo(() => getVisitedSet(), [hotNodes])
+
   const handleClick = (e: React.MouseEvent, nodeId: string) => {
     e.preventDefault()
     navigate(`/id/${nodeId}`)
@@ -94,7 +96,7 @@ export function HotNodes({ forceRefresh }: { forceRefresh?: boolean }) {
             <div key={node.parentId} className="bookmark">
               <a
                 href={`/id/${node.parentId}`}
-                className="book-name node-link"
+                className={`book-name node-link${visited.has(node.parentId) ? ' visited' : ''}`}
                 onClick={(e) => handleClick(e, node.parentId)}
               >
                 {node.parentName}

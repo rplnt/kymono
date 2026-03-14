@@ -2,7 +2,15 @@ import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { NodeData, NodeComment } from '@/types'
 import { useCurrentNode, useConfigValue, useFriends, useUser } from '@/contexts'
-import { fetchNodeData, submitComment, giveKarma, scrollToElement } from '@/utils'
+import {
+  fetchNodeData,
+  submitComment,
+  giveKarma,
+  scrollToElement,
+  recordVisit,
+  toggleStar,
+  isStarred,
+} from '@/utils'
 import { useTitle } from '@/utils/useTitle'
 import { config, CONFIG_PATHS } from '@/config'
 import { ExternalLinkIcon } from '@/components/ExternalLinkIcon'
@@ -70,6 +78,7 @@ export function Node() {
   const [commentKStates, setCommentKStates] = useState<
     Map<string, 'idle' | 'sending' | 'ok' | 'error' | 'nehul' | 'neda-sa'>
   >(new Map())
+  const [starred, setStarred] = useState(false)
 
   useTitle(node?.name)
 
@@ -111,6 +120,8 @@ export function Node() {
       setComments(response.children)
       setCurrentNode(response.node)
       setAnticsrf(response.anticsrf)
+      recordVisit(nodeId, response.node.name)
+      setStarred(isStarred(nodeId))
     } catch (err) {
       console.error('Failed to load node:', err)
       setError(err instanceof Error ? err.message : 'Failed to load node')
@@ -315,21 +326,30 @@ export function Node() {
 
   return (
     <div className="node-view">
-      {node.parentId && (
-        <div className="node-parent-ref">
-          <span className="node-parent-in">in </span>
-          <a
-            href={`#/id/${node.parentId}`}
-            className="node-parent-link"
-            onClick={(e) => {
-              e.preventDefault()
-              navigate(`/id/${node.parentId}`)
-            }}
-          >
-            {node.parentName || `node ${node.parentId}`}
-          </a>
-        </div>
-      )}
+      <div className="node-parent-ref">
+        {node.parentId && (
+          <>
+            <span className="node-parent-in">in </span>
+            <a
+              href={`#/id/${node.parentId}`}
+              className="node-parent-link"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate(`/id/${node.parentId}`)
+              }}
+            >
+              {node.parentName || `node ${node.parentId}`}
+            </a>
+          </>
+        )}
+        <button
+          className={`star-btn${starred ? ' active' : ''}`}
+          onClick={() => setStarred(toggleStar(node.id, node.name))}
+          title={starred ? 'Unstar' : 'Star'}
+        >
+          {starred ? '\u2605' : '\u2606'}
+        </button>
+      </div>
       {node.templateId === '4' ? (
         /* Submission: render like a comment */
         <div className="comment node-as-comment">

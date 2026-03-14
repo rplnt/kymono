@@ -10,7 +10,7 @@ import type {
 } from '@/types'
 import { config } from '@/config'
 import { parseVisitDate } from './date'
-import { stripHtml, sanitizeHtml, applyNl2br } from './html'
+import { stripHtml, sanitizeHtml, applyNl2br, localizeKyberiaLinks } from './html'
 
 export function getImageUrl(nodeId: string): string {
   if (!nodeId || nodeId.length < 2) return ''
@@ -259,7 +259,7 @@ export function parseNodeJson(
     id: raw.node_id,
     name: stripHtml(raw.node_name || ''),
     nameHtml: sanitizeHtml(raw.node_name || ''),
-    content: applyNl2br(raw.node_content || '', raw.nl2br),
+    content: localizeKyberiaLinks(applyNl2br(raw.node_content || '', raw.nl2br)),
     parentId: raw.node_parent,
     parentName: stripHtml(raw.node_parent_name || ''),
     creatorId: raw.node_creator,
@@ -296,7 +296,7 @@ export function parseChildJson(raw: RawChild, lastVisit?: Date): NodeComment {
     creatorId: raw.node_creator,
     owner: raw.login || '',
     name: stripHtml(raw.node_name || ''),
-    content: applyNl2br(raw.node_content || '', raw.nl2br),
+    content: localizeKyberiaLinks(applyNl2br(raw.node_content || '', raw.nl2br)),
     templateId: raw.template_id,
     createdAt,
     updatedAt,
@@ -318,7 +318,7 @@ export function parseKItem(raw: RawKItem): KItem {
   return {
     id: raw.node_id,
     name: stripHtml(raw.node_name || ''),
-    content: applyNl2br(raw.node_content || '', raw.nl2br),
+    content: localizeKyberiaLinks(applyNl2br(raw.node_content || '', raw.nl2br)),
     parentId: raw.node_parent,
     parentName: stripHtml(raw.parent_name || ''),
     creatorId: raw.node_creator,
