@@ -1,28 +1,24 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { NodeData, NodeComment } from '@/types'
-import { useCurrentNode, useConfigValue, useFriends, useUser } from '@/contexts'
+import { useCurrentNode, useConfigValue } from '@/contexts'
 import {
   fetchNodeData,
-  submitComment,
-  giveKarma,
   scrollToElement,
   recordVisit,
   toggleStar,
   isStarred,
 } from '@/utils'
 import { useTitle } from '@/utils/useTitle'
-import { config, CONFIG_PATHS } from '@/config'
-import { ExternalLinkIcon } from '@/components/ExternalLinkIcon'
-import { Timestamp } from '@/components/Timestamp'
+import { CONFIG_PATHS } from '@/config'
 import { Comment, getCommentIndent } from '@/components/Comment'
+import { NodeHeader } from '@/components/NodeHeader'
+import { ReplyForm } from '@/components/ReplyForm'
 
 export function Node() {
   const { nodeId } = useParams<{ nodeId: string }>()
   const navigate = useNavigate()
   const { setCurrentNode, anticsrf, setAnticsrf } = useCurrentNode()
-  const { isFriend } = useFriends()
-  const { userId } = useUser()
   const [node, setNode] = useState<NodeData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -31,18 +27,6 @@ export function Node() {
   const [collapsedComments, setCollapsedComments] = useState<Map<string, 'body' | 'subtree'>>(
     new Map()
   )
-  const [replyTitle, setReplyTitle] = useState('')
-  const [replyContent, setReplyContent] = useState('')
-  const [replyError, setReplyError] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-  const submittingRef = useRef(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const cursorPosRef = useRef<number | null>(null)
-  const [insertModal, setInsertModal] = useState<'link' | 'image' | null>(null)
-  const [modalUrl, setModalUrl] = useState('')
-  const [modalTitle, setModalTitle] = useState('')
-  const [modalWidth, setModalWidth] = useState('')
-  const [fullTimestamps] = useConfigValue<boolean>(CONFIG_PATHS.FULL_TIMESTAMPS)
   const [progressiveComments] = useConfigValue<boolean>(CONFIG_PATHS.NODE_PROGRESSIVE_COMMENTS)
   const [autoLoadCommentsOnScroll] = useConfigValue<boolean>(
     CONFIG_PATHS.NODE_AUTO_LOAD_COMMENTS_SCROLL
@@ -50,9 +34,6 @@ export function Node() {
   const [hideTopic] = useConfigValue<boolean>(CONFIG_PATHS.NODE_HIDE_TOPIC)
   const [visibleBatches, setVisibleBatches] = useState(1)
   const [childFilter, setChildFilter] = useState('')
-  const [nodeKState, setNodeKState] = useState<
-    'idle' | 'sending' | 'ok' | 'error' | 'nehul' | 'neda-sa'
-  >('idle')
   const [starred, setStarred] = useState(false)
 
   useTitle(node?.name)
@@ -84,10 +65,6 @@ export function Node() {
     setCollapsedComments(new Map())
     setLoading(true)
     setError(null)
-    setReplyTitle('')
-    setReplyContent('')
-    setReplyError(null)
-    setNodeKState('idle')
     try {
       const response = await fetchNodeData(nodeId)
       setNode(response.node)
@@ -158,54 +135,6 @@ export function Node() {
     return () => cancelAnimationFrame(raf)
   }, [progressiveComments, autoLoadCommentsOnScroll, comments, visibleBatches, topLevelCount])
 
-  const handleSubmit = async () => {
-    if (submittingRef.current) return
-    if (!replyContent.trim()) return
-    if (!anticsrf) {
-      setReplyError('Missing CSRF token. Try reloading.')
-      return
-    }
-    if (!nodeId) return
-
-    submittingRef.current = true
-    setSubmitting(true)
-    setReplyError(null)
-    try {
-      await submitComment(nodeId, replyTitle, replyContent, anticsrf)
-      setReplyTitle('')
-      setReplyContent('')
-      await loadData()
-    } catch (err) {
-      setReplyError(err instanceof Error ? err.message : 'Failed to submit comment')
-    } finally {
-      setSubmitting(false)
-      submittingRef.current = false
-    }
-  }
-
-  const openInsertModal = (type: 'link' | 'image') => {
-    cursorPosRef.current = textareaRef.current?.selectionStart ?? null
-    setModalUrl('')
-    setModalTitle('')
-    setModalWidth('')
-    setInsertModal(type)
-  }
-
-  const handleInsert = () => {
-    if (!modalUrl.trim()) return
-    const widthAttr = modalWidth.trim() ? ` width="${modalWidth.trim()}"` : ''
-    const html =
-      insertModal === 'image'
-        ? `<img src="${modalUrl.trim()}"${widthAttr}>`
-        : `<a href="${modalUrl.trim()}">${modalTitle.trim() || modalUrl.trim()}</a>`
-
-    const pos = cursorPosRef.current ?? replyContent.length
-    const before = replyContent.slice(0, pos)
-    const after = replyContent.slice(pos)
-    setReplyContent(before + html + after)
-    setInsertModal(null)
-  }
-
   // Clear current node when leaving
   useEffect(() => {
     return () => {
@@ -213,39 +142,10 @@ export function Node() {
     }
   }, [setCurrentNode])
 
-  const handleGiveNodeK = async () => {
-    if (nodeKState !== 'idle' || !node) return
-    setNodeKState('sending')
-    try {
-      const result = await giveKarma(node.id, anticsrf)
-      setNodeKState(result)
-      if (result === 'ok') {
-        setNode((prev) => prev && { ...prev, karma: prev.karma + 1 })
-      }
-    } catch {
-      setNodeKState('error')
-    }
+  const scrollToComments = () => {
+    const commentsEl = document.querySelector('.node-comments')
+    if (commentsEl) scrollToElement(commentsEl)
   }
-
-  // Handle clicks on local links in content
-  const handleContentClick = useCallback(
-    (e: React.MouseEvent) => {
-      const target = e.target as HTMLElement
-      const anchor = target.closest('a')
-      if (!anchor) return
-
-      const href = anchor.getAttribute('href')
-      if (!href) return
-
-      // Check for local /id/ links
-      const match = href.match(/^\/id\/(\d+)/)
-      if (match) {
-        e.preventDefault()
-        navigate(`/id/${match[1]}`)
-      }
-    },
-    [navigate]
-  )
 
   if (loading) {
     return (
@@ -274,351 +174,24 @@ export function Node() {
     )
   }
 
-  const externalUrl = `${config.externalBase}/id/${node.id}`
-
-  const scrollToComments = () => {
-    const commentsEl = document.querySelector('.node-comments')
-    if (commentsEl) scrollToElement(commentsEl)
-  }
-
   return (
     <div className="node-view">
-      <div className="node-parent-ref">
-        {node.parentId && (
-          <>
-            <span className="node-parent-in">in </span>
-            <a
-              href={`#/id/${node.parentId}`}
-              className="node-parent-link"
-              onClick={(e) => {
-                e.preventDefault()
-                navigate(`/id/${node.parentId}`)
-              }}
-            >
-              {node.parentName || `node ${node.parentId}`}
-            </a>
-          </>
-        )}
-        <button
-          className={`star-btn${starred ? ' active' : ''}`}
-          onClick={() => setStarred(toggleStar(node.id, node.name))}
-          title={starred ? 'Unstar' : 'Star'}
-        >
-          {starred ? '\u2605' : '\u2606'}
-        </button>
-      </div>
-      {node.templateId === '4' ? (
-        /* Submission: render like a comment */
-        <div className="comment node-as-comment">
-          <div className="comment-header" onClick={() => setContentCollapsed((prev) => !prev)}>
-            {node.creatorImageUrl ? (
-              <img
-                src={node.creatorImageUrl}
-                alt=""
-                className="comment-avatar avatar-img"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  navigate(`/id/${node.creatorId}`)
-                }}
-              />
-            ) : (
-              <div
-                className="comment-avatar comment-avatar-placeholder"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  navigate(`/id/${node.creatorId}`)
-                }}
-              />
-            )}
-            <div className="comment-meta">
-              <div className="comment-meta-line">
-                <a
-                  href={`#/id/${node.creatorId}`}
-                  className={`comment-author${node.creatorId === userId ? ' is-self' : isFriend(node.creatorId) ? ' is-friend' : ''}`}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    navigate(`/id/${node.creatorId}`)
-                  }}
-                >
-                  {node.owner}
-                </a>
-                <Timestamp
-                  createdAt={node.createdAt}
-                  updatedAt={node.updatedAt}
-                  fullTimestamps={fullTimestamps}
-                />
-                {node.karma >= 1 && (
-                  <span className="comment-karma karma-value">{node.karma}K</span>
-                )}
-              </div>
-              <div className="comment-meta-line">
-                <span className="comment-title">{node.name || `node ${node.id}`}</span>
-              </div>
-            </div>
-            <a
-              href={externalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="node-external-link"
-              title="Open on kyberia.sk"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <ExternalLinkIcon />
-            </a>
-          </div>
-          {!contentCollapsed && (
-            <div className="comment-body">
-              <div
-                className="comment-content"
-                dangerouslySetInnerHTML={{ __html: node.content }}
-                onClick={handleContentClick}
-              />
-            </div>
-          )}
-          <div className="give-k-wrap">
-            {node.givenK || nodeKState === 'ok' ? (
-              <span className="give-k-given">k given</span>
-            ) : nodeKState === 'nehul' ? (
-              <span className="give-k-err">nehul</span>
-            ) : nodeKState === 'neda-sa' ? (
-              <span className="give-k-err">neda sa</span>
-            ) : nodeKState === 'error' ? (
-              <span className="give-k-err">err</span>
-            ) : (
-              <button
-                className="give-k-btn"
-                onClick={handleGiveNodeK}
-                disabled={nodeKState === 'sending'}
-              >
-                give k
-              </button>
-            )}
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Node header */}
-          <div
-            className={`node-header${contentCollapsed ? ' collapsed' : ''}`}
-            onClick={() => setContentCollapsed((prev) => !prev)}
-          >
-            <div className="node-header-row">
-              <h1 className="node-title" dangerouslySetInnerHTML={{ __html: node.nameHtml }} />
-              {node.karma >= 1 && node.templateId !== '2' && node.templateId !== '3' && (
-                <span className="node-karma karma-value">{node.karma} K</span>
-              )}
-              <a
-                href={externalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="node-external-link"
-                title="Open on kyberia.sk"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <ExternalLinkIcon />
-              </a>
-            </div>
-            <div className="node-header-row">
-              <span className="node-meta">
-                <span className="node-meta-label">by</span>
-                <a
-                  href={`#/id/${node.creatorId}`}
-                  className="node-meta-link"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    e.preventDefault()
-                    navigate(`/id/${node.creatorId}`)
-                  }}
-                >
-                  {node.owner}
-                </a>
-              </span>
-              {node.childrenCount > 0 && (
-                <button
-                  className="node-children-link"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    scrollToComments()
-                  }}
-                >
-                  {node.childrenCount} children
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Node content */}
-          {!contentCollapsed && (
-            <div className="node-content-box">
-              {node.templateId === '14' ? (
-                <pre className="node-content node-content-mono">{node.content}</pre>
-              ) : (
-                <div
-                  className="node-content"
-                  dangerouslySetInnerHTML={{ __html: node.content }}
-                  onClick={handleContentClick}
-                />
-              )}
-            </div>
-          )}
-          <div className="give-k-wrap">
-            {node.givenK || nodeKState === 'ok' ? (
-              <span className="give-k-given">k given</span>
-            ) : nodeKState === 'nehul' ? (
-              <span className="give-k-err">nehul</span>
-            ) : nodeKState === 'neda-sa' ? (
-              <span className="give-k-err">neda sa</span>
-            ) : nodeKState === 'error' ? (
-              <span className="give-k-err">err</span>
-            ) : (
-              <button
-                className="give-k-btn"
-                onClick={handleGiveNodeK}
-                disabled={nodeKState === 'sending'}
-              >
-                give k
-              </button>
-            )}
-          </div>
-        </>
-      )}
+      <NodeHeader
+        node={node}
+        contentCollapsed={contentCollapsed}
+        onToggleContentCollapsed={() => setContentCollapsed((prev) => !prev)}
+        starred={starred}
+        onToggleStar={() => setStarred(toggleStar(node.id, node.name))}
+        onScrollToComments={scrollToComments}
+      />
 
       {/* Reply form - hidden for list templates (2, 14) */}
       {node.templateId !== '2' && node.templateId !== '14' && !node.canWrite && (
         <p className="node-readonly">prava nie sa</p>
       )}
 
-      {node.templateId !== '2' && node.templateId !== '14' && node.canWrite && (
-        <div className="reply-form">
-          <input
-            type="text"
-            className="reply-title input-surface"
-            placeholder="Title"
-            value={replyTitle}
-            onChange={(e) => setReplyTitle(e.target.value)}
-            disabled={submitting}
-            autoComplete="off"
-            autoCorrect="off"
-          />
-          <textarea
-            ref={textareaRef}
-            className="reply-content input-surface"
-            placeholder="Content"
-            value={replyContent}
-            onChange={(e) => setReplyContent(e.target.value)}
-            rows={4}
-            disabled={submitting}
-            autoComplete="off"
-            autoCorrect="off"
-          />
-          {replyError && <p className="reply-error">{replyError}</p>}
-          <div className="reply-actions">
-            <button
-              className="reply-submit"
-              disabled={submitting || !replyContent.trim()}
-              onClick={handleSubmit}
-            >
-              {submitting ? 'Submitting...' : 'Add'}
-            </button>
-            <div className="reply-toolbar">
-              <button
-                className="reply-toolbar-btn"
-                title="Insert link"
-                disabled={submitting}
-                onClick={() => openInsertModal('link')}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                </svg>
-              </button>
-              <button
-                className="reply-toolbar-btn"
-                title="Insert image"
-                disabled={submitting}
-                onClick={() => openInsertModal('image')}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          {insertModal && (
-            <div className="insert-modal-backdrop" onClick={() => setInsertModal(null)}>
-              <div className="insert-modal" onClick={(e) => e.stopPropagation()}>
-                <div className="insert-modal-title">Insert {insertModal}</div>
-                <input
-                  type="url"
-                  className="insert-modal-input input-surface"
-                  placeholder="URL"
-                  value={modalUrl}
-                  onChange={(e) => setModalUrl(e.target.value)}
-                  autoFocus
-                  autoComplete="off"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleInsert()
-                  }}
-                />
-                {insertModal === 'link' && (
-                  <input
-                    type="text"
-                    className="insert-modal-input input-surface"
-                    placeholder="Title (optional)"
-                    value={modalTitle}
-                    onChange={(e) => setModalTitle(e.target.value)}
-                    autoComplete="off"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleInsert()
-                    }}
-                  />
-                )}
-                {insertModal === 'image' && (
-                  <input
-                    type="number"
-                    className="insert-modal-input input-surface"
-                    placeholder="Width (optional, e.g. 300)"
-                    value={modalWidth}
-                    onChange={(e) => setModalWidth(e.target.value)}
-                    autoComplete="off"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleInsert()
-                    }}
-                  />
-                )}
-                <div className="insert-modal-actions">
-                  <button
-                    className="reply-submit"
-                    disabled={!modalUrl.trim()}
-                    onClick={handleInsert}
-                  >
-                    Insert
-                  </button>
-                  <button className="reply-submit" onClick={() => setInsertModal(null)}>
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+      {node.templateId !== '2' && node.templateId !== '14' && node.canWrite && nodeId && (
+        <ReplyForm nodeId={nodeId} anticsrf={anticsrf} onSubmitted={loadData} />
       )}
 
       {/* Comments section */}
