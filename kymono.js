@@ -9,9 +9,9 @@ var conf = {
     name: 'KyMoNo',
     version: 'v0.1.0',
     // css: 'kymono.css',
-    css: 'https://cdn.jsdelivr.net/gh/rplnt/kymono@master/kymono.css',
+    css: 'https://cdn.jsdelivr.net/gh/rplnt/kymono@v1/kymono.css',
     // userConfig: 'config.json',
-    userConfig: 'https://cdn.jsdelivr.net/gh/rplnt/kymono@master/config.json',
+    userConfig: 'https://cdn.jsdelivr.net/gh/rplnt/kymono@v1/config.json',
     recent: 1000*60*60*24*3
 };
 
