@@ -24,7 +24,7 @@ export function PeopleList({ people, onNavigate: onNav }: PeopleListProps) {
   return (
     <div className="people-section">
       <div className="people-header" onClick={() => setExpanded((v) => !v)}>
-        <span className="people-title">people ({others.length})</span>
+        <span className="people-title section-label">people ({others.length})</span>
         <span className="people-toggle">{expanded ? '−' : '+'}</span>
       </div>
 

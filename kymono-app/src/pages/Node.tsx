@@ -358,7 +358,7 @@ export function Node() {
               <img
                 src={node.creatorImageUrl}
                 alt=""
-                className="comment-avatar"
+                className="comment-avatar avatar-img"
                 onClick={(e) => {
                   e.stopPropagation()
                   navigate(`/id/${node.creatorId}`)
@@ -391,7 +391,9 @@ export function Node() {
                   updatedAt={node.updatedAt}
                   fullTimestamps={fullTimestamps}
                 />
-                {node.karma >= 1 && <span className="comment-karma">{node.karma}K</span>}
+                {node.karma >= 1 && (
+                  <span className="comment-karma karma-value">{node.karma}K</span>
+                )}
               </div>
               <div className="comment-meta-line">
                 <span className="comment-title">{node.name || `node ${node.id}`}</span>
@@ -447,7 +449,7 @@ export function Node() {
             <div className="node-header-row">
               <h1 className="node-title" dangerouslySetInnerHTML={{ __html: node.nameHtml }} />
               {node.karma >= 1 && node.templateId !== '2' && node.templateId !== '3' && (
-                <span className="node-karma">{node.karma} K</span>
+                <span className="node-karma karma-value">{node.karma} K</span>
               )}
               <a
                 href={externalUrl}
@@ -534,7 +536,7 @@ export function Node() {
         <div className="reply-form">
           <input
             type="text"
-            className="reply-title"
+            className="reply-title input-surface"
             placeholder="Title"
             value={replyTitle}
             onChange={(e) => setReplyTitle(e.target.value)}
@@ -544,7 +546,7 @@ export function Node() {
           />
           <textarea
             ref={textareaRef}
-            className="reply-content"
+            className="reply-content input-surface"
             placeholder="Content"
             value={replyContent}
             onChange={(e) => setReplyContent(e.target.value)}
@@ -608,7 +610,7 @@ export function Node() {
                 <div className="insert-modal-title">Insert {insertModal}</div>
                 <input
                   type="url"
-                  className="insert-modal-input"
+                  className="insert-modal-input input-surface"
                   placeholder="URL"
                   value={modalUrl}
                   onChange={(e) => setModalUrl(e.target.value)}
@@ -621,7 +623,7 @@ export function Node() {
                 {insertModal === 'link' && (
                   <input
                     type="text"
-                    className="insert-modal-input"
+                    className="insert-modal-input input-surface"
                     placeholder="Title (optional)"
                     value={modalTitle}
                     onChange={(e) => setModalTitle(e.target.value)}
@@ -634,7 +636,7 @@ export function Node() {
                 {insertModal === 'image' && (
                   <input
                     type="number"
-                    className="insert-modal-input"
+                    className="insert-modal-input input-surface"
                     placeholder="Width (optional, e.g. 300)"
                     value={modalWidth}
                     onChange={(e) => setModalWidth(e.target.value)}
@@ -681,7 +683,7 @@ export function Node() {
                     autoComplete="off"
                   />
                   {filtered.map((child) => (
-                    <div key={child.id} className="node-child-item">
+                    <div key={child.id} className="node-child-item list-row">
                       <a
                         href={`#/id/${child.id}`}
                         className="node-child-name"
@@ -695,7 +697,9 @@ export function Node() {
                       {child.childrenCount > 0 && (
                         <span className="node-child-children">{child.childrenCount}</span>
                       )}
-                      {child.karma > 0 && <span className="node-child-karma">{child.karma}K</span>}
+                      {child.karma > 0 && (
+                        <span className="node-child-karma karma-value">{child.karma}K</span>
+                      )}
                       <a
                         href={`#/id/${child.creatorId}`}
                         className="node-child-author"
@@ -778,7 +782,7 @@ export function Node() {
                                 <img
                                   src={comment.creatorImageUrl}
                                   alt=""
-                                  className="comment-avatar"
+                                  className="comment-avatar avatar-img"
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     navigate(`/id/${comment.creatorId}`)
@@ -812,7 +816,9 @@ export function Node() {
                                     fullTimestamps={fullTimestamps}
                                   />
                                   {comment.karma > 0 && (
-                                    <span className="comment-karma">{comment.karma}K</span>
+                                    <span className="comment-karma karma-value">
+                                      {comment.karma}K
+                                    </span>
                                   )}
                                   {(comment.isNew || comment.isOrphan) && (
                                     <span className="comment-badge comment-new">NEW</span>

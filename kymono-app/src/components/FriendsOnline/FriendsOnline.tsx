@@ -34,7 +34,7 @@ export function FriendsOnline({ people, onNavigate: onNav }: FriendsOnlineProps)
   return (
     <div className="friends-online-section">
       <div className="friends-online-header">
-        <span className="friends-online-title">friends</span>
+        <span className="friends-online-title section-label">friends</span>
       </div>
 
       <div className="friends-online-list">
@@ -43,7 +43,7 @@ export function FriendsOnline({ people, onNavigate: onNav }: FriendsOnlineProps)
             <img
               src={friend.creatorImageUrl || ''}
               alt={friend.login}
-              className="friend-icon"
+              className="friend-icon avatar-img"
               onError={(e) => {
                 ;(e.target as HTMLImageElement).style.display = 'none'
               }}

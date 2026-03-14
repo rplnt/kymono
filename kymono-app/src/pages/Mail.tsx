@@ -104,7 +104,7 @@ function ReplyForm({
   return (
     <div className="mail-reply-form">
       <textarea
-        className="mail-reply-textarea"
+        className="mail-reply-textarea input-bordered"
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
@@ -114,7 +114,7 @@ function ReplyForm({
       />
       <div className="mail-reply-actions">
         <button
-          className="btn btn-send"
+          className="btn btn-action"
           onClick={handleSend}
           disabled={!text.trim() || !anticsrf || sendState === 'sending'}
         >
@@ -213,7 +213,7 @@ function NewConversationSearch({
         </button>
         <input
           ref={inputRef}
-          className="new-conv-input"
+          className="new-conv-input input-bordered"
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -233,7 +233,7 @@ function NewConversationSearch({
               className={`new-conv-result${i === 0 ? ' new-conv-result-active' : ''}`}
               onClick={() => onSelect(s.userId)}
             >
-              <img src={getImageUrl(s.userId)} alt="" className="mail-avatar" />
+              <img src={getImageUrl(s.userId)} alt="" className="mail-avatar avatar-img" />
               <span className="new-conv-result-label">{s.label}</span>
             </div>
           ))}
@@ -394,7 +394,7 @@ export function Mail() {
           <img
             src={getImageUrl(selectedConversation)}
             alt=""
-            className="mail-avatar"
+            className="mail-avatar avatar-img"
             onClick={() => navigate(`/id/${selectedConversation}`)}
           />
           <a
@@ -424,7 +424,7 @@ export function Mail() {
                   <img
                     src={getImageUrl(msg.fromId)}
                     alt=""
-                    className="mail-avatar"
+                    className="mail-avatar avatar-img"
                     onClick={() => navigate(`/id/${msg.fromId}`)}
                   />
                   <a
@@ -478,7 +478,7 @@ export function Mail() {
   return (
     <div className="mail-view">
       <div className="mail-header">
-        <button className="btn btn-new-conv" onClick={() => setShowNewConversation(true)}>
+        <button className="btn btn-action" onClick={() => setShowNewConversation(true)}>
           new mail
         </button>
         <button className="mail-reload" onClick={() => loadData(true)} title="Reload">
@@ -505,7 +505,7 @@ export function Mail() {
               <img
                 src={getImageUrl(conv.otherUserId)}
                 alt=""
-                className="mail-avatar"
+                className="mail-avatar avatar-img"
                 onClick={(e) => {
                   e.stopPropagation()
                   navigate(`/id/${conv.otherUserId}`)

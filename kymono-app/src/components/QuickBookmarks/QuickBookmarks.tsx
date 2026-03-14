@@ -102,10 +102,10 @@ export function QuickBookmarks({ forceRefresh }: { forceRefresh?: boolean }) {
       {recentBookmarks.length > 0 && (
         <div className="quick-bookmarks-list">
           {recentBookmarks.map((bookmark) => (
-            <div key={bookmark.id} className="bookmark">
+            <div key={bookmark.id} className="bookmark list-row">
               <a
                 href={`/id/${bookmark.node}`}
-                className="book-name node-link"
+                className="book-name node-link text-fade-right"
                 onClick={(e) => handleBookmarkClick(e, bookmark.node)}
                 dangerouslySetInnerHTML={{ __html: bookmark.nameHtml }}
               />

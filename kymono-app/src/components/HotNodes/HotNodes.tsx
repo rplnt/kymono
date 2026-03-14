@@ -93,10 +93,10 @@ export function HotNodes({ forceRefresh }: { forceRefresh?: boolean }) {
       {hotNodes.length > 0 && (
         <div className="quick-bookmarks-list">
           {hotNodes.map((node) => (
-            <div key={node.parentId} className="bookmark">
+            <div key={node.parentId} className="bookmark list-row">
               <a
                 href={`/id/${node.parentId}`}
-                className={`book-name node-link${visited.has(node.parentId) ? ' visited' : ''}`}
+                className={`book-name node-link text-fade-right${visited.has(node.parentId) ? ' visited' : ''}`}
                 onClick={(e) => handleClick(e, node.parentId)}
               >
                 {node.parentName}

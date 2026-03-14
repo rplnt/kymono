@@ -84,7 +84,7 @@ export function SubmissionsList({
             <img
               src={item.creatorImageUrl}
               alt=""
-              className="fs-avatar"
+              className="fs-avatar avatar-img"
               onClick={(e) => {
                 e.preventDefault()
                 navigate(`/id/${item.creatorId}`)
@@ -100,9 +100,9 @@ export function SubmissionsList({
             <span className="fs-date">
               {fullTimestamps ? item.createdAt : formatRelativeString(item.createdAt)}
             </span>
-            {item.karma > 0 && <span className="fs-karma">{item.karma}K</span>}
+            {item.karma > 0 && <span className="fs-karma karma-value">{item.karma}K</span>}
           </div>
-          <div className="fs-title-line">
+          <div className="fs-title-line text-fade-right">
             <a
               href={`#/id/${item.id}`}
               className="fs-title"
@@ -121,7 +121,7 @@ export function SubmissionsList({
               </a>
             </span>
           </div>
-          <div className="fs-content">
+          <div className="fs-content text-fade-right">
             {item.content ? (
               <>
                 {item.content.endsWith('...') ? item.content.slice(0, -3) : item.content}

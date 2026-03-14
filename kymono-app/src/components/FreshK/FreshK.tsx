@@ -62,7 +62,7 @@ export function FreshK({ forceRefresh }: { forceRefresh?: boolean }) {
               <img
                 src={item.creatorImageUrl}
                 alt=""
-                className="fs-avatar"
+                className="fs-avatar avatar-img"
                 onClick={(e) => {
                   e.preventDefault()
                   navigate(`/id/${item.creatorId}`)
@@ -75,9 +75,9 @@ export function FreshK({ forceRefresh }: { forceRefresh?: boolean }) {
               >
                 {item.owner}
               </a>
-              {item.karma > 0 && <span className="fs-karma">{item.karma}K</span>}
+              {item.karma > 0 && <span className="fs-karma karma-value">{item.karma}K</span>}
             </div>
-            <div className="fs-title-line">
+            <div className="fs-title-line text-fade-right">
               <a
                 href={`#/id/${item.id}`}
                 className="fs-title"
@@ -96,7 +96,7 @@ export function FreshK({ forceRefresh }: { forceRefresh?: boolean }) {
                 </a>
               </span>
             </div>
-            <div className="fs-content">
+            <div className="fs-content text-fade-right">
               {plainContent ? (
                 <>
                   {plainContent.endsWith('...') ? plainContent.slice(0, -3) : plainContent}

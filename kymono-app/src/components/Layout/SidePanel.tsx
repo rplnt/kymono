@@ -206,7 +206,7 @@ export function SidePanel({ isOpen, onClose, onRepliesShown }: SidePanelProps) {
               {/* Ancestors (cwbe coordinates) */}
               {currentNode.ancestors.length > 0 && (
                 <div className="node-ancestors">
-                  <div className="node-ancestors-label">coordinates</div>
+                  <div className="node-ancestors-label section-label">coordinates</div>
                   <div className="node-ancestors-list">
                     {(() => {
                       // Decreasing indent per level: each step smaller than previous
@@ -226,7 +226,9 @@ export function SidePanel({ isOpen, onClose, onRepliesShown }: SidePanelProps) {
                           title={ancestor.id}
                           onClick={(e) => handleAncestorClick(e, ancestor.id)}
                         >
-                          <span className="node-ancestor-name">{ancestor.name}</span>
+                          <span className="node-ancestor-name text-fade-right">
+                            {ancestor.name}
+                          </span>
                         </a>
                       ))
                     })()}
@@ -236,7 +238,7 @@ export function SidePanel({ isOpen, onClose, onRepliesShown }: SidePanelProps) {
 
               {/* Karma */}
               {currentNode.karma > 0 && (
-                <div className="node-karma">
+                <div className="node-karma karma-value">
                   <span className="node-karma-value">{currentNode.karma}</span>
                   <span className="node-karma-icon">K</span>
                 </div>

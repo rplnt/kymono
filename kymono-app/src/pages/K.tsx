@@ -53,7 +53,7 @@ const KItemCard = memo(function KItemCard({
           <img
             src={item.creatorImageUrl}
             alt=""
-            className="comment-avatar"
+            className="comment-avatar avatar-img"
             onClick={(e) => {
               e.stopPropagation()
               onNavigate(`/id/${item.creatorId}`)
@@ -86,7 +86,7 @@ const KItemCard = memo(function KItemCard({
               updatedAt={item.updatedAt}
               fullTimestamps={fullTimestamps}
             />
-            {item.karma > 0 && <span className="comment-karma">{item.karma}K</span>}
+            {item.karma > 0 && <span className="comment-karma karma-value">{item.karma}K</span>}
           </div>
           <div className="comment-meta-line">
             <a

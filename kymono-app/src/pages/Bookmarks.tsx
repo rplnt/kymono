@@ -227,15 +227,15 @@ export function Bookmarks() {
         <div key={`${catIndex}-${cat.name}`} className="book-cat">
           <div className="cat-header" onClick={() => toggleCategory(cat.name)}>
             <span className="cat name">{cat.name}</span>
-            {cat.unread > 0 && <span className="cat unread">{cat.unread}</span>}
+            {cat.unread > 0 && <span className="cat-unread">{cat.unread}</span>}
           </div>
 
           {!collapsedCategories.has(cat.name) &&
             cat.visibleBookmarks.map((bookmark) => (
-              <div key={bookmark.id} className="bookmark" data-unread={bookmark.unread}>
+              <div key={bookmark.id} className="bookmark list-row" data-unread={bookmark.unread}>
                 <a
                   href={`/id/${bookmark.node}`}
-                  className="book-name node-link"
+                  className="book-name node-link text-fade-right"
                   onClick={(e) => handleBookmarkClick(e, bookmark.node)}
                   dangerouslySetInnerHTML={{ __html: bookmark.nameHtml }}
                 />

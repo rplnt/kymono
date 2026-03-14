@@ -35,7 +35,7 @@ function ReplyGroupView({
     <div className="reply-group">
       <a
         href={`#/id/${group.parentId}`}
-        className="reply-group-parent"
+        className="reply-group-parent text-fade-right"
         onClick={(e) => handleClick(e, group.parentId)}
       >
         <span className="lr-in">in</span>
@@ -48,14 +48,14 @@ function ReplyGroupView({
             src={reply.creatorImageUrl}
             alt={reply.login}
             title={reply.login}
-            className="lr-avatar"
+            className="lr-avatar avatar-img"
             onError={(e) => {
               ;(e.target as HTMLImageElement).style.display = 'none'
             }}
           />
           <a
             href={`#/id/${reply.id}`}
-            className="lr-text"
+            className="lr-text text-fade-right"
             onClick={(e) => handleClick(e, reply.id)}
           >
             {reply.content}
@@ -115,7 +115,7 @@ export function LatestReplies({ replies, lastLoadedAt, onNavigate }: LatestRepli
   return (
     <div className="latest-replies-section">
       <div className="latest-replies-header">
-        <span className="latest-replies-title">latest.replies</span>
+        <span className="latest-replies-title section-label">latest.replies</span>
       </div>
 
       <div className="latest-replies-list">
