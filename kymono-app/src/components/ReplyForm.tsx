@@ -182,11 +182,7 @@ export function ReplyForm({ nodeId, anticsrf, onSubmitted }: ReplyFormProps) {
               />
             )}
             <div className="insert-modal-actions">
-              <button
-                className="reply-submit"
-                disabled={!modalUrl.trim()}
-                onClick={handleInsert}
-              >
+              <button className="reply-submit" disabled={!modalUrl.trim()} onClick={handleInsert}>
                 Insert
               </button>
               <button className="reply-submit" onClick={() => setInsertModal(null)}>

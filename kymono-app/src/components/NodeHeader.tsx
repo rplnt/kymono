@@ -30,7 +30,9 @@ export function NodeHeader({
   const { anticsrf } = useCurrentNode()
   const [fullTimestamps] = useConfigValue<boolean>(CONFIG_PATHS.FULL_TIMESTAMPS)
 
-  const [kState, setKState] = useState<'idle' | 'sending' | 'ok' | 'error' | 'nehul' | 'neda-sa'>('idle')
+  const [kState, setKState] = useState<'idle' | 'sending' | 'ok' | 'error' | 'nehul' | 'neda-sa'>(
+    'idle'
+  )
   const [karmaOffset, setKarmaOffset] = useState(0)
 
   const handleGiveK = async () => {
@@ -79,11 +81,7 @@ export function NodeHeader({
       ) : kState === 'error' ? (
         <span className="give-k-err">err</span>
       ) : (
-        <button
-          className="give-k-btn"
-          onClick={handleGiveK}
-          disabled={kState === 'sending'}
-        >
+        <button className="give-k-btn" onClick={handleGiveK} disabled={kState === 'sending'}>
           give k
         </button>
       )}
