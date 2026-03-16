@@ -45,12 +45,15 @@ export function SidePanel({ isOpen, onClose, onRepliesShown }: SidePanelProps) {
         fetchRepliesData(force),
         fetchPeopleData(force),
       ])
+      // Capture the previous threshold before updating — this is what we compare
+      // replies against so the user sees the new ones that triggered the notification.
+      const prevLastLoaded = localStorage.getItem(LAST_LOADED_KEY)
+      setLastLoadedAt(prevLastLoaded)
       setReplies(repliesData)
       setPeople(peopleData)
       const newest = repliesData.reduce((max, r) => (r.createdAt > max ? r.createdAt : max), '')
       if (newest) {
         localStorage.setItem(LAST_LOADED_KEY, newest)
-        setLastLoadedAt(newest)
       }
     } catch (err) {
       console.error('Failed to load sidebar:', err)

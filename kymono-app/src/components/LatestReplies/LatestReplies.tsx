@@ -84,7 +84,7 @@ export function LatestReplies({ replies, lastLoadedAt, onNavigate }: LatestRepli
     const oldMap = new Map<string, ReplyGroup>()
 
     for (const reply of replies) {
-      const isNew = !lastLoadedAt || reply.createdAt > lastLoadedAt
+      const isNew = !lastLoadedAt || reply.createdAt >= lastLoadedAt
       const target = isNew ? freshMap : oldMap
 
       const existing = target.get(reply.parentId)

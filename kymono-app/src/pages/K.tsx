@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, memo } from 'react'
+import React, { useState, useEffect, useCallback, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { KItem } from '@/types'
 import { useConfigValue } from '@/contexts'
@@ -315,14 +315,16 @@ export function K() {
 
   const tabBar = (
     <div className="k-tabs">
-      {TABS.map((tab) => (
-        <button
-          key={tab.id}
-          className={`k-tab ${activeTab === tab.id ? 'k-tab-active' : ''}`}
-          onClick={() => handleTabChange(tab.id)}
-        >
-          {tab.label}
-        </button>
+      {TABS.map((tab, i) => (
+        <React.Fragment key={tab.id}>
+          {i === 1 && <span className="k-tab-sep">|</span>}
+          <button
+            className={`k-tab ${activeTab === tab.id ? 'k-tab-active' : ''}`}
+            onClick={() => handleTabChange(tab.id)}
+          >
+            {tab.label}
+          </button>
+        </React.Fragment>
       ))}
       <button className="k-tab k-tab-active k-tab-right" onClick={() => setNsfwFilter(!nsfwFilter)}>
         {nsfwFilter ? 'SFW' : 'ALL'}

@@ -2043,6 +2043,12 @@ a {
   color: var(--color-phosphor);
 }
 
+.k-tab-sep {
+  color: var(--color-text-muted);
+  align-self: center;
+  opacity: 0.4;
+}
+
 .k-tab-right {
   margin-left: auto;
 }
