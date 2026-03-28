@@ -28,8 +28,8 @@ export function usePullToRefresh(onRefresh?: () => Promise<void> | void): void {
     let state: State = 'idle'
     let startY = 0
     let currentPull = 0
-    const threshold = 70
-    const maxPull = 120
+    const threshold = 110
+    const maxPull = 160
 
     const updateIndicator = () => {
       if (state === 'pulling') {

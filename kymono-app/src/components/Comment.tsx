@@ -37,7 +37,14 @@ export interface CommentProps {
   onNext: (() => void) | null
 }
 
-export function Comment({ comment, level, collapsed, onToggleCollapse, onPrev, onNext }: CommentProps) {
+export function Comment({
+  comment,
+  level,
+  collapsed,
+  onToggleCollapse,
+  onPrev,
+  onNext,
+}: CommentProps) {
   const navigate = useNavigate()
   const { userId } = useUser()
   const { isFriend } = useFriends()
@@ -45,7 +52,9 @@ export function Comment({ comment, level, collapsed, onToggleCollapse, onPrev, o
   const [showCommentToolbar] = useConfigValue<boolean>(CONFIG_PATHS.COMMENT_TOOLBAR)
   const [fullTimestamps] = useConfigValue<boolean>(CONFIG_PATHS.FULL_TIMESTAMPS)
 
-  const [kState, setKState] = useState<'idle' | 'sending' | 'ok' | 'error' | 'nehul' | 'neda-sa'>('idle')
+  const [kState, setKState] = useState<'idle' | 'sending' | 'ok' | 'error' | 'nehul' | 'neda-sa'>(
+    'idle'
+  )
   const [karmaOffset, setKarmaOffset] = useState(0)
 
   const handleGiveK = async () => {
@@ -92,11 +101,7 @@ export function Comment({ comment, level, collapsed, onToggleCollapse, onPrev, o
     ) : kState === 'error' ? (
       <span className="give-k-err">err</span>
     ) : (
-      <button
-        className="give-k-btn"
-        onClick={handleGiveK}
-        disabled={kState === 'sending'}
-      >
+      <button className="give-k-btn" onClick={handleGiveK} disabled={kState === 'sending'}>
         give k
       </button>
     )
@@ -107,10 +112,7 @@ export function Comment({ comment, level, collapsed, onToggleCollapse, onPrev, o
       className={`comment${comment.isOrphan ? ' comment-orphan' : ''}`}
       style={{ marginLeft: `${getCommentIndent(level)}px` }}
     >
-      <div
-        className="comment-header"
-        onClick={onToggleCollapse}
-      >
+      <div className="comment-header" onClick={onToggleCollapse}>
         {comment.creatorImageUrl ? (
           <img
             src={comment.creatorImageUrl}
@@ -148,22 +150,14 @@ export function Comment({ comment, level, collapsed, onToggleCollapse, onPrev, o
               updatedAt={comment.updatedAt}
               fullTimestamps={fullTimestamps}
             />
-            {displayKarma > 0 && (
-              <span className="comment-karma karma-value">
-                {displayKarma}K
-              </span>
-            )}
+            {displayKarma > 0 && <span className="comment-karma karma-value">{displayKarma}K</span>}
             {(comment.isNew || comment.isOrphan) && (
               <span className="comment-badge comment-new">NEW</span>
             )}
-            {comment.contentChanged &&
-              !comment.isNew &&
-              !comment.isOrphan && (
-                <span className="comment-badge comment-changed">changed</span>
-              )}
-            {comment.isHardlink && (
-              <span className="comment-badge comment-hardlink">link</span>
+            {comment.contentChanged && !comment.isNew && !comment.isOrphan && (
+              <span className="comment-badge comment-changed">changed</span>
             )}
+            {comment.isHardlink && <span className="comment-badge comment-hardlink">link</span>}
           </div>
           <a
             href={`#/id/${comment.id}`}
@@ -180,10 +174,7 @@ export function Comment({ comment, level, collapsed, onToggleCollapse, onPrev, o
       </div>
       {!collapsed && (
         <div className="comment-body">
-          <CommentContent
-            html={comment.content}
-            onClick={handleContentClick}
-          />
+          <CommentContent html={comment.content} onClick={handleContentClick} />
         </div>
       )}
       {!showCommentToolbar ? (
@@ -192,11 +183,7 @@ export function Comment({ comment, level, collapsed, onToggleCollapse, onPrev, o
         </div>
       ) : (
         <div className="comment-toolbar">
-          <button
-            className="toolbar-btn"
-            disabled={!onPrev}
-            onClick={() => onPrev?.()}
-          >
+          <button className="toolbar-btn" disabled={!onPrev} onClick={() => onPrev?.()}>
             prev
           </button>
           <span className="toolbar-sep">|</span>
@@ -210,11 +197,7 @@ export function Comment({ comment, level, collapsed, onToggleCollapse, onPrev, o
             up
           </button>
           <span className="toolbar-sep">|</span>
-          <button
-            className="toolbar-btn"
-            disabled={!onNext}
-            onClick={() => onNext?.()}
-          >
+          <button className="toolbar-btn" disabled={!onNext} onClick={() => onNext?.()}>
             next
           </button>
           <span className="toolbar-k-right">{kBtn}</span>

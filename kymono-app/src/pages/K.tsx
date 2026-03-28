@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, memo } from 'react'
+import React, { useState, useEffect, useCallback, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { KItem } from '@/types'
 import { useConfigValue } from '@/contexts'
@@ -193,6 +193,7 @@ export function K() {
   const [fullTimestamps] = useConfigValue<boolean>(CONFIG_PATHS.FULL_TIMESTAMPS)
   const [progressiveDisplay] = useConfigValue<boolean>(CONFIG_PATHS.K_PROGRESSIVE_DISPLAY)
   const [autoLoadOnScroll] = useConfigValue<boolean>(CONFIG_PATHS.K_AUTO_LOAD_SCROLL)
+  const [nsfwFilter, setNsfwFilter] = useConfigValue<boolean>(CONFIG_PATHS.K_NSFW_FILTER)
   const [visibleCount, setVisibleCount] = useState(4)
   const [kStates, setKStates] = useState<
     Map<string, 'idle' | 'sending' | 'ok' | 'error' | 'nehul' | 'neda-sa'>
@@ -312,20 +313,29 @@ export function K() {
     [navigate]
   )
 
+  const tabBar = (
+    <div className="k-tabs">
+      {TABS.map((tab, i) => (
+        <React.Fragment key={tab.id}>
+          {i === 1 && <span className="k-tab-sep">|</span>}
+          <button
+            className={`k-tab ${activeTab === tab.id ? 'k-tab-active' : ''}`}
+            onClick={() => handleTabChange(tab.id)}
+          >
+            {tab.label}
+          </button>
+        </React.Fragment>
+      ))}
+      <button className="k-tab k-tab-active k-tab-right" onClick={() => setNsfwFilter(!nsfwFilter)}>
+        {nsfwFilter ? 'SFW' : 'ALL'}
+      </button>
+    </div>
+  )
+
   if (loading) {
     return (
       <div>
-        <div className="k-tabs">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              className={`k-tab ${activeTab === tab.id ? 'k-tab-active' : ''}`}
-              onClick={() => handleTabChange(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {tabBar}
         <div className="sp-circle" />
       </div>
     )
@@ -334,17 +344,7 @@ export function K() {
   if (error) {
     return (
       <div className="error-container">
-        <div className="k-tabs">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              className={`k-tab ${activeTab === tab.id ? 'k-tab-active' : ''}`}
-              onClick={() => handleTabChange(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {tabBar}
         <p className="error-message">{error}</p>
         <button className="btn btn-retry" onClick={() => loadData(activeTab, true)}>
           Retry
@@ -356,17 +356,7 @@ export function K() {
   if (items.length === 0) {
     return (
       <div>
-        <div className="k-tabs">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              className={`k-tab ${activeTab === tab.id ? 'k-tab-active' : ''}`}
-              onClick={() => handleTabChange(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {tabBar}
         <div className="empty-state">
           <div className="empty-state-icon">&#9733;</div>
           <p className="empty-state-text">No karma items</p>
@@ -375,22 +365,19 @@ export function K() {
     )
   }
 
-  const displayItems = progressiveDisplay ? items.slice(0, visibleCount) : items
-  const remaining = items.length - displayItems.length
+  const filteredItems = nsfwFilter
+    ? items.filter((item) => {
+        const name = (item.name || '').toLowerCase()
+        const parent = (item.parentName || '').toLowerCase()
+        return !name.includes('nsfw') && !parent.includes('nsfw')
+      })
+    : items
+  const displayItems = progressiveDisplay ? filteredItems.slice(0, visibleCount) : filteredItems
+  const remaining = filteredItems.length - displayItems.length
 
   return (
     <div className="k-view">
-      <div className="k-tabs">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            className={`k-tab ${activeTab === tab.id ? 'k-tab-active' : ''}`}
-            onClick={() => handleTabChange(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {tabBar}
       {displayItems.map((item) => (
         <KItemCard
           key={item.id}

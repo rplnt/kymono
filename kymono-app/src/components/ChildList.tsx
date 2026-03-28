@@ -40,9 +40,7 @@ export function ChildList({ items }: ChildListProps) {
           {child.childrenCount > 0 && (
             <span className="node-child-children">{child.childrenCount}</span>
           )}
-          {child.karma > 0 && (
-            <span className="node-child-karma karma-value">{child.karma}K</span>
-          )}
+          {child.karma > 0 && <span className="node-child-karma karma-value">{child.karma}K</span>}
           <a
             href={`#/id/${child.creatorId}`}
             className="node-child-author"
